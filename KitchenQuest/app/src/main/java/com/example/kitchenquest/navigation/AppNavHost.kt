@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.kitchenquest.feature.onboarding.OnboardingScreen
 import com.example.kitchenquest.ui.components.AppScaffold
 import com.example.kitchenquest.ui.screens.PlaceholderScreen
 
@@ -26,7 +27,14 @@ fun AppNavHost() {
 
             // Authentication and onboarding
             composable(AppDestinations.Onboarding) {
-                PlaceholderScreen(title = "Onboarding")
+                OnboardingScreen(
+                    onContinue = {
+                        navController.navigate(AppDestinations.Register)
+                    },
+                    onSkip = {
+                        navController.navigate(AppDestinations.Register)
+                    }
+                )
             }
 
             composable(AppDestinations.Login) {
