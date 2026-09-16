@@ -1,9 +1,12 @@
 package com.example.kitchenquest.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.kitchenquest.ui.components.AppScaffold
 import com.example.kitchenquest.ui.screens.PlaceholderScreen
 
 @Composable
@@ -11,99 +14,105 @@ fun AppNavHost() {
 
     val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = AppDestinations.Onboarding
-    ) {
+    AppScaffold(
+        navController = navController
+    ) { innerPadding ->
 
-        // Authentication and onboarding
-        composable(AppDestinations.Onboarding) {
-            PlaceholderScreen(title = "Onboarding")
-        }
+        NavHost(
+            navController = navController,
+            startDestination = AppDestinations.Onboarding,
+            modifier = Modifier.padding(innerPadding)
+        ) {
 
-        composable(AppDestinations.Login) {
-            PlaceholderScreen(title = "Login")
-        }
+            // Authentication and onboarding
+            composable(AppDestinations.Onboarding) {
+                PlaceholderScreen(title = "Onboarding")
+            }
 
-        composable(AppDestinations.Register) {
-            PlaceholderScreen(title = "Register")
-        }
+            composable(AppDestinations.Login) {
+                PlaceholderScreen(title = "Login")
+            }
 
-        composable(AppDestinations.ForgotPassword) {
-            PlaceholderScreen(title = "Forgot Password")
-        }
+            composable(AppDestinations.Register) {
+                PlaceholderScreen(title = "Register")
+            }
 
-        // Main application destinations
-        composable(AppDestinations.Home) {
-            PlaceholderScreen(title = "Home")
-        }
+            composable(AppDestinations.ForgotPassword) {
+                PlaceholderScreen(title = "Forgot Password")
+            }
 
-        composable(AppDestinations.Recipes) {
-            PlaceholderScreen(title = "Recipes")
-        }
+            // Main application destinations
+            composable(AppDestinations.Home) {
+                PlaceholderScreen(title = "Home")
+            }
 
-        composable(AppDestinations.MyKitchen) {
-            PlaceholderScreen(title = "My Kitchen")
-        }
+            composable(AppDestinations.Recipes) {
+                PlaceholderScreen(title = "Recipes")
+            }
 
-        composable(AppDestinations.Cook) {
-            PlaceholderScreen(title = "Cook")
-        }
+            composable(AppDestinations.MyKitchen) {
+                PlaceholderScreen(title = "My Kitchen")
+            }
 
-        composable(AppDestinations.Profile) {
-            PlaceholderScreen(title = "Profile")
-        }
+            composable(AppDestinations.Cook) {
+                PlaceholderScreen(title = "Cook")
+            }
 
-        // Recipe features
-        composable(AppDestinations.WhatCanIMake) {
-            PlaceholderScreen(title = "What Can I Make?")
-        }
+            composable(AppDestinations.Profile) {
+                PlaceholderScreen(title = "Profile")
+            }
 
-        composable(AppDestinations.RecipeDetails) {
-            PlaceholderScreen(title = "Recipe Details")
-        }
+            // Recipe features
+            composable(AppDestinations.WhatCanIMake) {
+                PlaceholderScreen(title = "What Can I Make?")
+            }
 
-        composable(AppDestinations.SavedRecipes) {
-            PlaceholderScreen(title = "Saved Recipes")
-        }
+            composable(AppDestinations.RecipeDetails) {
+                PlaceholderScreen(title = "Recipe Details")
+            }
 
-        // Pantry and shopping features
-        composable(AppDestinations.IngredientDetails) {
-            PlaceholderScreen(title = "Ingredient Details")
-        }
+            composable(AppDestinations.SavedRecipes) {
+                PlaceholderScreen(title = "Saved Recipes")
+            }
 
-        composable(AppDestinations.IngredientEditor) {
-            PlaceholderScreen(title = "Ingredient Editor")
-        }
+            // Pantry and shopping features
+            composable(AppDestinations.IngredientDetails) {
+                PlaceholderScreen(title = "Ingredient Details")
+            }
 
-        composable(AppDestinations.ShoppingList) {
-            PlaceholderScreen(title = "Shopping List")
-        }
+            composable(AppDestinations.IngredientEditor) {
+                PlaceholderScreen(title = "Ingredient Editor")
+            }
 
-        // Cooking features
-        composable(AppDestinations.CookingMode) {
-            PlaceholderScreen(title = "Cooking Mode")
-        }
+            composable(AppDestinations.ShoppingList) {
+                PlaceholderScreen(title = "Shopping List")
+            }
 
-        composable(AppDestinations.ActiveTimers) {
-            PlaceholderScreen(title = "Active Timers")
-        }
+            // Cooking features
+            composable(AppDestinations.CookingMode) {
+                PlaceholderScreen(title = "Cooking Mode")
+            }
 
-        composable(AppDestinations.KitchenTimer) {
-            PlaceholderScreen(title = "Kitchen Timer")
-        }
+            composable(AppDestinations.ActiveTimers) {
+                PlaceholderScreen(title = "Active Timers")
+            }
 
-        composable(AppDestinations.RecipeComplete) {
-            PlaceholderScreen(title = "Recipe Complete")
-        }
+            composable(AppDestinations.KitchenTimer) {
+                PlaceholderScreen(title = "Kitchen Timer")
+            }
 
-        // User features
-        composable(AppDestinations.CookingHistory) {
-            PlaceholderScreen(title = "Cooking History")
-        }
+            composable(AppDestinations.RecipeComplete) {
+                PlaceholderScreen(title = "Recipe Complete")
+            }
 
-        composable(AppDestinations.Settings) {
-            PlaceholderScreen(title = "Settings")
+            // User features
+            composable(AppDestinations.CookingHistory) {
+                PlaceholderScreen(title = "Cooking History")
+            }
+
+            composable(AppDestinations.Settings) {
+                PlaceholderScreen(title = "Settings")
+            }
         }
     }
 }
