@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "264423711181",
+    "project_id": "kitchenquest-aba37",
+    "storage_bucket": "kitchenquest-aba37.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:264423711181:android:26e6968292a7cd20282484",
+        "android_client_info": {
+          "package_name": "com.example.kitchenquest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQrIfyUeFgh7gnNxE5jyZ7rEfEv7JH1DU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
