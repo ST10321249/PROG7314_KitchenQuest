@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
 import com.example.kitchenquest.feature.onboarding.OnboardingScreen
@@ -75,8 +76,15 @@ fun AppNavHost() {
             }
 
             composable(AppDestinations.ForgotPassword) {
-                PlaceholderScreen(
-                    title = "Forgot Password"
+                ForgotPasswordScreen(
+                    onSendResetLink = { _ ->
+                        // Firebase password reset will be connected later.
+                    },
+                    onBackToLogin = {
+                        navController.navigate(
+                            AppDestinations.Login
+                        )
+                    }
                 )
             }
 
