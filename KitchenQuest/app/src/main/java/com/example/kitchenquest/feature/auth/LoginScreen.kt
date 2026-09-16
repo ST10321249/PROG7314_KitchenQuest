@@ -46,7 +46,7 @@ fun LoginScreen(
         mutableStateOf(false)
     }
 
-    val emailIsValid = isValidLoginEmail(email)
+    val emailIsValid = isValidEmail(email)
     val passwordIsValid = isValidLoginPassword(password)
 
     val emailError = when {

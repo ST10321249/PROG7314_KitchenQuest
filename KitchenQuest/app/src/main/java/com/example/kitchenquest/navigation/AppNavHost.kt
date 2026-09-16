@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kitchenquest.feature.auth.LoginScreen
+import com.example.kitchenquest.feature.auth.RegisterScreen
 import com.example.kitchenquest.feature.onboarding.OnboardingScreen
 import com.example.kitchenquest.ui.components.AppScaffold
 import com.example.kitchenquest.ui.screens.PlaceholderScreen
@@ -30,10 +31,14 @@ fun AppNavHost() {
             composable(AppDestinations.Onboarding) {
                 OnboardingScreen(
                     onContinue = {
-                        navController.navigate(AppDestinations.Register)
+                        navController.navigate(
+                            AppDestinations.Register
+                        )
                     },
                     onSkip = {
-                        navController.navigate(AppDestinations.Register)
+                        navController.navigate(
+                            AppDestinations.Register
+                        )
                     }
                 )
             }
@@ -41,7 +46,7 @@ fun AppNavHost() {
             composable(AppDestinations.Login) {
                 LoginScreen(
                     onLogin = { _, _ ->
-                        // Firebase login will be connected in a later commit.
+                        // Firebase login will be connected later.
                     },
                     onForgotPassword = {
                         navController.navigate(
@@ -57,8 +62,15 @@ fun AppNavHost() {
             }
 
             composable(AppDestinations.Register) {
-                PlaceholderScreen(
-                    title = "Register"
+                RegisterScreen(
+                    onRegister = { _, _, _ ->
+                        // Firebase registration will be connected later.
+                    },
+                    onBackToLogin = {
+                        navController.navigate(
+                            AppDestinations.Login
+                        )
+                    }
                 )
             }
 
