@@ -28,6 +28,8 @@ fun LoginScreen(
     onLogin: (String, String) -> Unit,
     onForgotPassword: () -> Unit,
     onCreateAccount: () -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier
 ) {
     var email by rememberSaveable {
@@ -151,9 +153,15 @@ fun LoginScreen(
             )
         }
 
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+        }
 
         Button(
             onClick = {
@@ -166,10 +174,15 @@ fun LoginScreen(
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
         ) {
             Text(
-                text = "Sign in"
+                text = if (isLoading) {
+                    "Signing in..."
+                } else {
+                    "Sign in"
+                }
             )
         }
 
@@ -179,7 +192,8 @@ fun LoginScreen(
 
         TextButton(
             onClick = onCreateAccount,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
         ) {
             Text(
                 text = "Create an account"

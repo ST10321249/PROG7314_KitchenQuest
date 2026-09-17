@@ -2,10 +2,15 @@ package com.example.kitchenquest.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.kitchenquest.feature.auth.AuthViewModel
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
@@ -17,6 +22,27 @@ import com.example.kitchenquest.ui.screens.PlaceholderScreen
 fun AppNavHost() {
 
     val navController = rememberNavController()
+
+    val authViewModel: AuthViewModel = viewModel()
+
+    val authState by authViewModel.uiState.collectAsState()
+
+    LaunchedEffect(authState.user) {
+        if (authState.user != null) {
+
+            navController.navigate(
+                AppDestinations.Home
+            ) {
+                popUpTo(
+                    AppDestinations.Onboarding
+                ) {
+                    inclusive = true
+                }
+
+                launchSingleTop = true
+            }
+        }
+    }
 
     AppScaffold(
         navController = navController
@@ -32,11 +58,15 @@ fun AppNavHost() {
             composable(AppDestinations.Onboarding) {
                 OnboardingScreen(
                     onContinue = {
+                        authViewModel.clearFeedback()
+
                         navController.navigate(
                             AppDestinations.Register
                         )
                     },
                     onSkip = {
+                        authViewModel.clearFeedback()
+
                         navController.navigate(
                             AppDestinations.Register
                         )
@@ -46,45 +76,75 @@ fun AppNavHost() {
 
             composable(AppDestinations.Login) {
                 LoginScreen(
-                    onLogin = { _, _ ->
-                        // Firebase login will be connected later.
+                    onLogin = { email, password ->
+                        authViewModel.login(
+                            email = email,
+                            password = password
+                        )
                     },
                     onForgotPassword = {
+                        authViewModel.clearFeedback()
+
                         navController.navigate(
                             AppDestinations.ForgotPassword
                         )
                     },
                     onCreateAccount = {
+                        authViewModel.clearFeedback()
+
                         navController.navigate(
                             AppDestinations.Register
                         )
-                    }
+                    },
+                    isLoading = authState.isLoading,
+                    errorMessage = authState.errorMessage
                 )
             }
 
             composable(AppDestinations.Register) {
                 RegisterScreen(
-                    onRegister = { _, _, _ ->
-                        // Firebase registration will be connected later.
+                    onRegister = {
+                            displayName,
+                            email,
+                            password ->
+
+                        authViewModel.register(
+                            displayName = displayName,
+                            email = email,
+                            password = password
+                        )
                     },
                     onBackToLogin = {
+                        authViewModel.clearFeedback()
+
                         navController.navigate(
                             AppDestinations.Login
                         )
-                    }
+                    },
+                    isLoading = authState.isLoading,
+                    errorMessage = authState.errorMessage
                 )
             }
 
             composable(AppDestinations.ForgotPassword) {
                 ForgotPasswordScreen(
-                    onSendResetLink = { _ ->
-                        // Firebase password reset will be connected later.
+                    onSendResetLink = { email ->
+                        authViewModel.sendPasswordReset(
+                            email = email
+                        )
                     },
                     onBackToLogin = {
+                        authViewModel.clearFeedback()
+
                         navController.navigate(
                             AppDestinations.Login
                         )
-                    }
+                    },
+                    isLoading = authState.isLoading,
+                    resetRequested =
+                        authState.passwordResetSent,
+                    errorMessage =
+                        authState.errorMessage
                 )
             }
 

@@ -34,6 +34,8 @@ fun RegisterScreen(
         password: String
     ) -> Unit,
     onBackToLogin: () -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier
 ) {
     var displayName by rememberSaveable {
@@ -64,14 +66,20 @@ fun RegisterScreen(
         mutableStateOf(false)
     }
 
-    val displayNameIsValid = isValidDisplayName(displayName)
-    val emailIsValid = isValidEmail(email)
-    val passwordIsValid = isStrongPassword(password)
+    val displayNameIsValid =
+        isValidDisplayName(displayName)
 
-    val confirmationIsValid = passwordsMatch(
-        password = password,
-        confirmPassword = confirmPassword
-    )
+    val emailIsValid =
+        isValidEmail(email)
+
+    val passwordIsValid =
+        isStrongPassword(password)
+
+    val confirmationIsValid =
+        passwordsMatch(
+            password = password,
+            confirmPassword = confirmPassword
+        )
 
     val formIsValid =
         displayNameIsValid &&
@@ -262,6 +270,17 @@ fun RegisterScreen(
             )
         }
 
+        if (errorMessage != null) {
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = errorMessage
+            )
+        }
+
         Spacer(
             modifier = Modifier.height(16.dp)
         )
@@ -275,10 +294,14 @@ fun RegisterScreen(
                 )
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = formIsValid
+            enabled = formIsValid && !isLoading
         ) {
             Text(
-                text = "Create account"
+                text = if (isLoading) {
+                    "Creating account..."
+                } else {
+                    "Create account"
+                }
             )
         }
 
@@ -297,7 +320,8 @@ fun RegisterScreen(
             )
 
             TextButton(
-                onClick = onBackToLogin
+                onClick = onBackToLogin,
+                enabled = !isLoading
             ) {
                 Text(
                     text = "Sign in"

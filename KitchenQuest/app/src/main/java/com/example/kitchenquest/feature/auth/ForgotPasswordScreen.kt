@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 fun ForgotPasswordScreen(
     onSendResetLink: (String) -> Unit,
     onBackToLogin: () -> Unit,
+    isLoading: Boolean = false,
+    resetRequested: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier
 ) {
     var email by rememberSaveable {
@@ -32,10 +35,6 @@ fun ForgotPasswordScreen(
     }
 
     var attemptedSubmit by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var resetRequested by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -125,6 +124,17 @@ fun ForgotPasswordScreen(
                 )
             )
 
+            if (errorMessage != null) {
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                Text(
+                    text = errorMessage
+                )
+            }
+
             Spacer(
                 modifier = Modifier.height(16.dp)
             )
@@ -137,14 +147,17 @@ fun ForgotPasswordScreen(
                         onSendResetLink(
                             email.trim()
                         )
-
-                        resetRequested = true
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
             ) {
                 Text(
-                    text = "Send reset link"
+                    text = if (isLoading) {
+                        "Sending..."
+                    } else {
+                        "Send reset link"
+                    }
                 )
             }
 
@@ -154,7 +167,8 @@ fun ForgotPasswordScreen(
 
             TextButton(
                 onClick = onBackToLogin,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
             ) {
                 Text(
                     text = "Back to sign in"
