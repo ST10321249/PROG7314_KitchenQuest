@@ -1,0 +1,52 @@
+package com.example.kitchenquest.feature.auth
+
+private val EmailRegex =
+    Regex(
+        "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    )
+
+fun isValidEmail(
+    email: String
+): Boolean {
+    return email.isNotBlank() &&
+            EmailRegex.matches(
+                email.trim()
+            )
+}
+
+fun isValidLoginPassword(
+    password: String
+): Boolean {
+    return password.isNotBlank()
+}
+
+fun isValidDisplayName(
+    displayName: String
+): Boolean {
+    return displayName
+        .trim()
+        .isNotEmpty()
+}
+
+fun isStrongPassword(
+    password: String
+): Boolean {
+    return password.length >= 8 &&
+            password.any {
+                it.isUpperCase()
+            } &&
+            password.any {
+                it.isDigit()
+            } &&
+            password.any {
+                !it.isLetterOrDigit()
+            }
+}
+
+fun passwordsMatch(
+    password: String,
+    confirmPassword: String
+): Boolean {
+    return confirmPassword.isNotEmpty() &&
+            password == confirmPassword
+}
