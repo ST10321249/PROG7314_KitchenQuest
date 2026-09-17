@@ -15,6 +15,10 @@ interface AuthRepository {
         password: String
     ): Result<AuthUser>
 
+    suspend fun signInWithGoogle(
+        idToken: String
+    ): Result<AuthUser>
+
     suspend fun sendPasswordReset(
         email: String
     ): Result<Unit>

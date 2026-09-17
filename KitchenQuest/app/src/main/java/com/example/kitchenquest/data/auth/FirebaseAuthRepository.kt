@@ -2,11 +2,13 @@ package com.example.kitchenquest.data.auth
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.tasks.await
 
 class FirebaseAuthRepository(
-    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val firebaseAuth: FirebaseAuth =
+        FirebaseAuth.getInstance()
 ) : AuthRepository {
 
     override val currentUser: AuthUser?
@@ -31,11 +33,15 @@ class FirebaseAuthRepository(
                     "Firebase did not return a user after registration."
                 )
 
-            val cleanDisplayName = displayName.trim()
+            val cleanDisplayName =
+                displayName.trim()
 
-            val profileUpdate = UserProfileChangeRequest.Builder()
-                .setDisplayName(cleanDisplayName)
-                .build()
+            val profileUpdate =
+                UserProfileChangeRequest.Builder()
+                    .setDisplayName(
+                        cleanDisplayName
+                    )
+                    .build()
 
             firebaseUser
                 .updateProfile(profileUpdate)
@@ -65,6 +71,32 @@ class FirebaseAuthRepository(
             val firebaseUser = result.user
                 ?: throw IllegalStateException(
                     "Firebase did not return a user after login."
+                )
+
+            firebaseUser.toAuthUser()
+        }
+    }
+
+    override suspend fun signInWithGoogle(
+        idToken: String
+    ): Result<AuthUser> {
+        return runCatching {
+
+            val credential =
+                GoogleAuthProvider.getCredential(
+                    idToken,
+                    null
+                )
+
+            val result = firebaseAuth
+                .signInWithCredential(
+                    credential
+                )
+                .await()
+
+            val firebaseUser = result.user
+                ?: throw IllegalStateException(
+                    "Firebase did not return a user after Google sign-in."
                 )
 
             firebaseUser.toAuthUser()

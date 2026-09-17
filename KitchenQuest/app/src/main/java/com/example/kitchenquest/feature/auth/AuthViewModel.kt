@@ -16,10 +16,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authRepository: AuthRepository = FirebaseAuthRepository()
+    private val authRepository: AuthRepository =
+        FirebaseAuthRepository()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthUiState())
+    private val _uiState =
+        MutableStateFlow(AuthUiState())
 
     val uiState: StateFlow<AuthUiState> =
         _uiState.asStateFlow()
@@ -28,39 +30,17 @@ class AuthViewModel(
         email: String,
         password: String
     ) {
-        _uiState.update {
-            it.copy(
-                isLoading = true,
-                errorMessage = null
-            )
-        }
+        setLoadingState()
 
         viewModelScope.launch {
 
-            val result = authRepository.login(
-                email = email,
-                password = password
-            )
+            val result =
+                authRepository.login(
+                    email = email,
+                    password = password
+                )
 
-            result.fold(
-                onSuccess = { user ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            user = user,
-                            errorMessage = null
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = getAuthErrorMessage(error)
-                        )
-                    }
-                }
-            )
+            handleAuthResult(result)
         }
     }
 
@@ -69,39 +49,48 @@ class AuthViewModel(
         email: String,
         password: String
     ) {
-        _uiState.update {
-            it.copy(
-                isLoading = true,
-                errorMessage = null
-            )
-        }
+        setLoadingState()
 
         viewModelScope.launch {
 
-            val result = authRepository.register(
-                displayName = displayName,
-                email = email,
-                password = password
-            )
+            val result =
+                authRepository.register(
+                    displayName = displayName,
+                    email = email,
+                    password = password
+                )
 
-            result.fold(
-                onSuccess = { user ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            user = user,
-                            errorMessage = null
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = getAuthErrorMessage(error)
-                        )
-                    }
-                }
+            handleAuthResult(result)
+        }
+    }
+
+    fun startGoogleSignIn() {
+        setLoadingState()
+    }
+
+    fun signInWithGoogle(
+        idToken: String
+    ) {
+        setLoadingState()
+
+        viewModelScope.launch {
+
+            val result =
+                authRepository.signInWithGoogle(
+                    idToken
+                )
+
+            handleAuthResult(result)
+        }
+    }
+
+    fun googleSignInFailed(
+        message: String
+    ) {
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = message
             )
         }
     }
@@ -120,7 +109,9 @@ class AuthViewModel(
         viewModelScope.launch {
 
             val result =
-                authRepository.sendPasswordReset(email)
+                authRepository.sendPasswordReset(
+                    email
+                )
 
             result.fold(
                 onSuccess = {
@@ -132,11 +123,15 @@ class AuthViewModel(
                         )
                     }
                 },
+
                 onFailure = { error ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = getResetErrorMessage(error)
+                            errorMessage =
+                                getResetErrorMessage(
+                                    error
+                                )
                         )
                     }
                 }
@@ -151,6 +146,44 @@ class AuthViewModel(
                 passwordResetSent = false
             )
         }
+    }
+
+    private fun setLoadingState() {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null
+            )
+        }
+    }
+
+    private fun handleAuthResult(
+        result:
+        Result<com.example.kitchenquest.data.auth.AuthUser>
+    ) {
+        result.fold(
+            onSuccess = { user ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = user,
+                        errorMessage = null
+                    )
+                }
+            },
+
+            onFailure = { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage =
+                            getAuthErrorMessage(
+                                error
+                            )
+                    )
+                }
+            }
+        )
     }
 
     private fun getAuthErrorMessage(

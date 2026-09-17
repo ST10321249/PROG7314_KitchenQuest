@@ -12,7 +12,20 @@
           "package_name": "com.example.kitchenquest"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "264423711181-udm38h1dkpmlhpg556ccojda161qa33j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kitchenquest",
+            "certificate_hash": "441048a294c2faa0ef8f0c1f82722528100e9f47"
+          }
+        },
+        {
+          "client_id": "264423711181-gr26m97fti3jtddkcck53gsmehn5uvja.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCQrIfyUeFgh7gnNxE5jyZ7rEfEv7JH1DU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "264423711181-gr26m97fti3jtddkcck53gsmehn5uvja.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

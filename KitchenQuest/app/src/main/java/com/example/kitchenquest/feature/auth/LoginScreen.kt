@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun LoginScreen(
     onLogin: (String, String) -> Unit,
+    onGoogleSignIn: () -> Unit,
     onForgotPassword: () -> Unit,
     onCreateAccount: () -> Unit,
     isLoading: Boolean = false,
@@ -48,19 +50,30 @@ fun LoginScreen(
         mutableStateOf(false)
     }
 
-    val emailIsValid = isValidEmail(email)
-    val passwordIsValid = isValidLoginPassword(password)
+    val emailIsValid =
+        isValidEmail(email)
+
+    val passwordIsValid =
+        isValidLoginPassword(password)
 
     val emailError = when {
         !attemptedSubmit -> null
-        email.isBlank() -> "Email is required"
-        !emailIsValid -> "Enter a valid email address"
+
+        email.isBlank() ->
+            "Email is required"
+
+        !emailIsValid ->
+            "Enter a valid email address"
+
         else -> null
     }
 
     val passwordError = when {
         !attemptedSubmit -> null
-        password.isBlank() -> "Password is required"
+
+        password.isBlank() ->
+            "Password is required"
+
         else -> null
     }
 
@@ -68,7 +81,8 @@ fun LoginScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement =
+            Arrangement.Center
     ) {
 
         Text(
@@ -76,7 +90,8 @@ fun LoginScreen(
         )
 
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier =
+                Modifier.height(24.dp)
         )
 
         OutlinedTextField(
@@ -84,7 +99,8 @@ fun LoginScreen(
             onValueChange = {
                 email = it
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
             label = {
                 Text("Email address")
             },
@@ -95,13 +111,16 @@ fun LoginScreen(
                     Text(emailError)
                 }
             },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
-            )
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType =
+                        KeyboardType.Email
+                )
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         OutlinedTextField(
@@ -109,44 +128,52 @@ fun LoginScreen(
             onValueChange = {
                 password = it
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
             label = {
                 Text("Password")
             },
             singleLine = true,
-            isError = passwordError != null,
+            isError =
+                passwordError != null,
             supportingText = {
                 if (passwordError != null) {
                     Text(passwordError)
                 }
             },
-            visualTransformation = if (showPassword) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
+            visualTransformation =
+                if (showPassword) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
             trailingIcon = {
                 TextButton(
                     onClick = {
-                        showPassword = !showPassword
+                        showPassword =
+                            !showPassword
                     }
                 ) {
                     Text(
-                        text = if (showPassword) {
-                            "Hide"
-                        } else {
-                            "Show"
-                        }
+                        text =
+                            if (showPassword) {
+                                "Hide"
+                            } else {
+                                "Show"
+                            }
                     )
                 }
             },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password
-            )
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType =
+                        KeyboardType.Password
+                )
         )
 
         TextButton(
-            onClick = onForgotPassword
+            onClick = onForgotPassword,
+            enabled = !isLoading
         ) {
             Text(
                 text = "Forgot password?"
@@ -154,12 +181,14 @@ fun LoginScreen(
         }
 
         if (errorMessage != null) {
+
             Text(
                 text = errorMessage
             )
 
             Spacer(
-                modifier = Modifier.height(8.dp)
+                modifier =
+                    Modifier.height(8.dp)
             )
         }
 
@@ -167,32 +196,55 @@ fun LoginScreen(
             onClick = {
                 attemptedSubmit = true
 
-                if (emailIsValid && passwordIsValid) {
+                if (
+                    emailIsValid &&
+                    passwordIsValid
+                ) {
                     onLogin(
                         email.trim(),
                         password
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
             enabled = !isLoading
         ) {
             Text(
-                text = if (isLoading) {
-                    "Signing in..."
-                } else {
-                    "Sign in"
-                }
+                text =
+                    if (isLoading) {
+                        "Signing in..."
+                    } else {
+                        "Sign in"
+                    }
             )
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
+        )
+
+        OutlinedButton(
+            onClick = onGoogleSignIn,
+            modifier =
+                Modifier.fillMaxWidth(),
+            enabled = !isLoading
+        ) {
+            Text(
+                text = "Continue with Google"
+            )
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(12.dp)
         )
 
         TextButton(
             onClick = onCreateAccount,
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
             enabled = !isLoading
         ) {
             Text(
