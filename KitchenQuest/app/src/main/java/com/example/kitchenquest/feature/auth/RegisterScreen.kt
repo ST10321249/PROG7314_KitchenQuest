@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
+import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
+import com.example.kitchenquest.ui.components.KitchenQuestTextField
+import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 @Composable
 fun RegisterScreen(
@@ -91,143 +91,157 @@ fun RegisterScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center
+            .padding(
+                KitchenQuestDimens.ScreenPadding
+            ),
+        verticalArrangement =
+            Arrangement.Center
     ) {
 
         Text(
-            text = "Create account"
+            text = "Create account",
+            style =
+                MaterialTheme.typography
+                    .headlineMedium
         )
 
         Spacer(
-            modifier = Modifier.height(20.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.SectionSpacing
+            )
         )
 
-        OutlinedTextField(
+        KitchenQuestTextField(
             value = displayName,
             onValueChange = {
                 displayName = it
             },
-            modifier = Modifier.fillMaxWidth(),
-            label = {
-                Text("Display name")
-            },
-            singleLine = true,
-            isError = displayName.isNotEmpty() &&
-                    !displayNameIsValid
+            label = "Display name",
+            modifier =
+                Modifier.fillMaxWidth(),
+            isError =
+                displayName.isNotEmpty() &&
+                        !displayNameIsValid
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
         )
 
-        OutlinedTextField(
+        KitchenQuestTextField(
             value = email,
             onValueChange = {
                 email = it
             },
-            modifier = Modifier.fillMaxWidth(),
-            label = {
-                Text("Email address")
-            },
-            singleLine = true,
-            isError = email.isNotEmpty() &&
-                    !emailIsValid,
-            supportingText = {
-                if (email.isNotEmpty() && !emailIsValid) {
-                    Text(
-                        text = "Enter a valid email address"
-                    )
-                }
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
-            )
+            label = "Email address",
+            modifier =
+                Modifier.fillMaxWidth(),
+            isError =
+                email.isNotEmpty() &&
+                        !emailIsValid,
+            supportingText =
+                if (
+                    email.isNotEmpty() &&
+                    !emailIsValid
+                ) {
+                    "Enter a valid email address"
+                } else {
+                    null
+                },
+            keyboardType =
+                KeyboardType.Email
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
         )
 
-        OutlinedTextField(
+        KitchenQuestTextField(
             value = password,
             onValueChange = {
                 password = it
             },
-            modifier = Modifier.fillMaxWidth(),
-            label = {
-                Text("Password")
-            },
-            singleLine = true,
-            isError = password.isNotEmpty() &&
-                    !passwordIsValid,
-            supportingText = {
-                if (password.isEmpty()) {
-                    Text(
-                        text = "At least 8 characters with one capital letter, one number and one special character"
-                    )
-                } else if (!passwordIsValid) {
-                    Text(
-                        text = "Password must have at least 8 characters, one capital letter, one number and one special character"
-                    )
-                }
-            },
-            visualTransformation = if (showPassword) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
+            label = "Password",
+            modifier =
+                Modifier.fillMaxWidth(),
+            isError =
+                password.isNotEmpty() &&
+                        !passwordIsValid,
+            supportingText =
+                when {
+                    password.isEmpty() ->
+                        "At least 8 characters with one capital letter, one number and one special character"
+
+                    !passwordIsValid ->
+                        "Password must have at least 8 characters, one capital letter, one number and one special character"
+
+                    else -> null
+                },
+            keyboardType =
+                KeyboardType.Password,
+            visualTransformation =
+                if (showPassword) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
             trailingIcon = {
                 TextButton(
                     onClick = {
-                        showPassword = !showPassword
+                        showPassword =
+                            !showPassword
                     }
                 ) {
                     Text(
-                        text = if (showPassword) {
-                            "Hide"
-                        } else {
-                            "Show"
-                        }
+                        text =
+                            if (showPassword) {
+                                "Hide"
+                            } else {
+                                "Show"
+                            }
                     )
                 }
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password
-            )
+            }
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
         )
 
-        OutlinedTextField(
+        KitchenQuestTextField(
             value = confirmPassword,
             onValueChange = {
                 confirmPassword = it
             },
-            modifier = Modifier.fillMaxWidth(),
-            label = {
-                Text("Confirm password")
-            },
-            singleLine = true,
-            isError = confirmPassword.isNotEmpty() &&
-                    !confirmationIsValid,
-            supportingText = {
+            label = "Confirm password",
+            modifier =
+                Modifier.fillMaxWidth(),
+            isError =
+                confirmPassword.isNotEmpty() &&
+                        !confirmationIsValid,
+            supportingText =
                 if (
                     confirmPassword.isNotEmpty() &&
                     !confirmationIsValid
                 ) {
-                    Text(
-                        text = "Passwords do not match"
-                    )
-                }
-            },
-            visualTransformation = if (showConfirmPassword) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
+                    "Passwords do not match"
+                } else {
+                    null
+                },
+            keyboardType =
+                KeyboardType.Password,
+            visualTransformation =
+                if (showConfirmPassword) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
             trailingIcon = {
                 TextButton(
                     onClick = {
@@ -236,26 +250,30 @@ fun RegisterScreen(
                     }
                 ) {
                     Text(
-                        text = if (showConfirmPassword) {
-                            "Hide"
-                        } else {
-                            "Show"
-                        }
+                        text =
+                            if (
+                                showConfirmPassword
+                            ) {
+                                "Hide"
+                            } else {
+                                "Show"
+                            }
                     )
                 }
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password
-            )
+            }
         )
 
         Spacer(
-            modifier = Modifier.height(8.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.SmallSpacing
+            )
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.fillMaxWidth(),
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Checkbox(
@@ -266,26 +284,46 @@ fun RegisterScreen(
             )
 
             Text(
-                text = "I agree to the Terms of Use and Privacy Policy"
+                text =
+                    "I agree to the Terms of Use and Privacy Policy",
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium
             )
         }
 
         if (errorMessage != null) {
 
             Spacer(
-                modifier = Modifier.height(8.dp)
+                modifier = Modifier.height(
+                    KitchenQuestDimens.SmallSpacing
+                )
             )
 
             Text(
-                text = errorMessage
+                text = errorMessage,
+                color =
+                    MaterialTheme.colorScheme
+                        .error,
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium
             )
         }
 
         Spacer(
-            modifier = Modifier.height(16.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.MediumSpacing
+            )
         )
 
-        Button(
+        KitchenQuestPrimaryButton(
+            text =
+                if (isLoading) {
+                    "Creating account..."
+                } else {
+                    "Create account"
+                },
             onClick = {
                 onRegister(
                     displayName.trim(),
@@ -293,35 +331,38 @@ fun RegisterScreen(
                     password
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = formIsValid && !isLoading
-        ) {
-            Text(
-                text = if (isLoading) {
-                    "Creating account..."
-                } else {
-                    "Create account"
-                }
-            )
-        }
+            modifier =
+                Modifier.fillMaxWidth(),
+            enabled =
+                formIsValid &&
+                        !isLoading
+        )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.Center,
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Text(
-                text = "Already have an account?"
+                text =
+                    "Already have an account?"
             )
 
             TextButton(
-                onClick = onBackToLogin,
-                enabled = !isLoading
+                onClick =
+                    onBackToLogin,
+                enabled =
+                    !isLoading
             ) {
                 Text(
                     text = "Sign in"

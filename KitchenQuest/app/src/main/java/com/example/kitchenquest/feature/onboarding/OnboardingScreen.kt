@@ -1,336 +1,274 @@
 package com.example.kitchenquest.feature.onboarding
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
+import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
+import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
-private val KitchenQuestOrange = Color(0xFFFF7A1A)
-private val SelectedGreen = Color(0xFFE4F4EB)
-
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OnboardingScreen(
     onContinue: () -> Unit,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedDietaryPreferences by remember {
-        mutableStateOf(setOf("No restrictions"))
-    }
 
-    var avoidedIngredients by remember {
-        mutableStateOf(emptySet<String>())
-    }
+    val dietaryOptions = listOf(
+        "No restrictions",
+        "Vegetarian",
+        "Vegan",
+        "Halal",
+        "Gluten-free",
+        "Dairy-free"
+    )
+
+    val avoidedIngredientOptions = listOf(
+        "Nuts",
+        "Shellfish",
+        "Eggs",
+        "Milk",
+        "Soy"
+    )
+
+    var selectedDietaryPreferences
+            by rememberSaveable {
+                mutableStateOf(
+                    setOf("No restrictions")
+                )
+            }
+
+    var selectedAvoidedIngredients
+            by rememberSaveable {
+                mutableStateOf(
+                    emptySet<String>()
+                )
+            }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .padding(
+                KitchenQuestDimens.ScreenPadding
+            )
     ) {
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.SpaceBetween,
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
-            Box(
-                modifier = Modifier
-                    .padding(top = 14.dp)
-                    .width(40.dp)
-                    .height(3.dp)
-                    .background(
-                        color = KitchenQuestOrange,
-                        shape = RoundedCornerShape(50)
-                    )
+            Text(
+                text = "KitchenQuest",
+                style =
+                    MaterialTheme.typography
+                        .titleMedium,
+                color =
+                    MaterialTheme.colorScheme
+                        .primary
             )
 
             TextButton(
                 onClick = onSkip
             ) {
                 Text(
-                    text = "Skip",
-                    color = Color.Gray
+                    text = "Skip"
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(
+            modifier = Modifier.padding(
+                KitchenQuestDimens
+                    .SmallSpacing
+            )
+        )
 
         Text(
             text = "Tell us how you eat",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            style =
+                MaterialTheme.typography
+                    .headlineMedium
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "We'll filter every recipe and recommendation to match. You can change this any time in Settings.",
-            fontSize = 14.sp,
-            color = Color.Gray,
-            lineHeight = 20.sp
+            text =
+                "We'll filter recipe and recommendation results to match your preferences.",
+            style =
+                MaterialTheme.typography
+                    .bodyMedium,
+            color =
+                MaterialTheme.colorScheme
+                    .onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(
+            modifier = Modifier.padding(
+                KitchenQuestDimens
+                    .MediumSpacing
+            )
+        )
 
         Text(
             text = "Dietary preference",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold
+            style =
+                MaterialTheme.typography
+                    .titleMedium
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            DietaryChip(
-                text = "No restrictions",
-                selected = "No restrictions" in selectedDietaryPreferences,
-                onClick = {
-                    selectedDietaryPreferences = setOf("No restrictions")
-                }
+        Spacer(
+            modifier = Modifier.padding(
+                KitchenQuestDimens
+                    .SmallSpacing
             )
+        )
 
-            DietaryChip(
-                text = "Vegetarian",
-                selected = "Vegetarian" in selectedDietaryPreferences,
-                onClick = {
-                    selectedDietaryPreferences =
-                        updateDietarySelection(
-                            currentSelection = selectedDietaryPreferences,
-                            preference = "Vegetarian"
-                        )
-                }
-            )
+        FlowRow {
 
-            DietaryChip(
-                text = "Vegan",
-                selected = "Vegan" in selectedDietaryPreferences,
-                onClick = {
-                    selectedDietaryPreferences =
-                        updateDietarySelection(
-                            currentSelection = selectedDietaryPreferences,
-                            preference = "Vegan"
-                        )
-                }
-            )
+            dietaryOptions.forEach {
+                    option ->
+
+                KitchenQuestChoiceChip(
+                    text = option,
+                    selected =
+                        option in
+                                selectedDietaryPreferences,
+                    onClick = {
+
+                        if (
+                            option ==
+                            "No restrictions"
+                        ) {
+
+                            selectedDietaryPreferences =
+                                setOf(
+                                    "No restrictions"
+                                )
+
+                        } else {
+
+                            val updated =
+                                selectedDietaryPreferences
+                                    .toMutableSet()
+
+                            updated.remove(
+                                "No restrictions"
+                            )
+
+                            if (
+                                option in updated
+                            ) {
+                                updated.remove(
+                                    option
+                                )
+                            } else {
+                                updated.add(
+                                    option
+                                )
+                            }
+
+                            selectedDietaryPreferences =
+                                if (
+                                    updated.isEmpty()
+                                ) {
+                                    setOf(
+                                        "No restrictions"
+                                    )
+                                } else {
+                                    updated
+                                }
+                        }
+                    }
+                )
+            }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            DietaryChip(
-                text = "Halal",
-                selected = "Halal" in selectedDietaryPreferences,
-                onClick = {
-                    selectedDietaryPreferences =
-                        updateDietarySelection(
-                            currentSelection = selectedDietaryPreferences,
-                            preference = "Halal"
-                        )
-                }
+        Spacer(
+            modifier = Modifier.padding(
+                KitchenQuestDimens
+                    .MediumSpacing
             )
-
-            DietaryChip(
-                text = "Gluten-free",
-                selected = "Gluten-free" in selectedDietaryPreferences,
-                onClick = {
-                    selectedDietaryPreferences =
-                        updateDietarySelection(
-                            currentSelection = selectedDietaryPreferences,
-                            preference = "Gluten-free"
-                        )
-                }
-            )
-
-            DietaryChip(
-                text = "Dairy-free",
-                selected = "Dairy-free" in selectedDietaryPreferences,
-                onClick = {
-                    selectedDietaryPreferences =
-                        updateDietarySelection(
-                            currentSelection = selectedDietaryPreferences,
-                            preference = "Dairy-free"
-                        )
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        )
 
         Text(
             text = "Avoid these ingredients",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold
+            style =
+                MaterialTheme.typography
+                    .titleMedium
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            AvoidIngredientChip(
-                text = "Nuts",
-                selected = "Nuts" in avoidedIngredients,
-                onClick = {
-                    avoidedIngredients =
-                        toggleSelection(avoidedIngredients, "Nuts")
-                }
+        Spacer(
+            modifier = Modifier.padding(
+                KitchenQuestDimens
+                    .SmallSpacing
             )
+        )
 
-            AvoidIngredientChip(
-                text = "Shellfish",
-                selected = "Shellfish" in avoidedIngredients,
-                onClick = {
-                    avoidedIngredients =
-                        toggleSelection(avoidedIngredients, "Shellfish")
-                }
-            )
+        FlowRow {
 
-            AvoidIngredientChip(
-                text = "Eggs",
-                selected = "Eggs" in avoidedIngredients,
-                onClick = {
-                    avoidedIngredients =
-                        toggleSelection(avoidedIngredients, "Eggs")
-                }
-            )
+            avoidedIngredientOptions.forEach {
+                    ingredient ->
 
-            AvoidIngredientChip(
-                text = "Milk",
-                selected = "Milk" in avoidedIngredients,
-                onClick = {
-                    avoidedIngredients =
-                        toggleSelection(avoidedIngredients, "Milk")
-                }
-            )
+                KitchenQuestChoiceChip(
+                    text = ingredient,
+                    selected =
+                        ingredient in
+                                selectedAvoidedIngredients,
+                    onClick = {
+
+                        val updated =
+                            selectedAvoidedIngredients
+                                .toMutableSet()
+
+                        if (
+                            ingredient in updated
+                        ) {
+                            updated.remove(
+                                ingredient
+                            )
+                        } else {
+                            updated.add(
+                                ingredient
+                            )
+                        }
+
+                        selectedAvoidedIngredients =
+                            updated
+                    }
+                )
+            }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            AvoidIngredientChip(
-                text = "Soy",
-                selected = "Soy" in avoidedIngredients,
-                onClick = {
-                    avoidedIngredients =
-                        toggleSelection(avoidedIngredients, "Soy")
-                }
-            )
-        }
+        Spacer(
+            modifier = Modifier.weight(1f)
+        )
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        Button(
+        KitchenQuestPrimaryButton(
+            text = "Continue",
             onClick = onContinue,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = KitchenQuestOrange
-            )
-        ) {
-            Text(
-                text = "Continue",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-@Composable
-private fun DietaryChip(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
-            Text(text = text)
-        },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = Color(0xFFFFEEE2),
-            selectedLabelColor = KitchenQuestOrange
+            modifier =
+                Modifier.fillMaxWidth()
         )
-    )
-}
-
-@Composable
-private fun AvoidIngredientChip(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
-            Text(text = text)
-        },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = SelectedGreen,
-            selectedLabelColor = Color(0xFF347A55)
-        )
-    )
-}
-
-private fun updateDietarySelection(
-    currentSelection: Set<String>,
-    preference: String
-): Set<String> {
-    val updatedSelection = currentSelection - "No restrictions"
-
-    return if (preference in updatedSelection) {
-        val result = updatedSelection - preference
-
-        if (result.isEmpty()) {
-            setOf("No restrictions")
-        } else {
-            result
-        }
-    } else {
-        updatedSelection + preference
-    }
-}
-
-private fun toggleSelection(
-    currentSelection: Set<String>,
-    item: String
-): Set<String> {
-    return if (item in currentSelection) {
-        currentSelection - item
-    } else {
-        currentSelection + item
     }
 }

@@ -2,10 +2,27 @@ package com.example.kitchenquest.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Main KitchenQuest colours
+val KitchenOrange = Color(0xFFFF7A1A)
+val KitchenOrangeDark = Color(0xFFE86400)
+val KitchenOrangeLight = Color(0xFFFFE1CC)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Light theme
+val KitchenBackground = Color(0xFFFFFBF7)
+val KitchenSurface = Color(0xFFFFFFFF)
+val KitchenSurfaceMuted = Color(0xFFF8F3EE)
+
+val KitchenText = Color(0xFF241F1B)
+val KitchenTextSecondary = Color(0xFF756D67)
+val KitchenBorder = Color(0xFFE6DED8)
+
+// Supporting status colours
+val KitchenGreen = Color(0xFF2F9E63)
+val KitchenRed = Color(0xFFBA1A1A)
+
+// Dark theme
+val KitchenDarkBackground = Color(0xFF19120E)
+val KitchenDarkSurface = Color(0xFF241B16)
+val KitchenDarkSurfaceMuted = Color(0xFF30251F)
+val KitchenDarkText = Color(0xFFFFF8F4)
+val KitchenDarkTextSecondary = Color(0xFFD6C8C0)

@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,7 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
+import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
+import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
+import com.example.kitchenquest.ui.components.KitchenQuestTextField
+import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 @Composable
 fun LoginScreen(
@@ -80,67 +80,60 @@ fun LoginScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(
+                KitchenQuestDimens.ScreenPadding
+            ),
         verticalArrangement =
             Arrangement.Center
     ) {
 
         Text(
-            text = "Welcome back"
+            text = "Welcome back",
+            style =
+                MaterialTheme.typography
+                    .headlineMedium
         )
 
         Spacer(
-            modifier =
-                Modifier.height(24.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.SectionSpacing
+            )
         )
 
-        OutlinedTextField(
+        KitchenQuestTextField(
             value = email,
             onValueChange = {
                 email = it
             },
+            label = "Email address",
             modifier =
                 Modifier.fillMaxWidth(),
-            label = {
-                Text("Email address")
-            },
-            singleLine = true,
             isError = emailError != null,
-            supportingText = {
-                if (emailError != null) {
-                    Text(emailError)
-                }
-            },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Email
-                )
+            supportingText = emailError,
+            keyboardType =
+                KeyboardType.Email
         )
 
         Spacer(
-            modifier =
-                Modifier.height(12.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
         )
 
-        OutlinedTextField(
+        KitchenQuestTextField(
             value = password,
             onValueChange = {
                 password = it
             },
+            label = "Password",
             modifier =
                 Modifier.fillMaxWidth(),
-            label = {
-                Text("Password")
-            },
-            singleLine = true,
             isError =
                 passwordError != null,
-            supportingText = {
-                if (passwordError != null) {
-                    Text(passwordError)
-                }
-            },
+            supportingText =
+                passwordError,
+            keyboardType =
+                KeyboardType.Password,
             visualTransformation =
                 if (showPassword) {
                     VisualTransformation.None
@@ -163,12 +156,7 @@ fun LoginScreen(
                             }
                     )
                 }
-            },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Password
-                )
+            }
         )
 
         TextButton(
@@ -183,16 +171,29 @@ fun LoginScreen(
         if (errorMessage != null) {
 
             Text(
-                text = errorMessage
+                text = errorMessage,
+                color =
+                    MaterialTheme.colorScheme
+                        .error,
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium
             )
 
             Spacer(
-                modifier =
-                    Modifier.height(8.dp)
+                modifier = Modifier.height(
+                    KitchenQuestDimens.SmallSpacing
+                )
             )
         }
 
-        Button(
+        KitchenQuestPrimaryButton(
+            text =
+                if (isLoading) {
+                    "Signing in..."
+                } else {
+                    "Sign in"
+                },
             onClick = {
                 attemptedSubmit = true
 
@@ -209,36 +210,26 @@ fun LoginScreen(
             modifier =
                 Modifier.fillMaxWidth(),
             enabled = !isLoading
-        ) {
-            Text(
-                text =
-                    if (isLoading) {
-                        "Signing in..."
-                    } else {
-                        "Sign in"
-                    }
-            )
-        }
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
         )
 
-        OutlinedButton(
+        Spacer(
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
+        )
+
+        KitchenQuestSecondaryButton(
+            text = "Continue with Google",
             onClick = onGoogleSignIn,
             modifier =
                 Modifier.fillMaxWidth(),
             enabled = !isLoading
-        ) {
-            Text(
-                text = "Continue with Google"
-            )
-        }
+        )
 
         Spacer(
-            modifier =
-                Modifier.height(12.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
         )
 
         TextButton(

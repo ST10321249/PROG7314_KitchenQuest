@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -19,7 +17,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
+import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
+import com.example.kitchenquest.ui.components.KitchenQuestTextField
+import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 @Composable
 fun ForgotPasswordScreen(
@@ -38,51 +38,82 @@ fun ForgotPasswordScreen(
         mutableStateOf(false)
     }
 
-    val emailIsValid = isValidEmail(email)
+    val emailIsValid =
+        isValidEmail(email)
 
     val emailError = when {
         !attemptedSubmit -> null
-        email.isBlank() -> "Email is required"
-        !emailIsValid -> "Enter a valid email address"
+
+        email.isBlank() ->
+            "Email is required"
+
+        !emailIsValid ->
+            "Enter a valid email address"
+
         else -> null
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center
+            .padding(
+                KitchenQuestDimens.ScreenPadding
+            ),
+        verticalArrangement =
+            Arrangement.Center
     ) {
 
         Text(
-            text = "Reset password"
+            text = "Reset password",
+            style =
+                MaterialTheme.typography
+                    .headlineMedium
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(
+                KitchenQuestDimens.FieldSpacing
+            )
         )
 
         if (resetRequested) {
 
             Text(
-                text = "Check your inbox"
+                text = "Check your inbox",
+                style =
+                    MaterialTheme.typography
+                        .titleLarge
             )
 
             Spacer(
-                modifier = Modifier.height(8.dp)
+                modifier = Modifier.height(
+                    KitchenQuestDimens.SmallSpacing
+                )
             )
 
             Text(
-                text = "If an account exists for this email, a password reset link has been sent."
+                text =
+                    "If an account exists for this email, a password reset link has been sent.",
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
 
             Spacer(
-                modifier = Modifier.height(20.dp)
+                modifier = Modifier.height(
+                    KitchenQuestDimens
+                        .SectionSpacing
+                )
             )
 
             TextButton(
-                onClick = onBackToLogin,
-                modifier = Modifier.fillMaxWidth()
+                onClick =
+                    onBackToLogin,
+                modifier =
+                    Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = "Back to sign in"
@@ -92,54 +123,73 @@ fun ForgotPasswordScreen(
         } else {
 
             Text(
-                text = "Enter the email address registered with your account."
+                text =
+                    "Enter the email address registered with your account.",
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
 
             Spacer(
-                modifier = Modifier.height(20.dp)
+                modifier = Modifier.height(
+                    KitchenQuestDimens
+                        .SectionSpacing
+                )
             )
 
-            OutlinedTextField(
+            KitchenQuestTextField(
                 value = email,
                 onValueChange = {
                     email = it
                 },
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(
-                        text = "Email address"
-                    )
-                },
-                singleLine = true,
-                isError = emailError != null,
-                supportingText = {
-                    if (emailError != null) {
-                        Text(
-                            text = emailError
-                        )
-                    }
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email
-                )
+                label = "Email address",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                isError =
+                    emailError != null,
+                supportingText =
+                    emailError,
+                keyboardType =
+                    KeyboardType.Email
             )
 
             if (errorMessage != null) {
 
                 Spacer(
-                    modifier = Modifier.height(8.dp)
+                    modifier = Modifier.height(
+                        KitchenQuestDimens
+                            .SmallSpacing
+                    )
                 )
 
                 Text(
-                    text = errorMessage
+                    text = errorMessage,
+                    color =
+                        MaterialTheme.colorScheme
+                            .error,
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium
                 )
             }
 
             Spacer(
-                modifier = Modifier.height(16.dp)
+                modifier = Modifier.height(
+                    KitchenQuestDimens
+                        .MediumSpacing
+                )
             )
 
-            Button(
+            KitchenQuestPrimaryButton(
+                text =
+                    if (isLoading) {
+                        "Sending..."
+                    } else {
+                        "Send reset link"
+                    },
                 onClick = {
                     attemptedSubmit = true
 
@@ -149,26 +199,26 @@ fun ForgotPasswordScreen(
                         )
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
-            ) {
-                Text(
-                    text = if (isLoading) {
-                        "Sending..."
-                    } else {
-                        "Send reset link"
-                    }
-                )
-            }
+                modifier =
+                    Modifier.fillMaxWidth(),
+                enabled =
+                    !isLoading
+            )
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(
+                    KitchenQuestDimens
+                        .FieldSpacing
+                )
             )
 
             TextButton(
-                onClick = onBackToLogin,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                onClick =
+                    onBackToLogin,
+                modifier =
+                    Modifier.fillMaxWidth(),
+                enabled =
+                    !isLoading
             ) {
                 Text(
                     text = "Back to sign in"
