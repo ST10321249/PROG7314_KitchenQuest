@@ -1,8 +1,10 @@
 package com.example.kitchenquest.feature.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kitchenquest.data.auth.AuthRepository
+import com.example.kitchenquest.data.auth.AuthUser
 import com.example.kitchenquest.data.auth.FirebaseAuthRepository
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -20,21 +22,48 @@ class AuthViewModel(
         FirebaseAuthRepository()
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG =
+            "KitchenQuestAuth"
+    }
+
+    private val initialUser =
+        authRepository.currentUser
+
     private val _uiState =
         MutableStateFlow(
             AuthUiState(
                 isAuthChecked = true,
-                user = authRepository.currentUser
+                user = initialUser
             )
         )
 
     val uiState: StateFlow<AuthUiState> =
         _uiState.asStateFlow()
 
+    init {
+        if (initialUser != null) {
+            Log.d(
+                TAG,
+                "Existing Firebase session found."
+            )
+        } else {
+            Log.d(
+                TAG,
+                "No existing Firebase session found."
+            )
+        }
+    }
+
     fun login(
         email: String,
         password: String
     ) {
+        Log.d(
+            TAG,
+            "Email and password sign-in started."
+        )
+
         setLoadingState()
 
         viewModelScope.launch {
@@ -45,7 +74,11 @@ class AuthViewModel(
                     password = password
                 )
 
-            handleAuthResult(result)
+            handleAuthResult(
+                result = result,
+                actionName =
+                    "Email and password sign-in"
+            )
         }
     }
 
@@ -54,6 +87,11 @@ class AuthViewModel(
         email: String,
         password: String
     ) {
+        Log.d(
+            TAG,
+            "Account registration started."
+        )
+
         setLoadingState()
 
         viewModelScope.launch {
@@ -65,17 +103,31 @@ class AuthViewModel(
                     password = password
                 )
 
-            handleAuthResult(result)
+            handleAuthResult(
+                result = result,
+                actionName =
+                    "Account registration"
+            )
         }
     }
 
     fun startGoogleSignIn() {
+        Log.d(
+            TAG,
+            "Google sign-in started."
+        )
+
         setLoadingState()
     }
 
     fun signInWithGoogle(
         idToken: String
     ) {
+        Log.d(
+            TAG,
+            "Google credential received. Starting Firebase authentication."
+        )
+
         setLoadingState()
 
         viewModelScope.launch {
@@ -85,13 +137,22 @@ class AuthViewModel(
                     idToken
                 )
 
-            handleAuthResult(result)
+            handleAuthResult(
+                result = result,
+                actionName =
+                    "Google sign-in"
+            )
         }
     }
 
     fun googleSignInFailed(
         message: String
     ) {
+        Log.w(
+            TAG,
+            "Google sign-in did not complete."
+        )
+
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -103,6 +164,11 @@ class AuthViewModel(
     fun sendPasswordReset(
         email: String
     ) {
+        Log.d(
+            TAG,
+            "Password reset request started."
+        )
+
         _uiState.update {
             it.copy(
                 isLoading = true,
@@ -114,12 +180,19 @@ class AuthViewModel(
         viewModelScope.launch {
 
             val result =
-                authRepository.sendPasswordReset(
-                    email
-                )
+                authRepository
+                    .sendPasswordReset(
+                        email
+                    )
 
             result.fold(
                 onSuccess = {
+
+                    Log.d(
+                        TAG,
+                        "Password reset request completed."
+                    )
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -130,6 +203,13 @@ class AuthViewModel(
                 },
 
                 onFailure = { error ->
+
+                    Log.e(
+                        TAG,
+                        "Password reset request failed: " +
+                                error.javaClass.simpleName
+                    )
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -144,22 +224,32 @@ class AuthViewModel(
         }
     }
 
-    fun clearFeedback() {
-        _uiState.update {
-            it.copy(
-                errorMessage = null,
-                passwordResetSent = false
-            )
-        }
-    }
-
     fun signOut() {
+
+        Log.d(
+            TAG,
+            "Firebase sign-out started."
+        )
 
         authRepository.signOut()
 
         _uiState.update {
             AuthUiState(
                 isAuthChecked = true
+            )
+        }
+
+        Log.d(
+            TAG,
+            "Firebase sign-out completed."
+        )
+    }
+
+    fun clearFeedback() {
+        _uiState.update {
+            it.copy(
+                errorMessage = null,
+                passwordResetSent = false
             )
         }
     }
@@ -174,11 +264,17 @@ class AuthViewModel(
     }
 
     private fun handleAuthResult(
-        result:
-        Result<com.example.kitchenquest.data.auth.AuthUser>
+        result: Result<AuthUser>,
+        actionName: String
     ) {
         result.fold(
             onSuccess = { user ->
+
+                Log.d(
+                    TAG,
+                    "$actionName completed successfully."
+                )
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -189,6 +285,13 @@ class AuthViewModel(
             },
 
             onFailure = { error ->
+
+                Log.e(
+                    TAG,
+                    "$actionName failed: " +
+                            error.javaClass.simpleName
+                )
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,

@@ -2,6 +2,7 @@ package com.example.kitchenquest.data.auth
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -12,12 +13,24 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 
 class GoogleSignInClient {
 
+    companion object {
+        private const val TAG =
+            "GoogleSignInClient"
+    }
+
     suspend fun getGoogleIdToken(
         activity: Activity
     ): String {
 
+        Log.d(
+            TAG,
+            "Requesting Google credential."
+        )
+
         val credentialManager =
-            CredentialManager.create(activity)
+            CredentialManager.create(
+                activity
+            )
 
         val googleSignInOption =
             GetSignInWithGoogleOption.Builder(
@@ -39,6 +52,11 @@ class GoogleSignInClient {
                 request = request
             )
 
+        Log.d(
+            TAG,
+            "Credential Manager returned a credential."
+        )
+
         val credential =
             result.credential
 
@@ -54,8 +72,18 @@ class GoogleSignInClient {
                     credential.data
                 )
 
+            Log.d(
+                TAG,
+                "Valid Google ID credential received."
+            )
+
             return googleCredential.idToken
         }
+
+        Log.w(
+            TAG,
+            "Credential Manager returned an unsupported credential type."
+        )
 
         throw IllegalStateException(
             "Google sign-in returned an unsupported credential."
@@ -65,11 +93,25 @@ class GoogleSignInClient {
     suspend fun clearCredentialState(
         context: Context
     ) {
-        val credentialManager =
-            CredentialManager.create(context)
 
-        credentialManager.clearCredentialState(
-            ClearCredentialStateRequest()
+        Log.d(
+            TAG,
+            "Clearing Credential Manager state."
+        )
+
+        val credentialManager =
+            CredentialManager.create(
+                context
+            )
+
+        credentialManager
+            .clearCredentialState(
+                ClearCredentialStateRequest()
+            )
+
+        Log.d(
+            TAG,
+            "Credential Manager state cleared."
         )
     }
 }
