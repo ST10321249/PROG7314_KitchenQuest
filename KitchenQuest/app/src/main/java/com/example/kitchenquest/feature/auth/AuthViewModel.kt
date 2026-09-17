@@ -153,6 +153,17 @@ class AuthViewModel(
         }
     }
 
+    fun signOut() {
+
+        authRepository.signOut()
+
+        _uiState.update {
+            AuthUiState(
+                isAuthChecked = true
+            )
+        }
+    }
+
     private fun setLoadingState() {
         _uiState.update {
             it.copy(

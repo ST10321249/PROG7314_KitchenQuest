@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kitchenquest.data.auth.GoogleSignInClient
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
+import com.example.kitchenquest.feature.auth.AccountScreen
 import com.example.kitchenquest.feature.auth.AuthViewModel
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
@@ -364,7 +365,13 @@ fun AppNavHost() {
                 AppDestinations.Profile
             ) {
                 PlaceholderScreen(
-                    title = "Profile"
+                    title = "Profile",
+                    actionText = "Settings",
+                    onAction = {
+                        navController.navigate(
+                            AppDestinations.Settings
+                        )
+                    }
                 )
             }
 
@@ -463,8 +470,38 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Settings
             ) {
-                PlaceholderScreen(
-                    title = "Settings"
+                AccountScreen(
+                    user = authState.user,
+                    onSignOut = {
+
+                        authViewModel.signOut()
+
+                        navController.navigate(
+                            AppDestinations.Login
+                        ) {
+                            popUpTo(0) {
+                                inclusive = true
+                            }
+
+                            launchSingleTop = true
+                        }
+
+                        coroutineScope.launch {
+
+                            try {
+                                googleSignInClient
+                                    .clearCredentialState(
+                                        context
+                                    )
+                            } catch (
+                                error: Exception
+                            ) {
+                                // Firebase sign-out has already completed.
+                                // Credential cleanup failure should not
+                                // keep the user signed in.
+                            }
+                        }
+                    }
                 )
             }
         }

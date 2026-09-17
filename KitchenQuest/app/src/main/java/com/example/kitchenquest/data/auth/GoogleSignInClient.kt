@@ -1,6 +1,8 @@
 package com.example.kitchenquest.data.auth
 
 import android.app.Activity
+import android.content.Context
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -37,7 +39,8 @@ class GoogleSignInClient {
                 request = request
             )
 
-        val credential = result.credential
+        val credential =
+            result.credential
 
         if (
             credential is CustomCredential &&
@@ -56,6 +59,17 @@ class GoogleSignInClient {
 
         throw IllegalStateException(
             "Google sign-in returned an unsupported credential."
+        )
+    }
+
+    suspend fun clearCredentialState(
+        context: Context
+    ) {
+        val credentialManager =
+            CredentialManager.create(context)
+
+        credentialManager.clearCredentialState(
+            ClearCredentialStateRequest()
         )
     }
 }
