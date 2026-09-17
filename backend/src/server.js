@@ -1,7 +1,6 @@
 const app = require('./app');
+const env = require('./config/env');
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`KitchenQuest API listening on port ${PORT}`);
+app.listen(env.port, () => {
+  console.log(`KitchenQuest API listening on port ${env.port}`);
 });
