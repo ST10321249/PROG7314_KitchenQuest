@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kitchenquest.data.auth.GoogleSignInClient
+import com.example.kitchenquest.data.preferences.OnboardingPreferences
 import com.example.kitchenquest.feature.auth.AuthViewModel
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
@@ -41,6 +42,13 @@ fun AppNavHost() {
 
     val context =
         LocalContext.current
+
+    val onboardingPreferences =
+        remember {
+            OnboardingPreferences(
+                context.applicationContext
+            )
+        }
 
     val activity =
         context as? Activity
@@ -82,8 +90,18 @@ fun AppNavHost() {
             currentRoute == AppDestinations.Splash
         ) {
 
+            val destination =
+                if (
+                    onboardingPreferences
+                        .isOnboardingComplete()
+                ) {
+                    AppDestinations.Login
+                } else {
+                    AppDestinations.Onboarding
+                }
+
             navController.navigate(
-                AppDestinations.Onboarding
+                destination
             ) {
                 popUpTo(
                     AppDestinations.Splash
@@ -124,6 +142,9 @@ fun AppNavHost() {
             ) {
                 OnboardingScreen(
                     onContinue = {
+                        onboardingPreferences
+                            .setOnboardingComplete()
+
                         authViewModel
                             .clearFeedback()
 
@@ -131,7 +152,11 @@ fun AppNavHost() {
                             AppDestinations.Register
                         )
                     },
+
                     onSkip = {
+                        onboardingPreferences
+                            .setOnboardingComplete()
+
                         authViewModel
                             .clearFeedback()
 
