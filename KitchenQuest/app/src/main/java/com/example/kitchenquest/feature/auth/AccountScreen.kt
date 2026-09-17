@@ -10,6 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.auth.AuthUser
@@ -20,6 +25,16 @@ fun AccountScreen(
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var displayedUser by remember {
+        mutableStateOf(user)
+    }
+
+    LaunchedEffect(user) {
+        if (user != null) {
+            displayedUser = user
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -36,7 +51,7 @@ fun AccountScreen(
         )
 
         Text(
-            text = "Name: ${user?.displayName ?: "Not available"}"
+            text = "Name: ${displayedUser?.displayName ?: "Not available"}"
         )
 
         Spacer(
@@ -44,7 +59,7 @@ fun AccountScreen(
         )
 
         Text(
-            text = "Email: ${user?.email ?: "Not available"}"
+            text = "Email: ${displayedUser?.email ?: "Not available"}"
         )
 
         Spacer(
