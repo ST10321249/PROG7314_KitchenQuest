@@ -24,6 +24,7 @@ import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
 import com.example.kitchenquest.feature.auth.SessionLoadingScreen
 import com.example.kitchenquest.feature.onboarding.OnboardingScreen
+import com.example.kitchenquest.feature.onboarding.OnboardingSelection
 import com.example.kitchenquest.ui.components.AppScaffold
 import com.example.kitchenquest.ui.screens.PlaceholderScreen
 import kotlinx.coroutines.launch
@@ -34,22 +35,16 @@ fun AppNavHost() {
     val navController =
         rememberNavController()
 
-    val authViewModel:
-            AuthViewModel = viewModel()
+    val authViewModel: AuthViewModel =
+        viewModel()
 
     val authState by
-    authViewModel.uiState
+    authViewModel
+        .uiState
         .collectAsState()
 
     val context =
         LocalContext.current
-
-    val onboardingPreferences =
-        remember {
-            OnboardingPreferences(
-                context.applicationContext
-            )
-        }
 
     val activity =
         context as? Activity
@@ -62,48 +57,171 @@ fun AppNavHost() {
             GoogleSignInClient()
         }
 
+    val onboardingPreferences =
+        remember {
+            OnboardingPreferences(
+                context.applicationContext
+            )
+        }
+
     LaunchedEffect(
         authState.isAuthChecked,
         authState.user
     ) {
-        if (!authState.isAuthChecked) {
+
+        if (
+            !authState.isAuthChecked
+        ) {
             return@LaunchedEffect
         }
 
         val currentRoute =
-            navController.currentDestination?.route
+            navController
+                .currentDestination
+                ?.route
 
-        if (authState.user != null) {
+        val currentUser =
+            authState.user
 
-            if (currentRoute != AppDestinations.Home) {
-                navController.navigate(
-                    AppDestinations.Home
-                ) {
-                    popUpTo(0) {
-                        inclusive = true
+        if (
+            currentUser != null
+        ) {
+
+            val existingPreferences =
+                onboardingPreferences
+                    .getUserPreferences(
+                        currentUser.uid
+                    )
+
+            val pendingSelection =
+                onboardingPreferences
+                    .getPendingSelection()
+
+            val firstAuthenticationOnInstall =
+                !onboardingPreferences
+                    .hasAuthenticatedBefore()
+
+            when {
+
+                existingPreferences != null &&
+                        firstAuthenticationOnInstall -> {
+
+                    if (
+                        currentRoute !=
+                        AppDestinations.Onboarding
+                    ) {
+
+                        navController.navigate(
+                            AppDestinations.Onboarding
+                        ) {
+
+                            popUpTo(0) {
+                                inclusive = true
+                            }
+
+                            launchSingleTop = true
+                        }
                     }
+                }
 
-                    launchSingleTop = true
+                existingPreferences != null -> {
+
+                    onboardingPreferences
+                        .markAuthenticatedBefore()
+
+                    onboardingPreferences
+                        .clearPendingSelection()
+
+                    if (
+                        currentRoute !=
+                        AppDestinations.Home
+                    ) {
+
+                        navController.navigate(
+                            AppDestinations.Home
+                        ) {
+
+                            popUpTo(0) {
+                                inclusive = true
+                            }
+
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
+                pendingSelection != null -> {
+
+                    onboardingPreferences
+                        .saveUserPreferences(
+                            uid =
+                                currentUser.uid,
+                            selection =
+                                pendingSelection
+                        )
+
+                    onboardingPreferences
+                        .markAuthenticatedBefore()
+
+                    onboardingPreferences
+                        .clearPendingSelection()
+
+                    navController.navigate(
+                        AppDestinations.Home
+                    ) {
+
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+
+                        launchSingleTop = true
+                    }
+                }
+
+                else -> {
+
+                    if (
+                        currentRoute !=
+                        AppDestinations.Onboarding
+                    ) {
+
+                        navController.navigate(
+                            AppDestinations.Onboarding
+                        ) {
+
+                            popUpTo(0) {
+                                inclusive = true
+                            }
+
+                            launchSingleTop = true
+                        }
+                    }
                 }
             }
+        }
 
-        } else if (
-            currentRoute == AppDestinations.Splash
+        else if (
+            currentRoute ==
+            AppDestinations.Splash
         ) {
 
             val destination =
                 if (
                     onboardingPreferences
-                        .isOnboardingComplete()
+                        .hasAuthenticatedBefore()
                 ) {
+
                     AppDestinations.Login
+
                 } else {
+
                     AppDestinations.Onboarding
                 }
 
             navController.navigate(
                 destination
             ) {
+
                 popUpTo(
                     AppDestinations.Splash
                 ) {
@@ -131,39 +249,166 @@ fun AppNavHost() {
                 )
         ) {
 
-            // Authentication and onboarding
             composable(
                 AppDestinations.Splash
             ) {
+
                 SessionLoadingScreen()
             }
 
             composable(
                 AppDestinations.Onboarding
             ) {
-                OnboardingScreen(
-                    onContinue = {
+
+                val currentUser =
+                    authState.user
+
+                val existingUserPreferences =
+                    currentUser?.let {
+                            user ->
+
                         onboardingPreferences
-                            .setOnboardingComplete()
+                            .getUserPreferences(
+                                user.uid
+                            )
+                    }
 
-                        authViewModel
-                            .clearFeedback()
+                val initialSelection =
+                    when {
 
-                        navController.navigate(
-                            AppDestinations.Register
-                        )
+                        existingUserPreferences != null ->
+                            existingUserPreferences
+
+                        currentUser == null ->
+                            onboardingPreferences
+                                .getPendingSelection()
+                                ?: OnboardingSelection()
+
+                        else ->
+                            OnboardingSelection()
+                    }
+
+                val existingMessage =
+                    if (
+                        currentUser != null &&
+                        existingUserPreferences != null
+                    ) {
+
+                        "We found dietary preferences already saved for this account. Review them below and continue to keep or update them."
+
+                    } else {
+
+                        null
+                    }
+
+                OnboardingScreen(
+                    initialSelection =
+                        initialSelection,
+
+                    existingPreferencesMessage =
+                        existingMessage,
+
+                    onContinue = {
+                            selection ->
+
+                        if (
+                            currentUser == null
+                        ) {
+
+                            onboardingPreferences
+                                .savePendingSelection(
+                                    selection
+                                )
+
+                            authViewModel
+                                .clearFeedback()
+
+                            navController.navigate(
+                                AppDestinations.Register
+                            )
+                        }
+
+                        else {
+
+                            onboardingPreferences
+                                .saveUserPreferences(
+                                    uid =
+                                        currentUser.uid,
+                                    selection =
+                                        selection
+                                )
+
+                            onboardingPreferences
+                                .markAuthenticatedBefore()
+
+                            onboardingPreferences
+                                .clearPendingSelection()
+
+                            navController.navigate(
+                                AppDestinations.Home
+                            ) {
+
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+
+                                launchSingleTop = true
+                            }
+                        }
                     },
 
                     onSkip = {
-                        onboardingPreferences
-                            .setOnboardingComplete()
 
-                        authViewModel
-                            .clearFeedback()
+                        if (
+                            currentUser == null
+                        ) {
 
-                        navController.navigate(
-                            AppDestinations.Register
-                        )
+                            onboardingPreferences
+                                .savePendingSelection(
+                                    OnboardingSelection()
+                                )
+
+                            authViewModel
+                                .clearFeedback()
+
+                            navController.navigate(
+                                AppDestinations.Register
+                            )
+                        }
+
+                        else {
+
+                            if (
+                                existingUserPreferences ==
+                                null
+                            ) {
+
+                                onboardingPreferences
+                                    .saveUserPreferences(
+                                        uid =
+                                            currentUser.uid,
+                                        selection =
+                                            OnboardingSelection()
+                                    )
+                            }
+
+                            onboardingPreferences
+                                .markAuthenticatedBefore()
+
+                            onboardingPreferences
+                                .clearPendingSelection()
+
+                            navController.navigate(
+                                AppDestinations.Home
+                            ) {
+
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+
+                                launchSingleTop = true
+                            }
+                        }
                     }
                 )
             }
@@ -171,27 +416,34 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Login
             ) {
+
                 LoginScreen(
+
                     onLogin = {
                             email,
                             password ->
 
                         authViewModel.login(
-                            email = email,
-                            password = password
+                            email =
+                                email,
+                            password =
+                                password
                         )
                     },
 
                     onGoogleSignIn = {
 
-                        if (activity == null) {
+                        if (
+                            activity == null
+                        ) {
 
                             authViewModel
                                 .googleSignInFailed(
                                     "Google sign-in is unavailable."
                                 )
+                        }
 
-                        } else {
+                        else {
 
                             authViewModel
                                 .startGoogleSignIn()
@@ -227,7 +479,7 @@ fun AppNavHost() {
 
                                     authViewModel
                                         .googleSignInFailed(
-                                            "Unable to sign in with Google. Please try again."
+                                            "Google sign-in failed. Please try again."
                                         )
                                 }
                             }
@@ -235,6 +487,7 @@ fun AppNavHost() {
                     },
 
                     onForgotPassword = {
+
                         authViewModel
                             .clearFeedback()
 
@@ -245,6 +498,7 @@ fun AppNavHost() {
                     },
 
                     onCreateAccount = {
+
                         authViewModel
                             .clearFeedback()
 
@@ -252,6 +506,47 @@ fun AppNavHost() {
                             AppDestinations.Register
                         )
                     },
+
+                    onEditDietaryPreferences =
+                        if (
+                            !onboardingPreferences
+                                .hasAuthenticatedBefore()
+                        ) {
+                            {
+
+                                /*
+                                 * Normally Onboarding is
+                                 * already behind Login in
+                                 * the back stack.
+                                 */
+                                val returnedToOnboarding =
+                                    navController
+                                        .popBackStack(
+                                            AppDestinations
+                                                .Onboarding,
+                                            false
+                                        )
+
+                                /*
+                                 * Fallback in case it is
+                                 * not currently present.
+                                 */
+                                if (
+                                    !returnedToOnboarding
+                                ) {
+
+                                    navController.navigate(
+                                        AppDestinations
+                                            .Onboarding
+                                    ) {
+                                        launchSingleTop =
+                                            true
+                                    }
+                                }
+                            }
+                        } else {
+                            null
+                        },
 
                     isLoading =
                         authState.isLoading,
@@ -264,7 +559,9 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Register
             ) {
+
                 RegisterScreen(
+
                     onRegister = {
                             displayName,
                             email,
@@ -273,12 +570,15 @@ fun AppNavHost() {
                         authViewModel.register(
                             displayName =
                                 displayName,
-                            email = email,
-                            password = password
+                            email =
+                                email,
+                            password =
+                                password
                         )
                     },
 
                     onBackToLogin = {
+
                         authViewModel
                             .clearFeedback()
 
@@ -286,6 +586,38 @@ fun AppNavHost() {
                             AppDestinations.Login
                         )
                     },
+
+                    onEditDietaryPreferences =
+                        if (
+                            !onboardingPreferences
+                                .hasAuthenticatedBefore()
+                        ) {
+                            {
+
+                                val returnedToOnboarding =
+                                    navController
+                                        .popBackStack(
+                                            AppDestinations
+                                                .Onboarding,
+                                            false
+                                        )
+
+                                if (
+                                    !returnedToOnboarding
+                                ) {
+
+                                    navController.navigate(
+                                        AppDestinations
+                                            .Onboarding
+                                    ) {
+                                        launchSingleTop =
+                                            true
+                                    }
+                                }
+                            }
+                        } else {
+                            null
+                        },
 
                     isLoading =
                         authState.isLoading,
@@ -298,16 +630,20 @@ fun AppNavHost() {
             composable(
                 AppDestinations.ForgotPassword
             ) {
+
                 ForgotPasswordScreen(
-                    onSendResetLink = { email ->
+
+                    onSendResetLink = {
+                            email ->
 
                         authViewModel
                             .sendPasswordReset(
-                                email = email
+                                email
                             )
                     },
 
                     onBackToLogin = {
+
                         authViewModel
                             .clearFeedback()
 
@@ -328,10 +664,10 @@ fun AppNavHost() {
                 )
             }
 
-            // Main application destinations
             composable(
                 AppDestinations.Home
             ) {
+
                 PlaceholderScreen(
                     title = "Home"
                 )
@@ -340,6 +676,7 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Recipes
             ) {
+
                 PlaceholderScreen(
                     title = "Recipes"
                 )
@@ -348,6 +685,7 @@ fun AppNavHost() {
             composable(
                 AppDestinations.MyKitchen
             ) {
+
                 PlaceholderScreen(
                     title = "My Kitchen"
                 )
@@ -356,6 +694,7 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Cook
             ) {
+
                 PlaceholderScreen(
                     title = "Cook"
                 )
@@ -364,10 +703,13 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Profile
             ) {
+
                 PlaceholderScreen(
                     title = "Profile",
-                    actionText = "Settings",
+                    actionText =
+                        "Settings",
                     onAction = {
+
                         navController.navigate(
                             AppDestinations.Settings
                         )
@@ -375,110 +717,135 @@ fun AppNavHost() {
                 )
             }
 
-            // Recipe features
             composable(
                 AppDestinations.WhatCanIMake
             ) {
+
                 PlaceholderScreen(
-                    title = "What Can I Make?"
+                    title =
+                        "What Can I Make?"
                 )
             }
 
             composable(
                 AppDestinations.RecipeDetails
             ) {
+
                 PlaceholderScreen(
-                    title = "Recipe Details"
+                    title =
+                        "Recipe Details"
                 )
             }
 
             composable(
                 AppDestinations.SavedRecipes
             ) {
-                PlaceholderScreen(
-                    title = "Saved Recipes"
-                )
-            }
 
-            // Pantry and shopping features
-            composable(
-                AppDestinations.IngredientDetails
-            ) {
                 PlaceholderScreen(
-                    title = "Ingredient Details"
+                    title =
+                        "Saved Recipes"
                 )
             }
 
             composable(
-                AppDestinations.IngredientEditor
+                AppDestinations
+                    .IngredientDetails
             ) {
+
                 PlaceholderScreen(
-                    title = "Ingredient Editor"
+                    title =
+                        "Ingredient Details"
+                )
+            }
+
+            composable(
+                AppDestinations
+                    .IngredientEditor
+            ) {
+
+                PlaceholderScreen(
+                    title =
+                        "Ingredient Editor"
                 )
             }
 
             composable(
                 AppDestinations.ShoppingList
             ) {
+
                 PlaceholderScreen(
-                    title = "Shopping List"
+                    title =
+                        "Shopping List"
                 )
             }
 
-            // Cooking features
             composable(
                 AppDestinations.CookingMode
             ) {
+
                 PlaceholderScreen(
-                    title = "Cooking Mode"
+                    title =
+                        "Cooking Mode"
                 )
             }
 
             composable(
                 AppDestinations.ActiveTimers
             ) {
+
                 PlaceholderScreen(
-                    title = "Active Timers"
+                    title =
+                        "Active Timers"
                 )
             }
 
             composable(
                 AppDestinations.KitchenTimer
             ) {
+
                 PlaceholderScreen(
-                    title = "Kitchen Timer"
+                    title =
+                        "Kitchen Timer"
                 )
             }
 
             composable(
                 AppDestinations.RecipeComplete
             ) {
+
                 PlaceholderScreen(
-                    title = "Recipe Complete"
+                    title =
+                        "Recipe Complete"
                 )
             }
 
-            // User features
             composable(
                 AppDestinations.CookingHistory
             ) {
+
                 PlaceholderScreen(
-                    title = "Cooking History"
+                    title =
+                        "Cooking History"
                 )
             }
 
             composable(
                 AppDestinations.Settings
             ) {
+
                 AccountScreen(
-                    user = authState.user,
+                    user =
+                        authState.user,
+
                     onSignOut = {
 
-                        authViewModel.signOut()
+                        authViewModel
+                            .signOut()
 
                         navController.navigate(
                             AppDestinations.Login
                         ) {
+
                             popUpTo(0) {
                                 inclusive = true
                             }
@@ -489,16 +856,20 @@ fun AppNavHost() {
                         coroutineScope.launch {
 
                             try {
+
                                 googleSignInClient
                                     .clearCredentialState(
                                         context
                                     )
+
                             } catch (
                                 error: Exception
                             ) {
-                                // Firebase sign-out has already completed.
-                                // Credential cleanup failure should not
-                                // keep the user signed in.
+
+                                /*
+                                 * Firebase has already
+                                 * signed out successfully.
+                                 */
                             }
                         }
                     }

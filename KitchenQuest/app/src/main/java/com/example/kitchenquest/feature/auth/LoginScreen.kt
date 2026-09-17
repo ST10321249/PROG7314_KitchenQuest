@@ -30,6 +30,7 @@ fun LoginScreen(
     onGoogleSignIn: () -> Unit,
     onForgotPassword: () -> Unit,
     onCreateAccount: () -> Unit,
+    onEditDietaryPreferences: (() -> Unit)? = null,
     isLoading: Boolean = false,
     errorMessage: String? = null,
     modifier: Modifier = Modifier
@@ -94,9 +95,27 @@ fun LoginScreen(
                     .headlineMedium
         )
 
+        if (
+            onEditDietaryPreferences != null
+        ) {
+
+            TextButton(
+                onClick =
+                    onEditDietaryPreferences,
+                enabled =
+                    !isLoading
+            ) {
+                Text(
+                    text =
+                        "Edit dietary preferences"
+                )
+            }
+        }
+
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.SectionSpacing
+                KitchenQuestDimens
+                    .SectionSpacing
             )
         )
 
@@ -108,15 +127,18 @@ fun LoginScreen(
             label = "Email address",
             modifier =
                 Modifier.fillMaxWidth(),
-            isError = emailError != null,
-            supportingText = emailError,
+            isError =
+                emailError != null,
+            supportingText =
+                emailError,
             keyboardType =
                 KeyboardType.Email
         )
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.FieldSpacing
+                KitchenQuestDimens
+                    .FieldSpacing
             )
         )
 
@@ -141,12 +163,14 @@ fun LoginScreen(
                     PasswordVisualTransformation()
                 },
             trailingIcon = {
+
                 TextButton(
                     onClick = {
                         showPassword =
                             !showPassword
                     }
                 ) {
+
                     Text(
                         text =
                             if (showPassword) {
@@ -160,30 +184,39 @@ fun LoginScreen(
         )
 
         TextButton(
-            onClick = onForgotPassword,
-            enabled = !isLoading
+            onClick =
+                onForgotPassword,
+            enabled =
+                !isLoading
         ) {
+
             Text(
-                text = "Forgot password?"
+                text =
+                    "Forgot password?"
             )
         }
 
         if (errorMessage != null) {
 
             Text(
-                text = errorMessage,
+                text =
+                    errorMessage,
                 color =
-                    MaterialTheme.colorScheme
+                    MaterialTheme
+                        .colorScheme
                         .error,
                 style =
-                    MaterialTheme.typography
+                    MaterialTheme
+                        .typography
                         .bodyMedium
             )
 
             Spacer(
-                modifier = Modifier.height(
-                    KitchenQuestDimens.SmallSpacing
-                )
+                modifier =
+                    Modifier.height(
+                        KitchenQuestDimens
+                            .SmallSpacing
+                    )
             )
         }
 
@@ -195,12 +228,14 @@ fun LoginScreen(
                     "Sign in"
                 },
             onClick = {
+
                 attemptedSubmit = true
 
                 if (
                     emailIsValid &&
                     passwordIsValid
                 ) {
+
                     onLogin(
                         email.trim(),
                         password
@@ -209,37 +244,47 @@ fun LoginScreen(
             },
             modifier =
                 Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            enabled =
+                !isLoading
         )
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.FieldSpacing
+                KitchenQuestDimens
+                    .FieldSpacing
             )
         )
 
         KitchenQuestSecondaryButton(
-            text = "Continue with Google",
-            onClick = onGoogleSignIn,
+            text =
+                "Continue with Google",
+            onClick =
+                onGoogleSignIn,
             modifier =
                 Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            enabled =
+                !isLoading
         )
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.FieldSpacing
+                KitchenQuestDimens
+                    .FieldSpacing
             )
         )
 
         TextButton(
-            onClick = onCreateAccount,
+            onClick =
+                onCreateAccount,
             modifier =
                 Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            enabled =
+                !isLoading
         ) {
+
             Text(
-                text = "Create an account"
+                text =
+                    "Create an account"
             )
         }
     }

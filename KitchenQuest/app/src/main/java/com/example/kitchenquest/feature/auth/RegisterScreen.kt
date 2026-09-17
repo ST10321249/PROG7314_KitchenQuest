@@ -34,6 +34,7 @@ fun RegisterScreen(
         password: String
     ) -> Unit,
     onBackToLogin: () -> Unit,
+    onEditDietaryPreferences: (() -> Unit)? = null,
     isLoading: Boolean = false,
     errorMessage: String? = null,
     modifier: Modifier = Modifier
@@ -67,18 +68,26 @@ fun RegisterScreen(
     }
 
     val displayNameIsValid =
-        isValidDisplayName(displayName)
+        isValidDisplayName(
+            displayName
+        )
 
     val emailIsValid =
-        isValidEmail(email)
+        isValidEmail(
+            email
+        )
 
     val passwordIsValid =
-        isStrongPassword(password)
+        isStrongPassword(
+            password
+        )
 
     val confirmationIsValid =
         passwordsMatch(
-            password = password,
-            confirmPassword = confirmPassword
+            password =
+                password,
+            confirmPassword =
+                confirmPassword
         )
 
     val formIsValid =
@@ -92,31 +101,55 @@ fun RegisterScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(
-                KitchenQuestDimens.ScreenPadding
+                KitchenQuestDimens
+                    .ScreenPadding
             ),
         verticalArrangement =
             Arrangement.Center
     ) {
 
         Text(
-            text = "Create account",
+            text =
+                "Create account",
             style =
-                MaterialTheme.typography
+                MaterialTheme
+                    .typography
                     .headlineMedium
         )
 
+        if (
+            onEditDietaryPreferences != null
+        ) {
+
+            TextButton(
+                onClick =
+                    onEditDietaryPreferences,
+                enabled =
+                    !isLoading
+            ) {
+
+                Text(
+                    text =
+                        "Edit dietary preferences"
+                )
+            }
+        }
+
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.SectionSpacing
+                KitchenQuestDimens
+                    .SectionSpacing
             )
         )
 
         KitchenQuestTextField(
-            value = displayName,
+            value =
+                displayName,
             onValueChange = {
                 displayName = it
             },
-            label = "Display name",
+            label =
+                "Display name",
             modifier =
                 Modifier.fillMaxWidth(),
             isError =
@@ -126,16 +159,19 @@ fun RegisterScreen(
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.FieldSpacing
+                KitchenQuestDimens
+                    .FieldSpacing
             )
         )
 
         KitchenQuestTextField(
-            value = email,
+            value =
+                email,
             onValueChange = {
                 email = it
             },
-            label = "Email address",
+            label =
+                "Email address",
             modifier =
                 Modifier.fillMaxWidth(),
             isError =
@@ -146,7 +182,9 @@ fun RegisterScreen(
                     email.isNotEmpty() &&
                     !emailIsValid
                 ) {
+
                     "Enter a valid email address"
+
                 } else {
                     null
                 },
@@ -156,16 +194,19 @@ fun RegisterScreen(
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.FieldSpacing
+                KitchenQuestDimens
+                    .FieldSpacing
             )
         )
 
         KitchenQuestTextField(
-            value = password,
+            value =
+                password,
             onValueChange = {
                 password = it
             },
-            label = "Password",
+            label =
+                "Password",
             modifier =
                 Modifier.fillMaxWidth(),
             isError =
@@ -173,32 +214,43 @@ fun RegisterScreen(
                         !passwordIsValid,
             supportingText =
                 when {
+
                     password.isEmpty() ->
                         "At least 8 characters with one capital letter, one number and one special character"
 
                     !passwordIsValid ->
                         "Password must have at least 8 characters, one capital letter, one number and one special character"
 
-                    else -> null
+                    else ->
+                        null
                 },
             keyboardType =
                 KeyboardType.Password,
             visualTransformation =
-                if (showPassword) {
+                if (
+                    showPassword
+                ) {
+
                     VisualTransformation.None
+
                 } else {
+
                     PasswordVisualTransformation()
                 },
             trailingIcon = {
+
                 TextButton(
                     onClick = {
                         showPassword =
                             !showPassword
                     }
                 ) {
+
                     Text(
                         text =
-                            if (showPassword) {
+                            if (
+                                showPassword
+                            ) {
                                 "Hide"
                             } else {
                                 "Show"
@@ -210,45 +262,60 @@ fun RegisterScreen(
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.FieldSpacing
+                KitchenQuestDimens
+                    .FieldSpacing
             )
         )
 
         KitchenQuestTextField(
-            value = confirmPassword,
+            value =
+                confirmPassword,
             onValueChange = {
                 confirmPassword = it
             },
-            label = "Confirm password",
+            label =
+                "Confirm password",
             modifier =
                 Modifier.fillMaxWidth(),
             isError =
-                confirmPassword.isNotEmpty() &&
+                confirmPassword
+                    .isNotEmpty() &&
                         !confirmationIsValid,
             supportingText =
                 if (
-                    confirmPassword.isNotEmpty() &&
+                    confirmPassword
+                        .isNotEmpty() &&
                     !confirmationIsValid
                 ) {
+
                     "Passwords do not match"
+
                 } else {
                     null
                 },
             keyboardType =
                 KeyboardType.Password,
             visualTransformation =
-                if (showConfirmPassword) {
+                if (
+                    showConfirmPassword
+                ) {
+
                     VisualTransformation.None
+
                 } else {
+
                     PasswordVisualTransformation()
                 },
             trailingIcon = {
+
                 TextButton(
                     onClick = {
+
                         showConfirmPassword =
                             !showConfirmPassword
                     }
                 ) {
+
                     Text(
                         text =
                             if (
@@ -265,7 +332,8 @@ fun RegisterScreen(
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.SmallSpacing
+                KitchenQuestDimens
+                    .SmallSpacing
             )
         )
 
@@ -277,7 +345,8 @@ fun RegisterScreen(
         ) {
 
             Checkbox(
-                checked = acceptedTerms,
+                checked =
+                    acceptedTerms,
                 onCheckedChange = {
                     acceptedTerms = it
                 }
@@ -287,33 +356,42 @@ fun RegisterScreen(
                 text =
                     "I agree to the Terms of Use and Privacy Policy",
                 style =
-                    MaterialTheme.typography
+                    MaterialTheme
+                        .typography
                         .bodyMedium
             )
         }
 
-        if (errorMessage != null) {
+        if (
+            errorMessage != null
+        ) {
 
             Spacer(
-                modifier = Modifier.height(
-                    KitchenQuestDimens.SmallSpacing
-                )
+                modifier =
+                    Modifier.height(
+                        KitchenQuestDimens
+                            .SmallSpacing
+                    )
             )
 
             Text(
-                text = errorMessage,
+                text =
+                    errorMessage,
                 color =
-                    MaterialTheme.colorScheme
+                    MaterialTheme
+                        .colorScheme
                         .error,
                 style =
-                    MaterialTheme.typography
+                    MaterialTheme
+                        .typography
                         .bodyMedium
             )
         }
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.MediumSpacing
+                KitchenQuestDimens
+                    .MediumSpacing
             )
         )
 
@@ -325,6 +403,7 @@ fun RegisterScreen(
                     "Create account"
                 },
             onClick = {
+
                 onRegister(
                     displayName.trim(),
                     email.trim(),
@@ -340,7 +419,8 @@ fun RegisterScreen(
 
         Spacer(
             modifier = Modifier.height(
-                KitchenQuestDimens.FieldSpacing
+                KitchenQuestDimens
+                    .FieldSpacing
             )
         )
 
@@ -364,8 +444,10 @@ fun RegisterScreen(
                 enabled =
                     !isLoading
             ) {
+
                 Text(
-                    text = "Sign in"
+                    text =
+                        "Sign in"
                 )
             }
         }
