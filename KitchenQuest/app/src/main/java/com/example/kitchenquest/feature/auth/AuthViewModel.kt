@@ -21,7 +21,12 @@ class AuthViewModel(
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow(AuthUiState())
+        MutableStateFlow(
+            AuthUiState(
+                isAuthChecked = true,
+                user = authRepository.currentUser
+            )
+        )
 
     val uiState: StateFlow<AuthUiState> =
         _uiState.asStateFlow()

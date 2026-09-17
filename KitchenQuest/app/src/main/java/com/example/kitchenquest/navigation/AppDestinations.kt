@@ -3,6 +3,7 @@ package com.example.kitchenquest.navigation
 object AppDestinations {
 
     // Authentication and onboarding
+    const val Splash = "splash"
     const val Onboarding = "onboarding"
     const val Login = "login"
     const val Register = "register"

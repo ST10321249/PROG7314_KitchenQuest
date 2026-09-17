@@ -20,6 +20,7 @@ import com.example.kitchenquest.feature.auth.AuthViewModel
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
+import com.example.kitchenquest.feature.auth.SessionLoadingScreen
 import com.example.kitchenquest.feature.onboarding.OnboardingScreen
 import com.example.kitchenquest.ui.components.AppScaffold
 import com.example.kitchenquest.ui.screens.PlaceholderScreen
@@ -53,15 +54,39 @@ fun AppNavHost() {
         }
 
     LaunchedEffect(
+        authState.isAuthChecked,
         authState.user
     ) {
+        if (!authState.isAuthChecked) {
+            return@LaunchedEffect
+        }
+
+        val currentRoute =
+            navController.currentDestination?.route
+
         if (authState.user != null) {
 
+            if (currentRoute != AppDestinations.Home) {
+                navController.navigate(
+                    AppDestinations.Home
+                ) {
+                    popUpTo(0) {
+                        inclusive = true
+                    }
+
+                    launchSingleTop = true
+                }
+            }
+
+        } else if (
+            currentRoute == AppDestinations.Splash
+        ) {
+
             navController.navigate(
-                AppDestinations.Home
+                AppDestinations.Onboarding
             ) {
                 popUpTo(
-                    AppDestinations.Onboarding
+                    AppDestinations.Splash
                 ) {
                     inclusive = true
                 }
@@ -80,7 +105,7 @@ fun AppNavHost() {
             navController =
                 navController,
             startDestination =
-                AppDestinations.Onboarding,
+                AppDestinations.Splash,
             modifier =
                 Modifier.padding(
                     innerPadding
@@ -88,6 +113,12 @@ fun AppNavHost() {
         ) {
 
             // Authentication and onboarding
+            composable(
+                AppDestinations.Splash
+            ) {
+                SessionLoadingScreen()
+            }
+
             composable(
                 AppDestinations.Onboarding
             ) {
