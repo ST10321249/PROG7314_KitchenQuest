@@ -60,6 +60,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
     implementation("com.google.firebase:firebase-auth")
 
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.play.services)
+
     // Credential Manager
     implementation("androidx.credentials:credentials:1.6.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
