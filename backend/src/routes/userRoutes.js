@@ -7,5 +7,6 @@ const userController = require('../controllers/userController');
 const router = express.Router();
 
 router.post('/sync', authMiddleware, validate(syncUserSchema), userController.syncUser);
+router.get('/me', authMiddleware, userController.getMe);
 
 module.exports = router;

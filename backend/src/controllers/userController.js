@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const ApiError = require('../utils/ApiError');
 
 async function syncUser(req, res, next) {
   try {
@@ -26,4 +27,18 @@ async function syncUser(req, res, next) {
   }
 }
 
-module.exports = { syncUser };
+async function getMe(req, res, next) {
+  try {
+    const user = await User.findOne({ firebaseUid: req.user.uid });
+
+    if (!user) {
+      throw new ApiError(404, 'User profile not found. Sync the user first.');
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { syncUser, getMe };
