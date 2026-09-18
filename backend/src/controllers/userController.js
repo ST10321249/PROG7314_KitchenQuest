@@ -41,4 +41,22 @@ async function getMe(req, res, next) {
   }
 }
 
-module.exports = { syncUser, getMe };
+async function updateMe(req, res, next) {
+  try {
+    const user = await User.findOneAndUpdate(
+      { firebaseUid: req.user.uid },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      throw new ApiError(404, 'User profile not found. Sync the user first.');
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { syncUser, getMe, updateMe };
