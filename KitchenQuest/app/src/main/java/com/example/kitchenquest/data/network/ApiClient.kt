@@ -14,7 +14,7 @@ object ApiClient {
     // The hosted API can take up to a minute to wake after being idle.
     private const val TIMEOUT_SECONDS = 60L
 
-    private val json = Json {
+    val json = Json {
         ignoreUnknownKeys = true
     }
 
