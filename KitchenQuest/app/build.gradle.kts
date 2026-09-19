@@ -79,4 +79,11 @@ dependencies {
 
     // Ktor
     implementation("io.ktor:ktor-client-android:3.5.2")
+
+    // Networking (REST API)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.kotlinx.serialization.json)
 }
