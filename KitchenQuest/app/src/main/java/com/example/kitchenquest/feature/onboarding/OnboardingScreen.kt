@@ -40,23 +40,10 @@ fun OnboardingScreen(
 ) {
 
     val dietaryOptions =
-        listOf(
-            "No restrictions",
-            "Vegetarian",
-            "Vegan",
-            "Halal",
-            "Gluten-free",
-            "Dairy-free"
-        )
+        PreferenceOptions.dietary
 
     val avoidedIngredientOptions =
-        listOf(
-            "Nuts",
-            "Shellfish",
-            "Eggs",
-            "Milk",
-            "Soy"
-        )
+        PreferenceOptions.avoidedIngredients
 
     var selectedDietaryPreferences
             by rememberSaveable {
@@ -230,49 +217,12 @@ fun OnboardingScreen(
                                 selectedDietaryPreferences,
                     onClick = {
 
-                        if (
-                            option ==
-                            "No restrictions"
-                        ) {
-
-                            selectedDietaryPreferences =
-                                setOf(
-                                    "No restrictions"
-                                )
-
-                        } else {
-
-                            val updated =
-                                selectedDietaryPreferences
-                                    .toMutableSet()
-
-                            updated.remove(
-                                "No restrictions"
-                            )
-
-                            if (
-                                option in updated
-                            ) {
-                                updated.remove(
+                        selectedDietaryPreferences =
+                            PreferenceOptions
+                                .toggleDietary(
+                                    selectedDietaryPreferences,
                                     option
                                 )
-                            } else {
-                                updated.add(
-                                    option
-                                )
-                            }
-
-                            selectedDietaryPreferences =
-                                if (
-                                    updated.isEmpty()
-                                ) {
-                                    setOf(
-                                        "No restrictions"
-                                    )
-                                } else {
-                                    updated
-                                }
-                        }
                     }
                 )
             }
@@ -315,25 +265,12 @@ fun OnboardingScreen(
                                     selectedAvoidedIngredients,
                         onClick = {
 
-                            val updated =
-                                selectedAvoidedIngredients
-                                    .toMutableSet()
-
-                            if (
-                                ingredient in
-                                updated
-                            ) {
-                                updated.remove(
-                                    ingredient
-                                )
-                            } else {
-                                updated.add(
-                                    ingredient
-                                )
-                            }
-
                             selectedAvoidedIngredients =
-                                updated
+                                PreferenceOptions
+                                    .toggleAvoided(
+                                        selectedAvoidedIngredients,
+                                        ingredient
+                                    )
                         }
                     )
                 }
