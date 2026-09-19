@@ -96,6 +96,18 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun askingToLoadAgainKeepsUnsavedEdits() {
+        viewModel.loadProfile()
+        viewModel.onDisplayNameChange("Half typed")
+
+        viewModel.loadProfile()
+
+        assertEquals(1, repository.getProfileCalls)
+        assertEquals("Half typed", state.displayName)
+        assertTrue(state.hasUnsavedChanges)
+    }
+
+    @Test
     fun aMissingProfileIsCreatedThenLoaded() {
         repository.getProfileResult = Result.failure(
             ApiException(ApiErrorType.NOT_FOUND, "missing")

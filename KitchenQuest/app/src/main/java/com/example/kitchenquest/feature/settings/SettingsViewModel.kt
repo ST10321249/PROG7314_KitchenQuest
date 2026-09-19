@@ -27,7 +27,8 @@ class SettingsViewModel(
     private var savedProfile: UserProfileDto? = null
 
     fun loadProfile() {
-        if (_uiState.value.isLoading) {
+        // The screen asks again after rotation; reloading would discard unsaved edits.
+        if (_uiState.value.isLoading || _uiState.value.hasLoaded) {
             return
         }
 

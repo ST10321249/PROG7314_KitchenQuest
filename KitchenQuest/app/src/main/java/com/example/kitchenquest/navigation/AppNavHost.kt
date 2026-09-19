@@ -17,7 +17,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kitchenquest.data.auth.GoogleSignInClient
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
-import com.example.kitchenquest.feature.auth.AccountScreen
 import com.example.kitchenquest.feature.auth.AuthViewModel
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
@@ -25,6 +24,8 @@ import com.example.kitchenquest.feature.auth.RegisterScreen
 import com.example.kitchenquest.feature.auth.SessionLoadingScreen
 import com.example.kitchenquest.feature.onboarding.OnboardingScreen
 import com.example.kitchenquest.feature.onboarding.OnboardingSelection
+import com.example.kitchenquest.feature.settings.SettingsScreen
+import com.example.kitchenquest.feature.settings.SettingsViewModel
 import com.example.kitchenquest.ui.components.AppScaffold
 import com.example.kitchenquest.ui.screens.PlaceholderScreen
 import kotlinx.coroutines.launch
@@ -833,9 +834,42 @@ fun AppNavHost() {
                 AppDestinations.Settings
             ) {
 
-                AccountScreen(
-                    user =
-                        authState.user,
+                val settingsViewModel: SettingsViewModel =
+                    viewModel()
+
+                val settingsState by
+                settingsViewModel
+                    .uiState
+                    .collectAsState()
+
+                LaunchedEffect(Unit) {
+                    settingsViewModel
+                        .loadProfile()
+                }
+
+                SettingsScreen(
+                    state =
+                        settingsState,
+
+                    onBack = {
+                        navController
+                            .popBackStack()
+                    },
+
+                    onDisplayNameChange =
+                        settingsViewModel::onDisplayNameChange,
+
+                    onDietaryPreferencesChange =
+                        settingsViewModel::onDietaryPreferencesChange,
+
+                    onAvoidedIngredientsChange =
+                        settingsViewModel::onAvoidedIngredientsChange,
+
+                    onSave =
+                        settingsViewModel::save,
+
+                    onRetry =
+                        settingsViewModel::loadProfile,
 
                     onSignOut = {
 
