@@ -2,10 +2,21 @@ package com.example.kitchenquest.data.preferences
 
 import android.content.Context
 import com.example.kitchenquest.feature.onboarding.OnboardingSelection
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class OnboardingPreferences(
     context: Context
 ) {
+
+    private val _userPreferencesVersion =
+        MutableStateFlow(0)
+
+    // Changes every time saveUserPreferences runs, so callers can react to it.
+    val userPreferencesVersion: StateFlow<Int> =
+        _userPreferencesVersion.asStateFlow()
 
     private val flowPreferences =
         context.getSharedPreferences(
@@ -163,6 +174,9 @@ class OnboardingPreferences(
                 true
             )
             .apply()
+
+        _userPreferencesVersion
+            .update { it + 1 }
     }
 
     fun getUserPreferences(

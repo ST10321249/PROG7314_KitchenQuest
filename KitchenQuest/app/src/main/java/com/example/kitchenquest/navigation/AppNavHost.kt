@@ -17,6 +17,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kitchenquest.data.auth.GoogleSignInClient
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
+import com.example.kitchenquest.data.user.DefaultUserRepository
+import com.example.kitchenquest.data.user.syncSignedInUser
 import com.example.kitchenquest.feature.auth.AuthViewModel
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
@@ -64,6 +66,42 @@ fun AppNavHost() {
                 context.applicationContext
             )
         }
+
+    val userRepository =
+        remember {
+            DefaultUserRepository()
+        }
+
+    val preferencesVersion by
+    onboardingPreferences
+        .userPreferencesVersion
+        .collectAsState()
+
+    // Keeps the server profile in step with the signed-in user and with the
+    // choices saved on this device (onboarding or Settings).
+    LaunchedEffect(
+        authState.user?.uid,
+        preferencesVersion
+    ) {
+
+        val user =
+            authState.user
+                ?: return@LaunchedEffect
+
+        val localChoices =
+            onboardingPreferences
+                .getUserPreferences(
+                    user.uid
+                )
+                ?: onboardingPreferences
+                    .getPendingSelection()
+
+        userRepository
+            .syncSignedInUser(
+                user,
+                localChoices
+            )
+    }
 
     LaunchedEffect(
         authState.isAuthChecked,
@@ -845,6 +883,37 @@ fun AppNavHost() {
                 LaunchedEffect(Unit) {
                     settingsViewModel
                         .loadProfile()
+                }
+
+                // Keep this device's saved choices, which drive the app's
+                // routing, in step with what was just saved to the server.
+                LaunchedEffect(
+                    settingsState.saveSucceeded
+                ) {
+
+                    val user =
+                        authState.user
+
+                    if (
+                        settingsState.saveSucceeded &&
+                        user != null
+                    ) {
+
+                        onboardingPreferences
+                            .saveUserPreferences(
+                                uid =
+                                    user.uid,
+                                selection =
+                                    OnboardingSelection(
+                                        dietaryPreferences =
+                                            settingsState
+                                                .dietaryPreferences,
+                                        avoidedIngredients =
+                                            settingsState
+                                                .avoidedIngredients
+                                    )
+                            )
+                    }
                 }
 
                 SettingsScreen(
