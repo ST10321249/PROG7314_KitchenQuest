@@ -23,6 +23,7 @@ object ApiClient {
             .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .addInterceptor(AuthInterceptor(FirebaseTokenProvider()))
             .apply {
                 if (BuildConfig.DEBUG) {
                     addInterceptor(
