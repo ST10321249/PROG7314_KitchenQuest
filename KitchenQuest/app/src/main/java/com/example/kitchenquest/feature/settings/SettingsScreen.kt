@@ -87,7 +87,8 @@ fun SettingsScreen(
         SettingsTopBar(onBack = onBack)
 
         when {
-            state.isLoading && !state.hasLoaded -> {
+            // Also covers the first frame, before loading has started.
+            !state.hasLoaded && (state.isLoading || state.errorMessage == null) -> {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

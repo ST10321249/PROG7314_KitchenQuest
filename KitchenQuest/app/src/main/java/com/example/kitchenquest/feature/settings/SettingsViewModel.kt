@@ -119,15 +119,29 @@ class SettingsViewModel(
             ).fold(
                 onSuccess = { profile ->
                     savedProfile = profile
-                    _uiState.update {
-                        it.copy(
-                            isSaving = false,
-                            displayName = profile.displayName,
-                            dietaryPreferences = profile.dietaryPreferences.toSet(),
-                            avoidedIngredients = profile.avoidedIngredients.toSet(),
-                            hasUnsavedChanges = false,
-                            saveSucceeded = true
-                        )
+                    _uiState.update { current ->
+                        // Anything typed while the save was running must not be overwritten.
+                        val editedDuringSave =
+                            current.displayName.trim() != name ||
+                                    current.dietaryPreferences != state.dietaryPreferences ||
+                                    current.avoidedIngredients != state.avoidedIngredients
+
+                        if (editedDuringSave) {
+                            current.copy(
+                                isSaving = false,
+                                hasUnsavedChanges = differsFromSaved(current),
+                                saveSucceeded = true
+                            )
+                        } else {
+                            current.copy(
+                                isSaving = false,
+                                displayName = profile.displayName,
+                                dietaryPreferences = profile.dietaryPreferences.toSet(),
+                                avoidedIngredients = profile.avoidedIngredients.toSet(),
+                                hasUnsavedChanges = false,
+                                saveSucceeded = true
+                            )
+                        }
                     }
                 },
                 onFailure = { failure ->

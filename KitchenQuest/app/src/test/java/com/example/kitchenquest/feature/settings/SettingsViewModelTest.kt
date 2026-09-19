@@ -30,6 +30,7 @@ class SettingsViewModelTest {
         var syncCalls = 0
         var updateCalls = 0
         var lastUpdate: Triple<String?, List<String>?, List<String>?>? = null
+        var duringUpdate: (() -> Unit)? = null
 
         override suspend fun syncUser(
             displayName: String?,
@@ -52,6 +53,7 @@ class SettingsViewModelTest {
         ): Result<UserProfileDto> {
             updateCalls++
             lastUpdate = Triple(displayName, dietaryPreferences, avoidedIngredients)
+            duringUpdate?.invoke()
 
             return updateResult ?: Result.success(
                 UserProfileDto(
@@ -172,6 +174,21 @@ class SettingsViewModelTest {
         assertFalse(state.hasUnsavedChanges)
         assertEquals("New Name", state.displayName)
         assertNull(state.errorMessage)
+    }
+
+    @Test
+    fun anEditMadeWhileSavingIsNotLost() {
+        viewModel.loadProfile()
+        viewModel.onDisplayNameChange("New Name")
+        repository.duringUpdate = {
+            viewModel.onAvoidedIngredientsChange(setOf("Peanuts", "Soy"))
+        }
+
+        viewModel.save()
+
+        assertFalse(state.isSaving)
+        assertEquals(setOf("Peanuts", "Soy"), state.avoidedIngredients)
+        assertTrue(state.hasUnsavedChanges)
     }
 
     @Test
