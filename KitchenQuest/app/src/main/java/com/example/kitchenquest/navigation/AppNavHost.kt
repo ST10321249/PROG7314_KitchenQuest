@@ -33,6 +33,7 @@ import com.example.kitchenquest.ui.screens.PlaceholderScreen
 import kotlinx.coroutines.launch
 import com.example.kitchenquest.feature.pantry.PantryViewModel
 import com.example.kitchenquest.feature.pantry.MyKitchenScreen
+import com.example.kitchenquest.feature.pantry.IngredientEditorScreen
 
 @Composable
 fun AppNavHost() {
@@ -805,14 +806,14 @@ fun AppNavHost() {
                 )
             }
 
-            composable(
-                AppDestinations
-                    .IngredientEditor
-            ) {
+            composable(AppDestinations.IngredientEditor) {
+                val pantryViewModel: PantryViewModel = viewModel()
 
-                PlaceholderScreen(
-                    title =
-                        "Ingredient Editor"
+                IngredientEditorScreen(
+                    onSave = { name, quantity, unit, category, expiryDate ->
+                        pantryViewModel.addItem(name, quantity, unit, category, expiryDate)
+                        navController.popBackStack()
+                    }
                 )
             }
 

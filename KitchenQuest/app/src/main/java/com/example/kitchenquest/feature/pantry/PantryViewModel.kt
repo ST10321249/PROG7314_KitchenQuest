@@ -54,4 +54,18 @@ class PantryViewModel(
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
+
+    fun addItem(
+        name: String,
+        quantity: Double,
+        unit: String,
+        category: String,
+        expiryDate: String?
+    ) {
+        viewModelScope.launch {
+            pantryRepository.addPantryItem(name, quantity, unit, category, expiryDate).onSuccess { item ->
+                _uiState.update { it.copy(items = it.items + item) }
+            }
+        }
+    }
 }
