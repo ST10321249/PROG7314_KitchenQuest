@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
 import com.example.kitchenquest.feature.pantry.PantryViewModel
 import com.example.kitchenquest.feature.pantry.MyKitchenScreen
 import com.example.kitchenquest.feature.pantry.IngredientEditorScreen
-
+import com.example.kitchenquest.feature.shopping.ShoppingListScreen
+import com.example.kitchenquest.feature.shopping.ShoppingViewModel
 @Composable
 fun AppNavHost() {
 
@@ -817,13 +818,17 @@ fun AppNavHost() {
                 )
             }
 
-            composable(
-                AppDestinations.ShoppingList
-            ) {
+            composable(AppDestinations.ShoppingList) {
+                val shoppingViewModel: ShoppingViewModel = viewModel()
+                val shoppingState by shoppingViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Shopping List"
+                LaunchedEffect(Unit) { shoppingViewModel.loadList() }
+
+                ShoppingListScreen(
+                    state = shoppingState,
+                    onAdd = shoppingViewModel::addItem,
+                    onTogglePurchased = shoppingViewModel::togglePurchased,
+                    onRemove = shoppingViewModel::removeItem
                 )
             }
 
