@@ -31,6 +31,8 @@ import com.example.kitchenquest.feature.settings.SettingsViewModel
 import com.example.kitchenquest.ui.components.AppScaffold
 import com.example.kitchenquest.ui.screens.PlaceholderScreen
 import kotlinx.coroutines.launch
+import com.example.kitchenquest.feature.pantry.PantryViewModel
+import com.example.kitchenquest.feature.pantry.MyKitchenScreen
 
 @Composable
 fun AppNavHost() {
@@ -721,12 +723,18 @@ fun AppNavHost() {
                 )
             }
 
-            composable(
-                AppDestinations.MyKitchen
-            ) {
+            composable(AppDestinations.MyKitchen) {
+                val pantryViewModel: PantryViewModel = viewModel()
+                val pantryState by pantryViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title = "My Kitchen"
+                LaunchedEffect(Unit) { pantryViewModel.loadPantry() }
+
+                MyKitchenScreen(
+                    state = pantryState,
+                    onAddIngredient = { navController.navigate(AppDestinations.IngredientEditor) },
+                    onIngredientClick = { navController.navigate(AppDestinations.IngredientDetails) },
+                    onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) },
+                    onRetry = pantryViewModel::loadPantry
                 )
             }
 
