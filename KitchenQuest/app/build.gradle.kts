@@ -14,8 +14,9 @@ val localProperties = Properties().apply {
     }
 }
 
-// Set api.baseUrl in local.properties to point the app at a different API server.
-val apiBaseUrl: String = (localProperties.getProperty("api.baseUrl") ?: "http://10.0.2.2:5000/")
+// Defaults to the hosted API. To use an API running on your own PC instead, set
+// api.baseUrl in local.properties (for example http://localhost:5000).
+val apiBaseUrl: String = (localProperties.getProperty("api.baseUrl") ?: "https://prog7314-kitchenquest.onrender.com/")
     .let { if (it.endsWith("/")) it else "$it/" }
 
 android {

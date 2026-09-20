@@ -158,6 +158,37 @@ All errors are JSON in the same shape:
 | `404` | Route or user profile not found |
 | `500` | Unexpected server error (details are logged on the server, not returned) |
 
+## Hosted API (Render)
+
+The API is deployed on Render at **https://prog7314-kitchenquest.onrender.com**. The Android app uses this address by default, so it works on a phone with no local setup. Check it with `https://prog7314-kitchenquest.onrender.com/health`.
+
+Render settings:
+
+| Setting | Value |
+|---|---|
+| Language | Node |
+| Branch | `api-data-layer` (switch to `main` once it is merged) |
+| Root Directory | `backend` |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+| Health Check Path | `/health` |
+
+Environment variables (set in Render, never committed):
+
+| Variable | Value |
+|---|---|
+| `MONGODB_URI` | The MongoDB Atlas connection string |
+| `NODE_ENV` | `production` |
+| `NODE_VERSION` | `22` |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | `/etc/secrets/serviceAccountKey.json` |
+
+The Firebase key is added under **Secret Files** with the filename `serviceAccountKey.json`.
+
+Notes:
+- Render redeploys automatically when the deployed branch is pushed to.
+- On the free plan the server sleeps when idle, so the first request after a quiet period can take up to about a minute. The app allows for this.
+- To run the app against an API on your own PC instead, add `api.baseUrl=http://localhost:5000` to `KitchenQuest/local.properties`. For a phone, also run `adb reverse tcp:5000 tcp:5000` so the phone's `localhost` reaches your PC.
+
 ## Testing
 
 ```bash
