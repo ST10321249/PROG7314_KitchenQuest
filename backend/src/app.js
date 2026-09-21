@@ -8,6 +8,8 @@ const pantryRoutes = require('./routes/pantryRoutes');
 const shoppingRoutes = require('./routes/shoppingRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
 const favouriteRoutes = require('./routes/favouriteRoutes');
+const historyRoutes = require('./routes/historyRoutes');
+const recipeNoteRoutes = require('./routes/recipeNoteRoutes');
 
 const app = express();
 
@@ -20,6 +22,9 @@ app.use('/api/pantry', pantryRoutes);
 app.use('/api/shopping-list', shoppingRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/favourites', favouriteRoutes);
+app.use('/api/history', historyRoutes);
+app.use('/api/recipe-notes', recipeNoteRoutes);
+
 
 app.use(notFoundHandler);
 app.use(errorHandler);
