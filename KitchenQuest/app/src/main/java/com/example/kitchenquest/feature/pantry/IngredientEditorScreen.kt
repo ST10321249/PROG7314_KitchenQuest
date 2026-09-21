@@ -1,15 +1,18 @@
 package com.example.kitchenquest.feature.pantry
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTextField
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IngredientEditorScreen(
     initialName: String = "",
@@ -24,10 +27,11 @@ fun IngredientEditorScreen(
 ) {
     var name by remember { mutableStateOf(initialName) }
     var quantity by remember { mutableStateOf(initialQuantity) }
-    var unit by remember { mutableStateOf(initialUnit) }
-    var category by remember { mutableStateOf(initialCategory) }
+    var unit by remember { mutableStateOf(initialUnit.ifBlank { IngredientOptions.units.first() }) }
+    var ingredientType by remember { mutableStateOf(initialCategory.ifBlank { IngredientOptions.ingredientTypes.first() }) }
     var expiryDate by remember { mutableStateOf(initialExpiryDate ?: "") }
     var errors by remember { mutableStateOf(IngredientFormErrors()) }
+    var unitMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -61,21 +65,50 @@ fun IngredientEditorScreen(
                 supportingText = errors.quantity,
                 modifier = Modifier.weight(1f)
             )
-            KitchenQuestTextField(
-                value = unit,
-                onValueChange = { unit = it },
-                label = "Unit",
+
+            ExposedDropdownMenuBox(
+                expanded = unitMenuExpanded,
+                onExpandedChange = { unitMenuExpanded = it },
                 modifier = Modifier.weight(1f)
-            )
+            ) {
+                OutlinedTextField(
+                    value = unit,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Unit") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitMenuExpanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = unitMenuExpanded,
+                    onDismissRequest = { unitMenuExpanded = false }
+                ) {
+                    IngredientOptions.units.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                unit = option
+                                unitMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
 
-        KitchenQuestTextField(
-            value = category,
-            onValueChange = { category = it },
-            label = "Category"
-        )
+        Text(text = "Ingredient type", style = MaterialTheme.typography.labelLarge)
+        Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+        Row {
+            IngredientOptions.ingredientTypes.forEach { option ->
+                KitchenQuestChoiceChip(
+                    text = option,
+                    selected = ingredientType == option,
+                    onClick = { ingredientType = option }
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
 
@@ -107,7 +140,7 @@ fun IngredientEditorScreen(
                 errors = validation
 
                 if (!validation.hasErrors) {
-                    onSave(name.trim(), quantity.toDouble(), unit.trim(), category.trim(), trimmedExpiry)
+                    onSave(name.trim(), quantity.toDouble(), unit, ingredientType, trimmedExpiry)
                 }
             },
             modifier = Modifier.fillMaxWidth()

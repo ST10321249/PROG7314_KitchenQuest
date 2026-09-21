@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.kitchenquest.data.pantry.PantryItemDto
 
 class PantryViewModel(
     private val pantryRepository: PantryRepository =
@@ -65,6 +66,26 @@ class PantryViewModel(
         viewModelScope.launch {
             pantryRepository.addPantryItem(name, quantity, unit, category, expiryDate).onSuccess { item ->
                 _uiState.update { it.copy(items = it.items + item) }
+            }
+        }
+    }
+
+    fun findItem(id: String): PantryItemDto? =
+        _uiState.value.items.firstOrNull { it.id == id }
+
+    fun updateItem(
+        id: String,
+        name: String,
+        quantity: Double,
+        unit: String,
+        category: String,
+        expiryDate: String?
+    ) {
+        viewModelScope.launch {
+            pantryRepository.updatePantryItem(id, name, quantity, unit, category, expiryDate).onSuccess { updated ->
+                _uiState.update { state ->
+                    state.copy(items = state.items.map { if (it.id == updated.id) updated else it })
+                }
             }
         }
     }

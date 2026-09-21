@@ -36,7 +36,13 @@ import com.example.kitchenquest.feature.pantry.MyKitchenScreen
 import com.example.kitchenquest.feature.pantry.IngredientEditorScreen
 import com.example.kitchenquest.feature.shopping.ShoppingListScreen
 import com.example.kitchenquest.feature.shopping.ShoppingViewModel
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.kitchenquest.feature.pantry.IngredientDetailScreen
 @Composable
+
+
 fun AppNavHost() {
 
     val navController =
@@ -724,7 +730,6 @@ fun AppNavHost() {
                     title = "Recipes"
                 )
             }
-
             composable(AppDestinations.MyKitchen) {
                 val pantryViewModel: PantryViewModel = viewModel()
                 val pantryState by pantryViewModel.uiState.collectAsState()
@@ -733,10 +738,67 @@ fun AppNavHost() {
 
                 MyKitchenScreen(
                     state = pantryState,
-                    onAddIngredient = { navController.navigate(AppDestinations.IngredientEditor) },
-                    onIngredientClick = { navController.navigate(AppDestinations.IngredientDetails) },
+                    onAddIngredient = { navController.navigate(AppDestinations.ingredientEditorRoute()) },
+                    onIngredientClick = { navController.navigate(AppDestinations.ingredientDetailsRoute(it.id)) },
                     onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) },
                     onRetry = pantryViewModel::loadPantry
+                )
+            }
+
+            composable(
+                route = AppDestinations.IngredientDetails,
+                arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val pantryViewModel: PantryViewModel = viewModel()
+                val itemId = backStackEntry.arguments?.getString("itemId")
+                val item = itemId?.let { pantryViewModel.findItem(it) }
+
+                if (item == null) {
+                    // Pantry hasn't loaded into this ViewModel instance yet (e.g. deep link or process death).
+                    LaunchedEffect(Unit) { pantryViewModel.loadPantry() }
+                    CircularProgressIndicator()
+                } else {
+                    IngredientDetailScreen(
+                        item = item,
+                        onEdit = { navController.navigate(AppDestinations.ingredientEditorRoute(item.id)) },
+                        onMarkFinished = {
+                            pantryViewModel.markFinished(item.id)
+                            navController.popBackStack()
+                        },
+                        onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) }
+                    )
+                }
+            }
+
+            composable(
+                route = AppDestinations.IngredientEditor,
+                arguments = listOf(navArgument("itemId") { type = NavType.StringType; nullable = true; defaultValue = null })
+            ) { backStackEntry ->
+                val pantryViewModel: PantryViewModel = viewModel()
+                val itemId = backStackEntry.arguments?.getString("itemId")
+                val existing = itemId?.let { pantryViewModel.findItem(it) }
+
+                IngredientEditorScreen(
+                    initialName = existing?.ingredientName ?: "",
+                    initialQuantity = existing?.quantity?.toString() ?: "",
+                    initialUnit = existing?.unit ?: "",
+                    initialCategory = existing?.category ?: "",
+                    initialExpiryDate = existing?.expiryDate,
+                    isEditing = existing != null,
+                    onSave = { name, quantity, unit, category, expiryDate ->
+                        if (existing != null) {
+                            pantryViewModel.updateItem(existing.id, name, quantity, unit, category, expiryDate)
+                        } else {
+                            pantryViewModel.addItem(name, quantity, unit, category, expiryDate)
+                        }
+                        navController.popBackStack()
+                    },
+                    onDelete = existing?.let {
+                        {
+                            pantryViewModel.markFinished(it.id)
+                            navController.popBackStack()
+                        }
+                    }
                 )
             }
 
@@ -796,27 +858,6 @@ fun AppNavHost() {
                 )
             }
 
-            composable(
-                AppDestinations
-                    .IngredientDetails
-            ) {
-
-                PlaceholderScreen(
-                    title =
-                        "Ingredient Details"
-                )
-            }
-
-            composable(AppDestinations.IngredientEditor) {
-                val pantryViewModel: PantryViewModel = viewModel()
-
-                IngredientEditorScreen(
-                    onSave = { name, quantity, unit, category, expiryDate ->
-                        pantryViewModel.addItem(name, quantity, unit, category, expiryDate)
-                        navController.popBackStack()
-                    }
-                )
-            }
 
             composable(AppDestinations.ShoppingList) {
                 val shoppingViewModel: ShoppingViewModel = viewModel()

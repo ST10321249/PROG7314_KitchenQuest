@@ -22,8 +22,13 @@ object AppDestinations {
     const val SavedRecipes = "saved_recipes"
 
     // Pantry and shopping features
-    const val IngredientDetails = "ingredient_details"
-    const val IngredientEditor = "ingredient_editor"
+    const val IngredientDetails = "ingredient_details/{itemId}"
+    const val IngredientEditor = "ingredient_editor?itemId={itemId}"
+
+    fun ingredientDetailsRoute(itemId: String) = "ingredient_details/$itemId"
+    fun ingredientEditorRoute(itemId: String? = null) =
+        if (itemId != null) "ingredient_editor?itemId=$itemId" else "ingredient_editor"
+
     const val ShoppingList = "shopping_list"
 
     // Cooking features
