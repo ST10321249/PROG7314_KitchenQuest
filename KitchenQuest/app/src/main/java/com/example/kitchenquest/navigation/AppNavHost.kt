@@ -775,6 +775,10 @@ fun AppNavHost() {
                 arguments = listOf(navArgument("itemId") { type = NavType.StringType; nullable = true; defaultValue = null })
             ) { backStackEntry ->
                 val pantryViewModel: PantryViewModel = viewModel()
+                val pantryState by pantryViewModel.uiState.collectAsState()
+
+                LaunchedEffect(Unit) { pantryViewModel.loadPantry() }
+
                 val itemId = backStackEntry.arguments?.getString("itemId")
                 val existing = itemId?.let { pantryViewModel.findItem(it) }
 
@@ -785,6 +789,7 @@ fun AppNavHost() {
                     initialCategory = existing?.category ?: "",
                     initialExpiryDate = existing?.expiryDate,
                     isEditing = existing != null,
+                    knownIngredients = pantryState.items,
                     onSave = { name, quantity, unit, category, expiryDate ->
                         if (existing != null) {
                             pantryViewModel.updateItem(existing.id, name, quantity, unit, category, expiryDate)
@@ -1035,4 +1040,4 @@ fun AppNavHost() {
             }
         }
     }
-}
+ }

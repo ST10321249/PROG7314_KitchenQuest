@@ -6,8 +6,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -23,6 +25,12 @@ fun MyKitchenScreen(
     onFindRecipes: () -> Unit,
     onRetry: () -> Unit
 ) {
+    var searchActive by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    fun matches(item: PantryItemDto) =
+        searchQuery.isBlank() || item.ingredientName.contains(searchQuery, ignoreCase = true)
+
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             state.isLoading && !state.hasLoaded -> {
@@ -42,32 +50,82 @@ fun MyKitchenScreen(
 
             else -> {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(KitchenQuestDimens.ScreenPadding),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "My Kitchen", style = MaterialTheme.typography.headlineSmall)
+
+                        IconButton(onClick = {
+                            searchActive = !searchActive
+                            if (!searchActive) searchQuery = ""
+                        }) {
+                            Icon(
+                                imageVector = if (searchActive) Icons.Filled.Close else Icons.Filled.Search,
+                                contentDescription = if (searchActive) "Close search" else "Search ingredients"
+                            )
+                        }
+                    }
+
+                    if (searchActive) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            label = { Text("Search ingredients") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = KitchenQuestDimens.ScreenPadding)
+                        )
+                        Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+                    }
+
+                    val filteredExpiringSoon = state.expiringSoon.filter(::matches)
+                    val filteredEverythingElse = state.everythingElse.filter(::matches)
+                    val noResults = searchQuery.isNotBlank() &&
+                            filteredExpiringSoon.isEmpty() && filteredEverythingElse.isEmpty()
+
                     LazyColumn(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(KitchenQuestDimens.ScreenPadding),
                         verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
                     ) {
-                        if (state.expiringSoon.isNotEmpty()) {
+                        if (noResults) {
+                            item {
+                                Text(
+                                    text = "No ingredients match \"$searchQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        if (filteredExpiringSoon.isNotEmpty()) {
                             item {
                                 Text(
                                     text = "Expiring soon",
                                     style = MaterialTheme.typography.titleMedium
                                 )
                             }
-                            items(state.expiringSoon, key = { it.id }) { ingredient ->
+                            items(filteredExpiringSoon, key = { it.id }) { ingredient ->
                                 IngredientRow(ingredient, highlighted = true, onClick = { onIngredientClick(ingredient) })
                             }
                             item { Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing)) }
                         }
 
-                        item {
-                            Text(
-                                text = "Everything else",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                        items(state.everythingElse, key = { it.id }) { ingredient ->
-                            IngredientRow(ingredient, highlighted = false, onClick = { onIngredientClick(ingredient) })
+                        if (filteredEverythingElse.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Everything else",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                            items(filteredEverythingElse, key = { it.id }) { ingredient ->
+                                IngredientRow(ingredient, highlighted = false, onClick = { onIngredientClick(ingredient) })
+                            }
                         }
                     }
 

@@ -1,11 +1,14 @@
 package com.example.kitchenquest.feature.pantry
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
@@ -22,6 +25,7 @@ fun IngredientEditorScreen(
     initialExpiryDate: String? = null,
     isEditing: Boolean = false,
     isSaving: Boolean = false,
+    knownIngredients: List<PantryItemDto> = emptyList(),
     onSave: (name: String, quantity: Double, unit: String, category: String, expiryDate: String?) -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
@@ -32,6 +36,19 @@ fun IngredientEditorScreen(
     var expiryDate by remember { mutableStateOf(initialExpiryDate ?: "") }
     var errors by remember { mutableStateOf(IngredientFormErrors()) }
     var unitMenuExpanded by remember { mutableStateOf(false) }
+    var nameMenuExpanded by remember { mutableStateOf(false) }
+
+    // Suggests from ingredients already in the user's kitchen; picking one fills every field below.
+    val suggestions = remember(name, knownIngredients) {
+        if (name.isBlank()) {
+            emptyList()
+        } else {
+            knownIngredients
+                .distinctBy { it.ingredientName.lowercase() }
+                .filter { it.ingredientName.contains(name, ignoreCase = true) }
+                .take(5)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -45,13 +62,43 @@ fun IngredientEditorScreen(
 
         Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 
-        KitchenQuestTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = "Ingredient name",
-            isError = errors.name != null,
-            supportingText = errors.name
-        )
+        ExposedDropdownMenuBox(
+            expanded = nameMenuExpanded && suggestions.isNotEmpty(),
+            onExpandedChange = { nameMenuExpanded = it }
+        ) {
+            KitchenQuestTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                    nameMenuExpanded = true
+                },
+                label = "Ingredient name",
+                isError = errors.name != null,
+                supportingText = errors.name
+                    ?: "Start typing to match a known ingredient, or keep your own name",
+                trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+
+            ExposedDropdownMenu(
+                expanded = nameMenuExpanded && suggestions.isNotEmpty(),
+                onDismissRequest = { nameMenuExpanded = false }
+            ) {
+                suggestions.forEach { match ->
+                    DropdownMenuItem(
+                        text = { Text(match.ingredientName) },
+                        onClick = {
+                            name = match.ingredientName
+                            quantity = match.quantity.toString()
+                            unit = match.unit
+                            ingredientType = match.category
+                            expiryDate = match.expiryDate ?: ""
+                            nameMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
 
