@@ -40,6 +40,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.kitchenquest.feature.pantry.IngredientDetailScreen
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
 @Composable
 
 
@@ -781,30 +784,37 @@ fun AppNavHost() {
 
                 val itemId = backStackEntry.arguments?.getString("itemId")
                 val existing = itemId?.let { pantryViewModel.findItem(it) }
+                val stillLoadingExistingItem = itemId != null && existing == null && !pantryState.hasLoaded
 
-                IngredientEditorScreen(
-                    initialName = existing?.ingredientName ?: "",
-                    initialQuantity = existing?.quantity?.toString() ?: "",
-                    initialUnit = existing?.unit ?: "",
-                    initialCategory = existing?.category ?: "",
-                    initialExpiryDate = existing?.expiryDate,
-                    isEditing = existing != null,
-                    knownIngredients = pantryState.items,
-                    onSave = { name, quantity, unit, category, expiryDate ->
-                        if (existing != null) {
-                            pantryViewModel.updateItem(existing.id, name, quantity, unit, category, expiryDate)
-                        } else {
-                            pantryViewModel.addItem(name, quantity, unit, category, expiryDate)
-                        }
-                        navController.popBackStack()
-                    },
-                    onDelete = existing?.let {
-                        {
-                            pantryViewModel.markFinished(it.id)
-                            navController.popBackStack()
-                        }
+                if (stillLoadingExistingItem) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
-                )
+                } else {
+                    IngredientEditorScreen(
+                        initialName = existing?.ingredientName ?: "",
+                        initialQuantity = existing?.quantity?.toString() ?: "",
+                        initialUnit = existing?.unit ?: "",
+                        initialCategory = existing?.category ?: "",
+                        initialExpiryDate = existing?.expiryDate,
+                        isEditing = existing != null,
+                        knownIngredients = pantryState.items,
+                        onSave = { name, quantity, unit, category, expiryDate ->
+                            if (existing != null) {
+                                pantryViewModel.updateItem(existing.id, name, quantity, unit, category, expiryDate)
+                            } else {
+                                pantryViewModel.addItem(name, quantity, unit, category, expiryDate)
+                            }
+                            navController.popBackStack()
+                        },
+                        onDelete = existing?.let {
+                            {
+                                pantryViewModel.markFinished(it.id)
+                                navController.popBackStack()
+                            }
+                        }
+                    )
+                }
             }
 
             composable(
