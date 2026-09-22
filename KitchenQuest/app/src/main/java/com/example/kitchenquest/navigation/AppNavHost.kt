@@ -2,6 +2,27 @@ package com.example.kitchenquest.navigation
 
 import android.app.Activity
 import androidx.compose.foundation.layout.padding
+import com.example.kitchenquest.feature.recipes.RecipeDetailViewModel
+import com.example.kitchenquest.feature.recipes.RecipeDetailScreen
+import com.example.kitchenquest.feature.recipes.WhatCanIMakeViewModel
+import com.example.kitchenquest.feature.recipes.WhatCanIMakeScreen
+import com.example.kitchenquest.feature.recipes.SavedRecipesViewModel
+import com.example.kitchenquest.feature.recipes.SavedRecipesScreen
+import com.example.kitchenquest.feature.cooking.CookingViewModel
+import com.example.kitchenquest.feature.cooking.CookingModeScreen
+import com.example.kitchenquest.feature.cooking.ActiveTimersScreen
+import com.example.kitchenquest.feature.cooking.KitchenTimerScreen
+import com.example.kitchenquest.feature.cooking.RecipeCompleteScreen
+import com.example.kitchenquest.feature.cooking.CookingHistoryScreen
+import com.example.kitchenquest.feature.cooking.CookingHistoryViewModel
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import com.example.kitchenquest.ui.theme.KitchenQuestDimens
+import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
+import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,6 +64,9 @@ import com.example.kitchenquest.feature.pantry.IngredientDetailScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
+import com.example.kitchenquest.feature.recipes.RecipesScreen
+import com.example.kitchenquest.feature.recipes.RecipesViewModel
+
 @Composable
 
 
@@ -52,6 +76,9 @@ fun AppNavHost() {
         rememberNavController()
 
     val authViewModel: AuthViewModel =
+        viewModel()
+
+    val cookingViewModel: CookingViewModel =
         viewModel()
 
     val authState by
@@ -728,9 +755,18 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Recipes
             ) {
+                val recipesViewModel: RecipesViewModel = viewModel()
+                val recipesState by recipesViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title = "Recipes"
+                RecipesScreen(
+                    state = recipesState,
+                    onQueryChange = recipesViewModel::onQueryChange,
+                    onSearch = recipesViewModel::search,
+                    onWhatCanIMake = { navController.navigate(AppDestinations.WhatCanIMake) },
+                    onSavedRecipes = { navController.navigate(AppDestinations.SavedRecipes) },
+                    onRecipeClick = { recipe ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recipe.recipeSourceId))
+                    }
                 )
             }
             composable(AppDestinations.MyKitchen) {
@@ -820,10 +856,44 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Cook
             ) {
+                val cookHubState by cookingViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title = "Cook"
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(KitchenQuestDimens.ScreenPadding),
+                    verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)
+                ) {
+                    Text(text = "Cook", style = MaterialTheme.typography.headlineSmall)
+
+                    cookHubState.recipe?.let { recipe ->
+                        KitchenQuestPrimaryButton(
+                            text = "Continue cooking ${recipe.title}",
+                            onClick = { navController.navigate(AppDestinations.CookingMode) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    KitchenQuestSecondaryButton(
+                        text = "Kitchen timer",
+                        onClick = { navController.navigate(AppDestinations.KitchenTimer) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (cookHubState.timers.isNotEmpty()) {
+                        KitchenQuestSecondaryButton(
+                            text = "Active timers (${cookHubState.timers.size})",
+                            onClick = { navController.navigate(AppDestinations.ActiveTimers) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    KitchenQuestSecondaryButton(
+                        text = "Cooking history",
+                        onClick = { navController.navigate(AppDestinations.CookingHistory) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
 
             composable(
@@ -846,30 +916,59 @@ fun AppNavHost() {
             composable(
                 AppDestinations.WhatCanIMake
             ) {
+                val whatCanIMakeViewModel: WhatCanIMakeViewModel = viewModel()
+                val whatCanIMakeState by whatCanIMakeViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "What Can I Make?"
+                LaunchedEffect(Unit) { whatCanIMakeViewModel.load() }
+
+                WhatCanIMakeScreen(
+                    state = whatCanIMakeState,
+                    onRecipeClick = { recommendation ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recommendation.recipeSourceId))
+                    },
+                    onRetry = whatCanIMakeViewModel::load
                 )
             }
 
             composable(
-                AppDestinations.RecipeDetails
-            ) {
+                route = AppDestinations.RecipeDetails,
+                arguments = listOf(navArgument("recipeId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
+                val detailViewModel: RecipeDetailViewModel = viewModel()
+                val detailState by detailViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Recipe Details"
+                LaunchedEffect(recipeId) { detailViewModel.load(recipeId) }
+
+                RecipeDetailScreen(
+                    state = detailState,
+                    onIncreaseServings = detailViewModel::increaseServings,
+                    onDecreaseServings = detailViewModel::decreaseServings,
+                    onAddMissingToList = detailViewModel::addMissingIngredientsToList,
+                    onToggleFavourite = detailViewModel::toggleFavourite,
+                    onStartCooking = {
+                        cookingViewModel.loadRecipe(recipeId)
+                        navController.navigate(AppDestinations.CookingMode)
+                    },
+                    onRetry = { detailViewModel.load(recipeId) }
                 )
             }
 
             composable(
                 AppDestinations.SavedRecipes
             ) {
+                val savedRecipesViewModel: SavedRecipesViewModel = viewModel()
+                val savedRecipesState by savedRecipesViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Saved Recipes"
+                LaunchedEffect(Unit) { savedRecipesViewModel.load() }
+
+                SavedRecipesScreen(
+                    state = savedRecipesState,
+                    onRecipeClick = { favourite ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(favourite.recipeSourceId))
+                    },
+                    onRemove = { favourite -> savedRecipesViewModel.removeFavourite(favourite.recipeSourceId) },
+                    onRetry = savedRecipesViewModel::load
                 )
             }
 
@@ -891,50 +990,75 @@ fun AppNavHost() {
             composable(
                 AppDestinations.CookingMode
             ) {
+                val cookingState by cookingViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Cooking Mode"
+                CookingModeScreen(
+                    state = cookingState,
+                    onExit = { navController.popBackStack() },
+                    onNextStep = cookingViewModel::nextStep,
+                    onPreviousStep = cookingViewModel::previousStep,
+                    onStartStepTimer = cookingViewModel::startTimerForCurrentStep,
+                    onViewAllTimers = { navController.navigate(AppDestinations.ActiveTimers) },
+                    onFinish = { navController.navigate(AppDestinations.RecipeComplete) }
                 )
             }
 
             composable(
                 AppDestinations.ActiveTimers
             ) {
+                val cookingState by cookingViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Active Timers"
+                ActiveTimersScreen(
+                    state = cookingState,
+                    onAddMinute = cookingViewModel::addMinuteToTimer,
+                    onTogglePause = cookingViewModel::togglePauseTimer,
+                    onCancel = cookingViewModel::cancelTimer,
+                    onStopAll = cookingViewModel::stopAllTimers,
+                    onBackToCooking = { navController.popBackStack() }
                 )
             }
 
             composable(
                 AppDestinations.KitchenTimer
             ) {
-
-                PlaceholderScreen(
-                    title =
-                        "Kitchen Timer"
+                KitchenTimerScreen(
+                    onStartTimer = { minutes, label ->
+                        cookingViewModel.startStandaloneTimer(minutes, label)
+                        navController.navigate(AppDestinations.ActiveTimers)
+                    }
                 )
             }
 
             composable(
                 AppDestinations.RecipeComplete
             ) {
+                val cookingState by cookingViewModel.uiState.collectAsState()
+                val recipeTitle = cookingState.recipe?.title ?: "Recipe"
 
-                PlaceholderScreen(
-                    title =
-                        "Recipe Complete"
+                RecipeCompleteScreen(
+                    recipeTitle = recipeTitle,
+                    onSave = { rating, difficulty, note ->
+                        cookingViewModel.completeCooking(rating, difficulty, note) {
+                            navController.navigate(AppDestinations.Home) {
+                                popUpTo(AppDestinations.Home) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 )
             }
 
             composable(
                 AppDestinations.CookingHistory
             ) {
+                val cookingHistoryViewModel: CookingHistoryViewModel = viewModel()
+                val cookingHistoryState by cookingHistoryViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Cooking History"
+                LaunchedEffect(Unit) { cookingHistoryViewModel.load() }
+
+                CookingHistoryScreen(
+                    state = cookingHistoryState,
+                    onRetry = cookingHistoryViewModel::load
                 )
             }
 
@@ -1039,10 +1163,7 @@ fun AppNavHost() {
                                 error: Exception
                             ) {
 
-                                /*
-                                 * Firebase has already
-                                 * signed out successfully.
-                                 */
+
                             }
                         }
                     }
@@ -1050,4 +1171,4 @@ fun AppNavHost() {
             }
         }
     }
- }
+}

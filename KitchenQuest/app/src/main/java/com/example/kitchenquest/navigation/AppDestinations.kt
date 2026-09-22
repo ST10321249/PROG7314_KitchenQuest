@@ -18,7 +18,8 @@ object AppDestinations {
 
     // Recipe features
     const val WhatCanIMake = "what_can_i_make"
-    const val RecipeDetails = "recipe_details"
+    const val RecipeDetails = "recipe_details/{recipeId}"
+    fun recipeDetailsRoute(recipeId: String) = "recipe_details/$recipeId"
     const val SavedRecipes = "saved_recipes"
 
     // Pantry and shopping features
