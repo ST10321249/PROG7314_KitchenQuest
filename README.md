@@ -187,7 +187,6 @@ Both run automatically on GitHub Actions on every push.
 
 ## What's planned next
 
-- Finish the Home and Profile screens
 - RoomDB for offline pantry, shopping list and favourites, with sync when connectivity returns
 - Biometric unlock after first sign-in
 - Push notifications for timers, expiring ingredients and shopping reminders
