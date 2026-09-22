@@ -63,6 +63,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import com.example.kitchenquest.feature.recipes.RecipesScreen
 import com.example.kitchenquest.feature.recipes.RecipesViewModel
+import com.example.kitchenquest.feature.home.HomeScreen
+import com.example.kitchenquest.feature.home.HomeViewModel
+import com.example.kitchenquest.feature.notifications.NotificationsScreen
 
 @Composable
 
@@ -737,8 +740,36 @@ fun AppNavHost() {
                 AppDestinations.Home
             ) {
 
-                PlaceholderScreen(
-                    title = "Home"
+                val homeViewModel: HomeViewModel = viewModel()
+                val homeState by homeViewModel.uiState.collectAsState()
+
+                LaunchedEffect(Unit) {
+                    homeViewModel.load()
+                }
+
+                HomeScreen(
+                    state = homeState,
+                    onNotifications = {
+                        navController.navigate(AppDestinations.Notifications)
+                    },
+                    onKitchenTimer = {
+                        navController.navigate(AppDestinations.KitchenTimer)
+                    },
+                    onWhatCanIMake = {
+                        navController.navigate(AppDestinations.WhatCanIMake)
+                    },
+                    onShoppingList = {
+                        navController.navigate(AppDestinations.ShoppingList)
+                    },
+                    onRecipes = {
+                        navController.navigate(AppDestinations.Recipes)
+                    },
+                    onRecipeClick = { recipeId ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recipeId))
+                    },
+                    onRetry = {
+                        homeViewModel.load()
+                    }
                 )
             }
 
@@ -752,6 +783,9 @@ fun AppNavHost() {
                     state = recipesState,
                     onQueryChange = recipesViewModel::onQueryChange,
                     onSearch = recipesViewModel::search,
+                    onDietSelected = recipesViewModel::onDietSelected,
+                    onCuisineSelected = recipesViewModel::onCuisineSelected,
+                    onMaxReadyTimeSelected = recipesViewModel::onMaxReadyTimeSelected,
                     onWhatCanIMake = { navController.navigate(AppDestinations.WhatCanIMake) },
                     onSavedRecipes = { navController.navigate(AppDestinations.SavedRecipes) },
                     onRecipeClick = { recipe ->
@@ -789,6 +823,7 @@ fun AppNavHost() {
                 } else {
                     IngredientDetailScreen(
                         item = item,
+                        onBack = { navController.popBackStack() },
                         onEdit = { navController.navigate(AppDestinations.ingredientEditorRoute(item.id)) },
                         onMarkFinished = {
                             pantryViewModel.markFinished(item.id)
@@ -818,6 +853,7 @@ fun AppNavHost() {
                     }
                 } else {
                     IngredientEditorScreen(
+                        onBack = { navController.popBackStack() },
                         initialName = existing?.ingredientName ?: "",
                         initialQuantity = existing?.quantity?.toString() ?: "",
                         initialUnit = existing?.unit ?: "",
@@ -893,9 +929,11 @@ fun AppNavHost() {
 
                 WhatCanIMakeScreen(
                     state = whatCanIMakeState,
+                    onBack = { navController.popBackStack() },
                     onRecipeClick = { recommendation ->
                         navController.navigate(AppDestinations.recipeDetailsRoute(recommendation.recipeSourceId))
                     },
+                    onAddMissingToShoppingList = whatCanIMakeViewModel::addMissingToShoppingList,
                     onRetry = whatCanIMakeViewModel::load
                 )
             }
@@ -912,6 +950,7 @@ fun AppNavHost() {
 
                 RecipeDetailScreen(
                     state = detailState,
+                    onBack = { navController.popBackStack() },
                     onIncreaseServings = detailViewModel::increaseServings,
                     onDecreaseServings = detailViewModel::decreaseServings,
                     onAddMissingToList = detailViewModel::addMissingIngredientsToList,
@@ -934,6 +973,8 @@ fun AppNavHost() {
 
                 SavedRecipesScreen(
                     state = savedRecipesState,
+                    onBack = { navController.popBackStack() },
+                    onQueryChange = savedRecipesViewModel::onQueryChange,
                     onRecipeClick = { favourite ->
                         navController.navigate(AppDestinations.recipeDetailsRoute(favourite.recipeSourceId))
                     },
@@ -951,6 +992,7 @@ fun AppNavHost() {
 
                 ShoppingListScreen(
                     state = shoppingState,
+                    onBack = { navController.popBackStack() },
                     onAdd = shoppingViewModel::addItem,
                     onTogglePurchased = shoppingViewModel::togglePurchased,
                     onRemove = shoppingViewModel::removeItem
@@ -1029,6 +1071,15 @@ fun AppNavHost() {
                 CookingHistoryScreen(
                     state = cookingHistoryState,
                     onRetry = cookingHistoryViewModel::load
+                )
+            }
+
+            composable(
+                AppDestinations.Notifications
+            ) {
+
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
 

@@ -10,14 +10,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
+import com.example.kitchenquest.ui.components.KitchenQuestDatePickerField
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTextField
+import com.example.kitchenquest.ui.components.KitchenQuestTopBar
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IngredientEditorScreen(
+    onBack: () -> Unit,
     initialName: String = "",
     initialQuantity: String = "",
     initialUnit: String = "",
@@ -50,147 +53,152 @@ fun IngredientEditorScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(KitchenQuestDimens.ScreenPadding)
-    ) {
-        Text(
-            text = if (isEditing) "Edit ingredient" else "Add ingredient",
-            style = MaterialTheme.typography.headlineSmall
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        KitchenQuestTopBar(
+            title = if (isEditing) "Edit ingredient" else "Add ingredient",
+            onBack = onBack,
+            modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
         )
 
-        Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
-
-        ExposedDropdownMenuBox(
-            expanded = nameMenuExpanded && suggestions.isNotEmpty(),
-            onExpandedChange = { nameMenuExpanded = it }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = KitchenQuestDimens.ScreenPadding)
         ) {
-            KitchenQuestTextField(
-                value = name,
-                onValueChange = {
-                    name = it
-                    nameMenuExpanded = true
-                },
-                label = "Ingredient name",
-                isError = errors.name != null,
-                supportingText = errors.name
-                    ?: "Start typing to match a known ingredient, or keep your own name",
-                trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
-            )
-
-            ExposedDropdownMenu(
-                expanded = nameMenuExpanded && suggestions.isNotEmpty(),
-                onDismissRequest = { nameMenuExpanded = false }
-            ) {
-                suggestions.forEach { match ->
-                    DropdownMenuItem(
-                        text = { Text(match.ingredientName) },
-                        onClick = {
-                            name = match.ingredientName
-                            quantity = match.quantity.toString()
-                            unit = match.unit
-                            ingredientType = match.category
-                            expiryDate = match.expiryDate ?: ""
-                            nameMenuExpanded = false
-                        }
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)) {
-            KitchenQuestTextField(
-                value = quantity,
-                onValueChange = { quantity = it },
-                label = "Quantity",
-                keyboardType = KeyboardType.Decimal,
-                isError = errors.quantity != null,
-                supportingText = errors.quantity,
-                modifier = Modifier.weight(1f)
-            )
 
             ExposedDropdownMenuBox(
-                expanded = unitMenuExpanded,
-                onExpandedChange = { unitMenuExpanded = it },
-                modifier = Modifier.weight(1f)
+                expanded = nameMenuExpanded && suggestions.isNotEmpty(),
+                onExpandedChange = { nameMenuExpanded = it }
             ) {
-                OutlinedTextField(
-                    value = unit,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Unit") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitMenuExpanded) },
+                KitchenQuestTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        nameMenuExpanded = true
+                    },
+                    label = "Ingredient name",
+                    isError = errors.name != null,
+                    supportingText = errors.name
+                        ?: "Start typing to match a known ingredient, or keep your own name",
+                    trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
+
                 ExposedDropdownMenu(
-                    expanded = unitMenuExpanded,
-                    onDismissRequest = { unitMenuExpanded = false }
+                    expanded = nameMenuExpanded && suggestions.isNotEmpty(),
+                    onDismissRequest = { nameMenuExpanded = false }
                 ) {
-                    IngredientOptions.units.forEach { option ->
+                    suggestions.forEach { match ->
                         DropdownMenuItem(
-                            text = { Text(option) },
+                            text = { Text(match.ingredientName) },
                             onClick = {
-                                unit = option
-                                unitMenuExpanded = false
+                                name = match.ingredientName
+                                quantity = match.quantity.toString()
+                                unit = match.unit
+                                ingredientType = match.category
+                                expiryDate = match.expiryDate ?: ""
+                                nameMenuExpanded = false
                             }
                         )
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
 
-        Text(text = "Ingredient type", style = MaterialTheme.typography.labelLarge)
-        Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-        Row {
-            IngredientOptions.ingredientTypes.forEach { option ->
-                KitchenQuestChoiceChip(
-                    text = option,
-                    selected = ingredientType == option,
-                    onClick = { ingredientType = option }
+            Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)) {
+                KitchenQuestTextField(
+                    value = quantity,
+                    onValueChange = { quantity = it },
+                    label = "Quantity",
+                    keyboardType = KeyboardType.Decimal,
+                    isError = errors.quantity != null,
+                    supportingText = errors.quantity,
+                    modifier = Modifier.weight(1f)
                 )
+
+                ExposedDropdownMenuBox(
+                    expanded = unitMenuExpanded,
+                    onExpandedChange = { unitMenuExpanded = it },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    KitchenQuestTextField(
+                        value = unit,
+                        onValueChange = {},
+                        label = "Unit",
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitMenuExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = unitMenuExpanded,
+                        onDismissRequest = { unitMenuExpanded = false }
+                    ) {
+                        IngredientOptions.units.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    unit = option
+                                    unitMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
 
-        KitchenQuestTextField(
-            value = expiryDate,
-            onValueChange = { expiryDate = it },
-            label = "Expiry date (YYYY-MM-DD)",
-            isError = errors.expiryDate != null,
-            supportingText = errors.expiryDate
-        )
+            Text(text = "Ingredient type", style = MaterialTheme.typography.labelLarge)
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+            Row {
+                IngredientOptions.ingredientTypes.forEach { option ->
+                    KitchenQuestChoiceChip(
+                        text = option,
+                        selected = ingredientType == option,
+                        onClick = { ingredientType = option }
+                    )
+                }
+            }
 
-        Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
 
-        if (isEditing && onDelete != null) {
-            KitchenQuestSecondaryButton(
-                text = "Mark finished",
-                onClick = onDelete,
+            KitchenQuestDatePickerField(
+                value = expiryDate,
+                onValueChange = { expiryDate = it },
+                label = "Expiry date",
+                isError = errors.expiryDate != null,
+                supportingText = errors.expiryDate ?: "Optional"
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            if (isEditing && onDelete != null) {
+                KitchenQuestSecondaryButton(
+                    text = "Mark finished",
+                    onClick = onDelete,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
+            }
+
+            KitchenQuestPrimaryButton(
+                text = if (isEditing) "Save changes" else "Add to kitchen",
+                enabled = !isSaving,
+                onClick = {
+                    val trimmedExpiry = expiryDate.trim().ifBlank { null }
+                    val validation = validateIngredientForm(name, quantity, trimmedExpiry)
+                    errors = validation
+
+                    if (!validation.hasErrors) {
+                        onSave(name.trim(), quantity.toDouble(), unit, ingredientType, trimmedExpiry)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
+
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
         }
-
-        KitchenQuestPrimaryButton(
-            text = if (isEditing) "Save changes" else "Add to kitchen",
-            enabled = !isSaving,
-            onClick = {
-                val trimmedExpiry = expiryDate.trim().ifBlank { null }
-                val validation = validateIngredientForm(name, quantity, trimmedExpiry)
-                errors = validation
-
-                if (!validation.hasErrors) {
-                    onSave(name.trim(), quantity.toDouble(), unit, ingredientType, trimmedExpiry)
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }

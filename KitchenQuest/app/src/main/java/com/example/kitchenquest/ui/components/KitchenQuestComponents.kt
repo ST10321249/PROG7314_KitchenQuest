@@ -2,6 +2,7 @@ package com.example.kitchenquest.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,10 +22,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -33,9 +38,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,6 +58,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 @Composable
 fun KitchenQuestPrimaryButton(
@@ -117,7 +132,8 @@ fun KitchenQuestTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: (@Composable () -> Unit)? = null,
     leadingIcon: (@Composable () -> Unit)? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    readOnly: Boolean = false
 ) {
     OutlinedTextField(
         value = value,
@@ -128,6 +144,7 @@ fun KitchenQuestTextField(
         },
         singleLine = true,
         enabled = enabled,
+        readOnly = readOnly,
         isError = isError,
         supportingText =
             if (supportingText != null) {
@@ -456,5 +473,95 @@ fun KitchenQuestErrorState(
             onClick = onRetry,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+// Read-only field that opens a real Material3 date picker instead of asking the
+// user to type a date string. Emits/accepts the same "YYYY-MM-DD" format the rest
+// of the app already uses (IngredientValidation.kt, CreatePantryItemRequest, the
+// backend's Zod schema), so nothing downstream needs to change.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun KitchenQuestDatePickerField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    supportingText: String? = null,
+    allowPastDates: Boolean = false
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    val zoneId = ZoneOffset.UTC
+    val today = LocalDate.now(zoneId)
+
+    val initialMillis = value.trim()
+        .takeIf { it.isNotEmpty() }
+        ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        ?.atStartOfDay(zoneId)
+        ?.toInstant()
+        ?.toEpochMilli()
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                if (allowPastDates) return true
+                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(zoneId).toLocalDate()
+                return !date.isBefore(today)
+            }
+        }
+    )
+
+    Box(modifier = modifier) {
+        KitchenQuestTextField(
+            value = value,
+            onValueChange = {},
+            label = label,
+            modifier = Modifier.fillMaxWidth(),
+            isError = isError,
+            supportingText = supportingText,
+            readOnly = true,
+            trailingIcon = {
+                Icon(imageVector = Icons.Filled.CalendarMonth, contentDescription = null)
+            }
+        )
+
+        // OutlinedTextField's own touch target isn't reliable when read-only, so an
+        // invisible clickable layer on top guarantees a tap always opens the dialog.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { showDialog = true }
+        )
+    }
+
+    if (showDialog) {
+        DatePickerDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = datePickerState.selectedDateMillis
+                    if (millis != null) {
+                        val picked = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+                        onValueChange(picked.toString())
+                    }
+                    showDialog = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 }
