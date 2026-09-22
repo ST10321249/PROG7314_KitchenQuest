@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class RecipesViewModel(
-    private val recipeRepository: RecipeRepository =
-        DefaultRecipeRepository()
+    private val recipeRepository: RecipeRepository = DefaultRecipeRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipesUiState())
@@ -22,25 +21,60 @@ class RecipesViewModel(
         _uiState.update { it.copy(searchQuery = query) }
     }
 
+    fun onFilterSelected(filter: String) {
+        _uiState.update { it.copy(selectedFilter = filter) }
+        search()
+    }
+
+    fun searchCategory(category: String) {
+        _uiState.update {
+            it.copy(
+                searchQuery = category,
+                selectedFilter = "All"
+            )
+        }
+        search()
+    }
+
     fun search() {
-        val query = _uiState.value.searchQuery
-        if (query.isBlank()) return
+        val state = _uiState.value
+
+        val query = when {
+            state.searchQuery.isNotBlank() -> state.searchQuery.trim()
+            state.selectedFilter == "Chicken" -> "chicken"
+            else -> null
+        }
+
+        val diet = if (state.selectedFilter == "Vegetarian") "vegetarian" else null
+        val maxReadyTime = if (state.selectedFilter == "Under 30 min") 30 else null
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            recipeRepository.searchRecipes(query = query).fold(
+            recipeRepository.searchRecipes(
+                query = query,
+                diet = diet,
+                maxReadyTime = maxReadyTime
+            ).fold(
                 onSuccess = { results ->
-                    _uiState.update { it.copy(isLoading = false, results = results) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            results = results
+                        )
+                    }
                 },
                 onFailure = { failure ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = failure.message) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            errorMessage = failure.message
+                        )
+                    }
                 }
             )
         }
-    }
-
-    fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
     }
 }
