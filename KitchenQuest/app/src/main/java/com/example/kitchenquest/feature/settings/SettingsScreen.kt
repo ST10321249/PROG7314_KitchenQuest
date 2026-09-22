@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Person
@@ -57,6 +56,7 @@ import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTextField
+import com.example.kitchenquest.ui.components.KitchenQuestTopBar
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 import com.example.kitchenquest.ui.theme.KitchenQuestTheme
 
@@ -84,7 +84,11 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
     ) {
 
-        SettingsTopBar(onBack = onBack)
+        KitchenQuestTopBar(
+            title = "Settings",
+            onBack = onBack,
+            modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
+        )
 
         when {
             // Also covers the first frame, before loading has started.
@@ -123,46 +127,6 @@ fun SettingsScreen(
                 horizontal = KitchenQuestDimens.MediumSpacing,
                 vertical = KitchenQuestDimens.SectionSpacing
             )
-        )
-    }
-}
-
-@Composable
-private fun SettingsTopBar(
-    onBack: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = KitchenQuestDimens.MediumSpacing,
-                vertical = KitchenQuestDimens.SmallSpacing
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Surface(
-            onClick = onBack,
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .padding(start = KitchenQuestDimens.MediumSpacing)
-                .semantics { heading() }
         )
     }
 }

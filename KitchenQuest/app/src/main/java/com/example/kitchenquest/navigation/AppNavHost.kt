@@ -47,7 +47,6 @@ import com.example.kitchenquest.feature.onboarding.OnboardingSelection
 import com.example.kitchenquest.feature.settings.SettingsScreen
 import com.example.kitchenquest.feature.settings.SettingsViewModel
 import com.example.kitchenquest.ui.components.AppScaffold
-import com.example.kitchenquest.ui.screens.PlaceholderScreen
 import kotlinx.coroutines.launch
 import com.example.kitchenquest.feature.pantry.PantryViewModel
 import com.example.kitchenquest.feature.pantry.MyKitchenScreen
@@ -66,6 +65,8 @@ import com.example.kitchenquest.feature.recipes.RecipesViewModel
 import com.example.kitchenquest.feature.home.HomeScreen
 import com.example.kitchenquest.feature.home.HomeViewModel
 import com.example.kitchenquest.feature.notifications.NotificationsScreen
+import com.example.kitchenquest.feature.profile.ProfileScreen
+import com.example.kitchenquest.feature.profile.ProfileViewModel
 
 @Composable
 
@@ -906,15 +907,23 @@ fun AppNavHost() {
                 AppDestinations.Profile
             ) {
 
-                PlaceholderScreen(
-                    title = "Profile",
-                    actionText =
-                        "Settings",
-                    onAction = {
+                val profileViewModel: ProfileViewModel = viewModel()
+                val profileState by profileViewModel.uiState.collectAsState()
 
-                        navController.navigate(
-                            AppDestinations.Settings
-                        )
+                LaunchedEffect(Unit) {
+                    profileViewModel.load()
+                }
+
+                ProfileScreen(
+                    state = profileState,
+                    onSettings = {
+                        navController.navigate(AppDestinations.Settings)
+                    },
+                    onCookingHistory = {
+                        navController.navigate(AppDestinations.CookingHistory)
+                    },
+                    onRetry = {
+                        profileViewModel.load()
                     }
                 )
             }
@@ -1022,6 +1031,7 @@ fun AppNavHost() {
 
                 ActiveTimersScreen(
                     state = cookingState,
+                    onBack = { navController.popBackStack() },
                     onAddMinute = cookingViewModel::addMinuteToTimer,
                     onTogglePause = cookingViewModel::togglePauseTimer,
                     onCancel = cookingViewModel::cancelTimer,
@@ -1034,6 +1044,7 @@ fun AppNavHost() {
                 AppDestinations.KitchenTimer
             ) {
                 KitchenTimerScreen(
+                    onBack = { navController.popBackStack() },
                     onStartTimer = { minutes, label ->
                         cookingViewModel.startStandaloneTimer(minutes, label)
                         navController.navigate(AppDestinations.ActiveTimers)
@@ -1049,6 +1060,7 @@ fun AppNavHost() {
 
                 RecipeCompleteScreen(
                     recipeTitle = recipeTitle,
+                    onBack = { navController.popBackStack() },
                     onSave = { rating, difficulty, note ->
                         cookingViewModel.completeCooking(rating, difficulty, note) {
                             navController.navigate(AppDestinations.Home) {
@@ -1070,6 +1082,10 @@ fun AppNavHost() {
 
                 CookingHistoryScreen(
                     state = cookingHistoryState,
+                    onBack = { navController.popBackStack() },
+                    onRecipeClick = { recipeSourceId ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recipeSourceId))
+                    },
                     onRetry = cookingHistoryViewModel::load
                 )
             }
