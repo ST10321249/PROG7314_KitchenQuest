@@ -1,108 +1,87 @@
 # KitchenQuest API
 
-REST API for the KitchenQuest Android app, built with Node.js and Express. It stores user profile data in MongoDB (via Mongoose) and protects its routes by verifying Firebase ID tokens sent from the app.
+Backend for the KitchenQuest app - a REST API written in Node and Express. It stores everything in MongoDB and checks every request against Firebase to make sure whoever's calling it actually is who they say they are.
 
 ```
-Android app -> Retrofit -> Express API -> Firebase Admin (verify token) -> Mongoose -> MongoDB
+Android app -> Retrofit -> Express API -> Firebase Admin checks the token -> Mongoose -> MongoDB
 ```
 
-## Tech stack
+## Built with
 
-| Technology | Purpose |
-|---|---|
-| Node.js + Express | HTTP server and routing |
-| MongoDB + Mongoose | Database and data models |
-| Firebase Admin SDK | Verifies Firebase ID tokens |
-| Zod | Request body validation |
-| Morgan | Request logging |
-| Jest + Supertest | Automated tests |
+Node.js + Express for the server, MongoDB + Mongoose for storage, the Firebase Admin SDK to verify tokens, Spoonacular's API for recipe data, Zod for validating what comes in, Morgan for request logs, Jest + Supertest for the tests.
 
-## Project structure
+## Layout
 
 ```
 backend/
-├── src/
-│   ├── config/        env loading, MongoDB connection, Firebase Admin setup
-│   ├── controllers/   request handlers
-│   ├── middleware/    auth, validation, 404 and error handling
-│   ├── models/        Mongoose schemas
-│   ├── routes/        route definitions
-│   ├── utils/         shared helpers (ApiError)
-│   ├── validators/    Zod schemas
-│   ├── app.js         Express app (no listener, so it can be tested)
-│   └── server.js      connects to MongoDB, then starts listening
-├── tests/             Jest tests
-├── .env.example       template for environment variables
-└── package.json
+  src/
+    config/       env loading, MongoDB connection, Firebase Admin setup
+    controllers/  the request handlers
+    middleware/   auth check, validation, 404s, error handling
+    models/       Mongoose schemas
+    routes/       route definitions
+    utils/        shared helpers (ApiError)
+    validators/   Zod schemas
+    app.js        the Express app itself, no listener attached (so it's testable)
+    server.js     connects to Mongo, then starts listening
+  tests/          Jest tests
+  .env.example    template for the env file
+  package.json
 ```
 
-## Setup
+## Getting it running
 
-Requires Node.js 22 or newer (a requirement of the Firebase Admin SDK).
+Needs Node 22+ - Firebase Admin won't run on anything older.
 
-1. Install dependencies:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Create your environment file from the template and fill in the values:
-   ```bash
-   cp .env.example .env
-   ```
-3. Add a Firebase service account key (see below).
-4. Start the server:
-   ```bash
-   npm run dev     # auto-restarts on file changes
-   npm start       # plain start
-   ```
+```
+cd backend -> npm install -> cp .env.example .env
+```
 
-On startup the server connects to MongoDB first, then begins listening. If the database connection fails it exits instead of accepting requests.
+Fill in `.env`, add a Firebase service account key (see below), then:
+```
+npm run dev     # restarts on save
+npm start       # plain start
+```
 
-### Environment variables
+The server connects to MongoDB before it starts listening, so if that connection fails it just exits rather than quietly accepting requests it can't do anything with.
 
-| Variable | Description | Default |
+### Env vars
+
+| Variable | What it's for | Default |
 |---|---|---|
-| `NODE_ENV` | `development` or `production` | `development` |
-| `PORT` | Port the server listens on | `5000` |
-| `MONGODB_URI` | MongoDB connection string, including the database name | none (required) |
-| `FIREBASE_SERVICE_ACCOUNT_PATH` | Path to the Firebase service account JSON | none (required) |
+| `NODE_ENV` | development or production | development |
+| `PORT` | port the server runs on | 5000 |
+| `MONGODB_URI` | MongoDB connection string, database name included | required |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | path to the Firebase service account JSON | required |
+| `SPOONACULAR_API_KEY` | key used for recipe requests | required |
 
-`.env` and the service account key are listed in `.gitignore`. Never commit them.
+`.env` and the service account key are both in `.gitignore` - don't commit them. Same for the Spoonacular key: keep it in `.env` locally and in whatever's hosting the API, never in the code itself.
 
 ### MongoDB Atlas
 
-Create a free cluster, add a database user, and copy the connection string into `MONGODB_URI` (add the database name, e.g. `/kitchenquest`, before the `?`). Under **Network Access**, allow the IP address of the machine running the API, or `0.0.0.0/0` for development. If the server hangs on start and then fails to connect, an IP that is not on this list is the usual cause.
+Spin up a free cluster, add a database user, drop the connection string into `MONGODB_URI` (the database name goes in before the `?`, e.g. `/kitchenquest`). Under Network Access, allow the IP running the API, or `0.0.0.0/0` while just developing. If the server hangs and then fails to connect, an IP that's not on that list is almost always why.
 
 ### Firebase service account key
 
-In the Firebase console open **Project settings -> Service accounts -> Generate new private key**. Save the downloaded file as `backend/serviceAccountKey.json` (or point `FIREBASE_SERVICE_ACCOUNT_PATH` at wherever you keep it). It must belong to the same Firebase project the Android app signs in with.
+Firebase console -> Project settings -> Service accounts -> Generate new private key. Save it as `backend/serviceAccountKey.json`, or point `FIREBASE_SERVICE_ACCOUNT_PATH` somewhere else if preferred. It has to come from the same Firebase project the app signs into.
 
-## Authentication
+## Auth
 
-Every route except `/health` requires a Firebase ID token:
-
+Every route except `/health` needs:
 ```
 Authorization: Bearer <Firebase ID token>
 ```
 
-The token is verified with the Firebase Admin SDK, and the user is identified from the verified token's `uid`. The API never trusts a user ID sent in the request body or URL. A missing or invalid token returns `401`.
+The Admin SDK verifies it, and the user gets identified from the token's `uid` - never from anything sent in the body or URL. No token, or a bad one, gets a `401`.
 
 ## Endpoints
 
-### `GET /health`
-
-Public. Confirms the API is running.
-
+**`GET /health`** - public, just confirms the API is up.
 ```json
 { "status": "ok" }
 ```
 
-### `POST /api/users/sync`
-
-Creates the signed-in user's profile if it does not exist, otherwise returns the existing one. Call it after sign-in. All body fields are optional and only used when the profile is first created. An existing profile is never overwritten by this call.
-
-Request body:
-
+**`POST /api/users/sync`** - creates the signed-in user's profile if there isn't one yet, otherwise returns what's already there (never overwrites it). Call this right after sign-in.
 ```json
 {
   "displayName": "Example User",
@@ -110,89 +89,41 @@ Request body:
   "avoidedIngredients": ["Peanuts", "Shellfish"]
 }
 ```
+`201` for a new profile, `200` if one already existed. No `displayName` sent -> falls back to whatever Firebase has. `email` always comes from the token, not the body.
 
-Returns `201` with the new profile, or `200` with the existing one. If `displayName` is not sent, the name from the Firebase token is used. `email` always comes from the token.
+**`GET /api/users/me`** - the signed-in user's profile, or `404` if they haven't synced yet.
 
-### `GET /api/users/me`
-
-Returns the signed-in user's profile, or `404` if they have not been synced yet.
-
-```json
-{
-  "_id": "6aadb1c1ed585ca3c83ebd40",
-  "firebaseUid": "firebase-user-id",
-  "displayName": "Example User",
-  "email": "user@example.com",
-  "dietaryPreferences": ["Vegetarian"],
-  "avoidedIngredients": ["Peanuts", "Shellfish"],
-  "createdAt": "2026-09-18T21:48:49.623Z",
-  "updatedAt": "2026-09-18T21:48:49.811Z"
-}
-```
-
-### `PUT /api/users/me`
-
-Updates the signed-in user's profile. Send any of `displayName`, `dietaryPreferences` and `avoidedIngredients`. Only the fields you send are changed. Other fields (including `firebaseUid` and `email`) are ignored. At least one field is required.
-
-```json
-{
-  "dietaryPreferences": ["Vegetarian", "Gluten free"],
-  "avoidedIngredients": ["Peanuts"]
-}
-```
-
-Returns `200` with the updated profile, `400` for invalid data, or `404` if the user has not been synced yet.
+**`PUT /api/users/me`** - updates whichever of `displayName`, `dietaryPreferences`, `avoidedIngredients` gets sent. Only sent fields change; anything else (including trying to sneak in a `firebaseUid` or `email`) is ignored. Needs at least one field. `200` with the updated profile, `400` for bad data, `404` if there's no profile yet.
 
 ## Errors
 
-All errors are JSON in the same shape:
-
+Every error comes back the same shape:
 ```json
 { "error": "message" }
 ```
-
 | Status | Meaning |
 |---|---|
-| `400` | Invalid request data |
-| `401` | Missing or invalid Firebase token |
-| `404` | Route or user profile not found |
-| `500` | Unexpected server error (details are logged on the server, not returned) |
+| `400` | bad request data |
+| `401` | missing or invalid token |
+| `404` | route or profile not found |
+| `500` | something broke server-side (the real error is logged server-side, the client just gets a generic message) |
 
-## Hosted API (Render)
+## Where it's hosted
 
-The API is deployed on Render at **https://prog7314-kitchenquest.onrender.com**. The Android app uses this address by default, so it works on a phone with no local setup. Check it with `https://prog7314-kitchenquest.onrender.com/health`.
+Live on Render: **https://prog7314-kitchenquest.onrender.com** - `/health` confirms it's up.
 
-Render settings:
+Set up as Node, root directory `backend`, `npm install` to build, `npm start` to run, health check on `/health`, deploying off the `api-data-layer` branch for now (switch to `main` once everything's merged in).
 
-| Setting | Value |
-|---|---|
-| Language | Node |
-| Branch | `api-data-layer` (switch to `main` once it is merged) |
-| Root Directory | `backend` |
-| Build Command | `npm install` |
-| Start Command | `npm start` |
-| Health Check Path | `/health` |
+Env vars are set directly in Render - same names as above, plus `NODE_VERSION=22` - and `FIREBASE_SERVICE_ACCOUNT_PATH` points at `/etc/secrets/serviceAccountKey.json`. The actual key file goes in under Secret Files there, not as an env var value.
 
-Environment variables (set in Render, never committed):
+It's on the free tier, so it sleeps after a while idle, and the first request after that can take close to a minute to wake it back up - worth remembering before a demo.
 
-| Variable | Value |
-|---|---|
-| `MONGODB_URI` | The MongoDB Atlas connection string |
-| `NODE_ENV` | `production` |
-| `NODE_VERSION` | `22` |
-| `FIREBASE_SERVICE_ACCOUNT_PATH` | `/etc/secrets/serviceAccountKey.json` |
+To point at a local backend instead, add `api.baseUrl=http://localhost:5000` to `KitchenQuest/local.properties`. On a phone over USB, also run `adb reverse tcp:5000 tcp:5000`.
 
-The Firebase key is added under **Secret Files** with the filename `serviceAccountKey.json`.
+## Tests
 
-Notes:
-- Render redeploys automatically when the deployed branch is pushed to.
-- On the free plan the server sleeps when idle, so the first request after a quiet period can take up to about a minute. The app allows for this.
-- To run the app against an API on your own PC instead, add `api.baseUrl=http://localhost:5000` to `KitchenQuest/local.properties`. For a phone, also run `adb reverse tcp:5000 tcp:5000` so the phone's `localhost` reaches your PC.
-
-## Testing
-
-```bash
+```
 npm test
 ```
 
-Tests use Jest and Supertest. Firebase and the database are mocked, so they need no `.env`, service account key, network or MongoDB connection.
+Runs with Jest and Supertest. Firebase and the database are both mocked, so none of it needs a `.env`, a service account key, or an internet connection.
