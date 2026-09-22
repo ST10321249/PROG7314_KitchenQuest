@@ -1,222 +1,83 @@
 # KitchenQuest
 
-An Android cooking and recipe-management app that helps users manage the ingredients they have, reduce food waste, discover recipes they can actually make right now, and follow those recipes while cooking.
+KitchenQuest is an Android app built around one idea: match recipes to what's actually in your kitchen instead of making you browse recipes and then find out what you're missing. Add what you've got to your pantry, and the app shows what you can cook right now, flags what's missing on anything close, and pushes ingredients that are close to expiring to the front so they get used before they go off.
 
-KitchenQuest takes an ingredient-first approach: instead of browsing recipes and then checking what you're missing, it matches recipes to what's already in your kitchen and prioritises ingredients that are close to expiring.
+Built for PROG7314 (Part 2) by Group 13.
 
-Built for **PROG7314 (Part 2 prototype)** by Group 13.
+## What it does
 
----
+Sign up or sign in with email/password or Google. First time in, onboarding asks about dietary preferences and anything to avoid, and that carries through to the rest of the app.
 
-## Table of contents
+From there:
+- My Kitchen is the pantry - add, edit, delete ingredients, with search and autocomplete once there's a few in there
+- Shopping list works the same way, with items markable as bought
+- Recipes come from the Spoonacular API, with full detail pages and ingredient scaling by servings
+- What Can I Make? checks the pantry against recipes and shows what's missing
+- Recipes can be saved to Favourites
+- Cooking Mode walks through a recipe step by step, with timers running alongside - recipe timers and a standalone kitchen timer both land in one list
+- Finished cooks get logged to Cooking History with a rating and notes
+- Settings holds display name, dietary preferences and avoided ingredients, saved server-side so it survives a reinstall
 
-- [Features](#features)
-- [Tech stack](#tech-stack)
-- [Project structure](#project-structure)
-- [Getting started](#getting-started)
-- [Running tests](#running-tests)
-- [What's planned next](#whats-planned-next)
-- [Architecture](#architecture)
-- [Team](#team)
+Home and Profile are still placeholder screens for now - what they'd summarise already works from its own tab. A few other things are planned but not built yet, listed further down.
 
----
-
-## Features
-
-### Implemented
-
-**Account & onboarding**
-- Register and sign in with email/password, or Google sign-in
-- Password reset
-- Session restored automatically on app restart
-- Onboarding captures dietary preference(s) and avoided ingredients
-
-**Settings & profile**
-- View and edit display name, dietary preferences and avoided ingredients
-- Changes are saved to the backend and to the phone, so they load correctly if the app is closed and reopened, or reinstalled
-
-**My Kitchen (pantry)**
-- Add, edit and delete pantry ingredients (name, quantity, unit, category, optional expiry date)
-- Search and autocomplete from ingredients already in the pantry
-- Ingredient detail screen
-
-**Shopping list**
-- Add, edit, delete and mark items purchased
-
-**Recipes**
-- Search recipes (via the Spoonacular API), with recipe details and ingredient scaling
-- Save recipes as favourites
-- "What Can I Make?" — matches recipes against what's in My Kitchen
-
-**Cooking**
-- Guided, step-by-step Cooking Mode
-- Recipe timers and a standalone Kitchen Timer, both shown in one Active Timers list
-- Cooking History, with the completed recipe, rating and notes saved at the end of a cook
-
-**Backend**
-- A REST API (Node.js/Express) backing all of the above, with MongoDB for storage
-- Every protected route verifies the signed-in user's Firebase ID token before running
-- Deployed and publicly reachable — the app talks to it with no local setup required
-
-### Not yet implemented
-
-These are intentionally left for later, per the project plan:
-- The Home and Profile tabs are still placeholder screens (the features they'd summarise, like the pantry and recipes, already work from their own tabs)
-- Offline mode (RoomDB) and background sync
-- Biometric (fingerprint) unlock
-- Push notifications (Firebase Cloud Messaging) for timers, expiry and shopping
-- Multiple languages (English only for now)
-- Final production imagery/icons
-
----
-
-## Tech stack
-
-| Layer | Technology |
-|---|---|
-| Android app | Kotlin, Jetpack Compose |
-| Architecture | MVVM + Repository pattern |
-| Networking | Retrofit + OkHttp |
-| Authentication | Firebase Authentication (email/password + Google) |
-| Backend | Node.js + Express |
-| Database | MongoDB (Mongoose) |
-| Backend auth | Firebase Admin SDK (verifies ID tokens) |
-| Recipe data | Spoonacular API |
-| Hosting | Render |
-| Testing | JUnit (Android), Jest + Supertest (backend) |
-| CI | GitHub Actions |
-
----
-
-## Project structure
+## How it fits together
 
 ```
-PROG7314_KitchenQuest/
-├── KitchenQuest/          Android app (Kotlin, Jetpack Compose)
-│   └── app/src/main/java/com/example/kitchenquest/
-│       ├── data/          Repositories, API interfaces and DTOs, one folder per feature
-│       ├── feature/       Screens and ViewModels, one folder per feature
-│       ├── navigation/    App-wide navigation graph
-│       └── ui/            Shared theme and reusable components
-├── backend/               REST API (Node.js + Express + MongoDB)
-│   └── src/
-│       ├── routes/        Route definitions
-│       ├── controllers/   Request handlers
-│       ├── models/        MongoDB/Mongoose schemas
-│       ├── middleware/    Auth, validation, error handling
-│       └── config/        Environment, database and Firebase setup
-└── .github/workflows/     CI: builds the app and runs its unit tests on every push
+Android app (Kotlin, Jetpack Compose) -> Retrofit -> REST API (Node/Express) -> MongoDB
 ```
 
----
+Screens follow MVVM with a repository sitting between the ViewModel and the network layer. On the backend, every route except `/health` checks the caller's Firebase ID token before doing anything, and looks up data by the UID inside that token rather than trusting anything the client sends - so nobody can read or change someone else's profile just by changing an id in a request.
 
-## Getting started
+## Stack
 
-### Prerequisites
-- **Android Studio** (recent version) with an Android SDK installed
-- A phone or emulator running **Android 8.0 (API 26)** or newer
-- For backend development only: **Node.js 22+**
+**Android:** Kotlin, Jetpack Compose, MVVM + Repository, Retrofit + OkHttp, Firebase Auth
+**Backend:** Node.js, Express, MongoDB via Mongoose, Firebase Admin SDK for token checks, Spoonacular for recipe data
+**Hosting:** Render (API), MongoDB Atlas (database)
+**Testing:** JUnit on Android, Jest + Supertest on the backend - both run through GitHub Actions on every push
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/ST10321249/PROG7314_KitchenQuest.git
-cd PROG7314_KitchenQuest
-```
+## Running it
 
-### 2. Run the Android app
-The app is already configured to use the **hosted backend** by default, so no local setup is needed for this step.
+Needs Android Studio and a phone or emulator on Android 8.0 (API 26) or newer. Node.js 22+ only matters if the backend is being touched.
 
-1. Open the `KitchenQuest` folder in Android Studio.
-2. Let Gradle sync.
-3. Run the app on an emulator or a phone connected over USB.
+Clone it, open the `KitchenQuest` folder in Android Studio, let Gradle sync, hit run. The app points at the hosted API by default, so that's genuinely everything needed to get it going. The first request after the server's sat idle a while can take close to a minute - that's Render's free tier waking up, not a bug.
 
-The first API request after a period of inactivity can take up to about a minute, since the free hosting tier sleeps when idle — this is expected, not a bug.
-
-### 3. (Optional) Run the backend locally
-Only needed if you're changing backend code, or want the app to talk to a database on your own machine instead of the hosted one.
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-```
-
-Fill in `.env` with your own values:
-
-| Variable | Description |
-|---|---|
-| `MONGODB_URI` | A MongoDB connection string (e.g. from MongoDB Atlas), including a database name |
-| `FIREBASE_SERVICE_ACCOUNT_PATH` | Path to a Firebase service account key JSON file (from Firebase Console → Project Settings → Service Accounts) |
-| `SPOONACULAR_API_KEY` | A free API key from [spoonacular.com/food-api](https://spoonacular.com/food-api) |
-
-None of these values are committed to the repo — `.env` and the service account key are both gitignored.
-
-```bash
-npm start
-```
-
-You should see `MongoDB connected` and `KitchenQuest API listening on port 5000`.
-
-To point the Android app at this local server instead of the hosted one, add this line to `KitchenQuest/local.properties` (also gitignored):
-```
-api.baseUrl=http://localhost:5000
-```
-On a physical phone connected by USB, also run `adb reverse tcp:5000 tcp:5000` so the phone can reach your PC.
-
-See [`backend/README.md`](backend/README.md) for the full API reference and deployment details.
-
----
-
-## Running tests
-
-**Android:**
-```bash
-cd KitchenQuest
-./gradlew testDebugUnitTest
-```
-
-**Backend:**
-```bash
-cd backend
-npm test
-```
-
-Both run automatically on GitHub Actions on every push.
-
----
-
-## What's planned next
-
-- RoomDB for offline pantry, shopping list and favourites, with sync when connectivity returns
-- Biometric unlock after first sign-in
-- Push notifications for timers, expiring ingredients and shopping reminders
-- Afrikaans language support
-
----
-
-## Architecture
+To run the backend locally instead (for backend changes, or a personal database):
 
 ```
-Android (Kotlin, Jetpack Compose)
-        │  MVVM + Repository
-        ▼
-   Retrofit + OkHttp  ──(Firebase ID token)──┐
-        │                                     │
-        ▼                                     ▼
-  REST API (Node.js + Express)  ───────►  Firebase (Auth)
-        │
-        ▼
-  MongoDB (via Mongoose)
+cd backend -> npm install -> cp .env.example .env
 ```
 
-Every protected API request carries the signed-in user's Firebase ID token. The backend verifies that token with the Firebase Admin SDK before touching the database, so a user's data can only ever be read or changed by that same user.
+then fill in:
+- `MONGODB_URI` - a MongoDB connection string, database name included
+- `FIREBASE_SERVICE_ACCOUNT_PATH` - path to a Firebase service account key (Firebase Console -> Project Settings -> Service Accounts)
+- `SPOONACULAR_API_KEY` - a free key from spoonacular.com/food-api
 
----
+None of that goes into the repo - `.env` and the service account key are both gitignored. Then `npm start`, and `MongoDB connected` followed by the server listening on port 5000 should show up.
+
+To point the app at that instead of the hosted one, add `api.baseUrl=http://localhost:5000` to `KitchenQuest/local.properties` (also gitignored). On a real phone over USB, also run `adb reverse tcp:5000 tcp:5000` so it can actually reach the PC.
+
+Full API reference lives in `backend/README.md`.
+
+## Tests
+
+```
+cd KitchenQuest && ./gradlew testDebugUnitTest
+cd backend && npm test
+```
+
+Both run in CI on every push.
+
+## Still to come
+
+- Offline support via RoomDB, syncing once back online
+- Biometric unlock
+- Push notifications for timers, expiry and shopping reminders
+- Afrikaans
 
 ## Team
 
 Group 13:
-- Raheel Singh — ST10321249
-- Akeev Sivai — ST10312856
-- Avikar Maharaj — ST10325729
-- Mohamed Shaheer Joosab — ST10108240
+- Raheel Singh - ST10321249
+- Akeev Sivai - ST10312856
+- Avikar Maharaj - ST10325729
+- Mohamed Shaheer Joosab - ST10108240
