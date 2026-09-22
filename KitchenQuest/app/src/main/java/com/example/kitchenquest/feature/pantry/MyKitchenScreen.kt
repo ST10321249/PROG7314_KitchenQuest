@@ -3,7 +3,6 @@ package com.example.kitchenquest.feature.pantry
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -12,8 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.pantry.PantryItemDto
+import com.example.kitchenquest.ui.components.KitchenQuestCard
+import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
+import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
+import com.example.kitchenquest.ui.components.KitchenQuestErrorState
+import com.example.kitchenquest.ui.components.KitchenQuestSearchField
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 import com.example.kitchenquest.ui.theme.KitchenRed
 
@@ -27,9 +30,13 @@ fun MyKitchenScreen(
 ) {
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
 
-    fun matches(item: PantryItemDto) =
-        searchQuery.isBlank() || item.ingredientName.contains(searchQuery, ignoreCase = true)
+    fun matches(item: PantryItemDto): Boolean {
+        val matchesQuery = searchQuery.isBlank() || item.ingredientName.contains(searchQuery, ignoreCase = true)
+        val matchesCategory = selectedCategory == null || item.category == selectedCategory
+        return matchesQuery && matchesCategory
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -38,13 +45,12 @@ fun MyKitchenScreen(
             }
 
             state.errorMessage != null && !state.hasLoaded -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(KitchenQuestDimens.ScreenPadding),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(KitchenQuestDimens.ScreenPadding)
                 ) {
-                    Text(text = state.errorMessage)
-                    Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
-                    Button(onClick = onRetry) { Text("Retry") }
+                    KitchenQuestErrorState(message = state.errorMessage, onRetry = onRetry)
                 }
             }
 
@@ -70,61 +76,90 @@ fun MyKitchenScreen(
                         }
                     }
 
-                    if (searchActive) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            label = { Text("Search ingredients") },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = KitchenQuestDimens.ScreenPadding)
-                        )
-                        Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = KitchenQuestDimens.ScreenPadding)
+                    ) {
+                        if (searchActive) {
+                            KitchenQuestSearchField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = "Search ingredients"
+                            )
+                            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.TinySpacing)) {
+                            KitchenQuestChoiceChip(
+                                text = "All",
+                                selected = selectedCategory == null,
+                                onClick = { selectedCategory = null }
+                            )
+                            IngredientOptions.ingredientTypes.forEach { category ->
+                                KitchenQuestChoiceChip(
+                                    text = category,
+                                    selected = selectedCategory == category,
+                                    onClick = {
+                                        selectedCategory = if (selectedCategory == category) null else category
+                                    }
+                                )
+                            }
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
 
                     val filteredExpiringSoon = state.expiringSoon.filter(::matches)
                     val filteredEverythingElse = state.everythingElse.filter(::matches)
-                    val noResults = searchQuery.isNotBlank() &&
-                            filteredExpiringSoon.isEmpty() && filteredEverythingElse.isEmpty()
+                    val noResults = filteredExpiringSoon.isEmpty() && filteredEverythingElse.isEmpty()
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(KitchenQuestDimens.ScreenPadding),
-                        verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
-                    ) {
-                        if (noResults) {
-                            item {
-                                Text(
-                                    text = "No ingredients match \"$searchQuery\"",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    if (noResults) {
+                        KitchenQuestEmptyState(
+                            title = if (state.expiringSoon.isEmpty() && state.everythingElse.isEmpty()) {
+                                "Your kitchen is empty"
+                            } else {
+                                "No matches"
+                            },
+                            message = if (state.expiringSoon.isEmpty() && state.everythingElse.isEmpty()) {
+                                "Tap + to add your first ingredient."
+                            } else {
+                                "Try a different search or category."
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .align(Alignment.CenterHorizontally)
+                                .padding(KitchenQuestDimens.ScreenPadding)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(KitchenQuestDimens.ScreenPadding),
+                            verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+                        ) {
+                            if (filteredExpiringSoon.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Expiring soon",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                }
+                                items(filteredExpiringSoon, key = { it.id }) { ingredient ->
+                                    IngredientRow(ingredient, highlighted = true, onClick = { onIngredientClick(ingredient) })
+                                }
+                                item { Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing)) }
                             }
-                        }
 
-                        if (filteredExpiringSoon.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = "Expiring soon",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            }
-                            items(filteredExpiringSoon, key = { it.id }) { ingredient ->
-                                IngredientRow(ingredient, highlighted = true, onClick = { onIngredientClick(ingredient) })
-                            }
-                            item { Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing)) }
-                        }
-
-                        if (filteredEverythingElse.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = "Everything else",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            }
-                            items(filteredEverythingElse, key = { it.id }) { ingredient ->
-                                IngredientRow(ingredient, highlighted = false, onClick = { onIngredientClick(ingredient) })
+                            if (filteredEverythingElse.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Everything else",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                }
+                                items(filteredEverythingElse, key = { it.id }) { ingredient ->
+                                    IngredientRow(ingredient, highlighted = false, onClick = { onIngredientClick(ingredient) })
+                                }
                             }
                         }
                     }
@@ -158,13 +193,9 @@ private fun IngredientRow(
 ) {
     val days = daysUntilExpiry(ingredient)
 
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
-        color = if (highlighted) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
-    ) {
+    KitchenQuestCard(onClick = onClick) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(KitchenQuestDimens.MediumSpacing),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = ingredient.ingredientName, style = MaterialTheme.typography.bodyLarge)

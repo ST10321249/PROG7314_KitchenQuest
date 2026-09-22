@@ -1,6 +1,7 @@
 package com.example.kitchenquest.navigation
 
 import android.app.Activity
+import android.widget.Toast
 import androidx.compose.foundation.layout.padding
 import com.example.kitchenquest.feature.recipes.RecipeDetailViewModel
 import com.example.kitchenquest.feature.recipes.RecipeDetailScreen
@@ -9,26 +10,21 @@ import com.example.kitchenquest.feature.recipes.WhatCanIMakeScreen
 import com.example.kitchenquest.feature.recipes.SavedRecipesViewModel
 import com.example.kitchenquest.feature.recipes.SavedRecipesScreen
 import com.example.kitchenquest.feature.cooking.CookingViewModel
+import com.example.kitchenquest.feature.cooking.CookScreen
 import com.example.kitchenquest.feature.cooking.CookingModeScreen
 import com.example.kitchenquest.feature.cooking.ActiveTimersScreen
 import com.example.kitchenquest.feature.cooking.KitchenTimerScreen
 import com.example.kitchenquest.feature.cooking.RecipeCompleteScreen
 import com.example.kitchenquest.feature.cooking.CookingHistoryScreen
 import com.example.kitchenquest.feature.cooking.CookingHistoryViewModel
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import com.example.kitchenquest.ui.theme.KitchenQuestDimens
-import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
-import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.credentials.exceptions.GetCredentialCancellationException
@@ -40,6 +36,7 @@ import com.example.kitchenquest.data.auth.GoogleSignInClient
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.syncSignedInUser
+import com.example.kitchenquest.data.user.toOnboardingSelection
 import com.example.kitchenquest.feature.auth.AuthViewModel
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
@@ -50,7 +47,6 @@ import com.example.kitchenquest.feature.onboarding.OnboardingSelection
 import com.example.kitchenquest.feature.settings.SettingsScreen
 import com.example.kitchenquest.feature.settings.SettingsViewModel
 import com.example.kitchenquest.ui.components.AppScaffold
-import com.example.kitchenquest.ui.screens.PlaceholderScreen
 import kotlinx.coroutines.launch
 import com.example.kitchenquest.feature.pantry.PantryViewModel
 import com.example.kitchenquest.feature.pantry.MyKitchenScreen
@@ -66,6 +62,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import com.example.kitchenquest.feature.recipes.RecipesScreen
 import com.example.kitchenquest.feature.recipes.RecipesViewModel
+import com.example.kitchenquest.feature.home.HomeScreen
+import com.example.kitchenquest.feature.home.HomeViewModel
+import com.example.kitchenquest.feature.notifications.NotificationsScreen
+import com.example.kitchenquest.feature.profile.ProfileScreen
+import com.example.kitchenquest.feature.profile.ProfileViewModel
 
 @Composable
 
@@ -112,45 +113,20 @@ fun AppNavHost() {
             DefaultUserRepository()
         }
 
-    val preferencesVersion by
-    onboardingPreferences
-        .userPreferencesVersion
-        .collectAsState()
-
-    // Keeps the server profile in step with the signed-in user and with the
-    // choices saved on this device (onboarding or Settings).
-    LaunchedEffect(
-        authState.user?.uid,
-        preferencesVersion
-    ) {
-
-        val user =
-            authState.user
-                ?: return@LaunchedEffect
-
-        val localChoices =
-            onboardingPreferences
-                .getUserPreferences(
-                    user.uid
-                )
-                ?: onboardingPreferences
-                    .getPendingSelection()
-
-        userRepository
-            .syncSignedInUser(
-                user,
-                localChoices
-            )
+    var showExistingPreferencesMessage by
+    remember {
+        mutableStateOf(false)
     }
 
+    // Authentication and profile synchronisation are handled together so the
+    // server can decide whether this is a new or returning KitchenQuest user
+    // before navigation continues. Existing server preferences always win.
     LaunchedEffect(
         authState.isAuthChecked,
-        authState.user
+        authState.user?.uid
     ) {
 
-        if (
-            !authState.isAuthChecked
-        ) {
+        if (!authState.isAuthChecked) {
             return@LaunchedEffect
         }
 
@@ -162,93 +138,138 @@ fun AppNavHost() {
         val currentUser =
             authState.user
 
-        if (
-            currentUser != null
-        ) {
+        if (currentUser == null) {
+            showExistingPreferencesMessage = false
 
-            val existingPreferences =
-                onboardingPreferences
-                    .getUserPreferences(
-                        currentUser.uid
-                    )
+            if (currentRoute == AppDestinations.Splash) {
+                val destination =
+                    if (
+                        onboardingPreferences
+                            .hasAuthenticatedBefore()
+                    ) {
+                        AppDestinations.Login
+                    } else {
+                        AppDestinations.Onboarding
+                    }
 
-            val pendingSelection =
-                onboardingPreferences
+                navController.navigate(destination) {
+                    popUpTo(AppDestinations.Splash) {
+                        inclusive = true
+                    }
+
+                    launchSingleTop = true
+                }
+            }
+
+            return@LaunchedEffect
+        }
+
+        val firstAuthenticationOnInstall =
+            !onboardingPreferences
+                .hasAuthenticatedBefore()
+
+        val localChoices =
+            onboardingPreferences
+                .getUserPreferences(currentUser.uid)
+                ?: onboardingPreferences
                     .getPendingSelection()
 
-            val firstAuthenticationOnInstall =
-                !onboardingPreferences
-                    .hasAuthenticatedBefore()
+        userRepository
+            .syncSignedInUser(
+                user = currentUser,
+                local = localChoices
+            )
+            .fold(
+                onSuccess = { syncResult ->
+                    val serverSelection =
+                        syncResult.profile
+                            .toOnboardingSelection()
 
-            when {
-
-                existingPreferences != null &&
-                        firstAuthenticationOnInstall -> {
-
-                    if (
-                        currentRoute !=
-                        AppDestinations.Onboarding
-                    ) {
-
-                        navController.navigate(
-                            AppDestinations.Onboarding
-                        ) {
-
-                            popUpTo(0) {
-                                inclusive = true
-                            }
-
-                            launchSingleTop = true
-                        }
-                    }
-                }
-
-                existingPreferences != null -> {
-
-                    onboardingPreferences
-                        .markAuthenticatedBefore()
-
-                    onboardingPreferences
-                        .clearPendingSelection()
-
-                    if (
-                        currentRoute !=
-                        AppDestinations.Home
-                    ) {
-
-                        navController.navigate(
-                            AppDestinations.Home
-                        ) {
-
-                            popUpTo(0) {
-                                inclusive = true
-                            }
-
-                            launchSingleTop = true
-                        }
-                    }
-                }
-
-                pendingSelection != null -> {
-
+                    // The server is the source of truth for an existing user.
+                    // For a new user, the server profile was created from the
+                    // onboarding choices supplied above.
                     onboardingPreferences
                         .saveUserPreferences(
-                            uid =
-                                currentUser.uid,
-                            selection =
-                                pendingSelection
+                            uid = currentUser.uid,
+                            selection = serverSelection
                         )
 
-                    onboardingPreferences
-                        .markAuthenticatedBefore()
+                    showExistingPreferencesMessage =
+                        !syncResult.created &&
+                                firstAuthenticationOnInstall
 
-                    onboardingPreferences
-                        .clearPendingSelection()
+                    when {
+                        // A returning account on a fresh installation should
+                        // review the preferences recovered from the server.
+                        !syncResult.created &&
+                                firstAuthenticationOnInstall -> {
+                            navController.navigate(
+                                AppDestinations.Onboarding
+                            ) {
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
 
-                    navController.navigate(
-                        AppDestinations.Home
-                    ) {
+                                launchSingleTop = true
+                            }
+                        }
 
+                        // A genuinely new account that did not pass through
+                        // onboarding first still needs to choose preferences.
+                        syncResult.created &&
+                                localChoices == null -> {
+                            navController.navigate(
+                                AppDestinations.Onboarding
+                            ) {
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+
+                                launchSingleTop = true
+                            }
+                        }
+
+                        else -> {
+                            onboardingPreferences
+                                .markAuthenticatedBefore()
+
+                            onboardingPreferences
+                                .clearPendingSelection()
+
+                            navController.navigate(
+                                AppDestinations.Home
+                            ) {
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                },
+                onFailure = { failure ->
+                    showExistingPreferencesMessage = false
+
+                    Toast
+                        .makeText(
+                            context,
+                            failure.message
+                                ?: "Unable to sync your profile. Please try again.",
+                            Toast.LENGTH_LONG
+                        )
+                        .show()
+
+                    // Keep the app usable if the profile request temporarily
+                    // fails. No local value is pushed to the server here.
+                    val fallbackDestination =
+                        if (localChoices != null) {
+                            AppDestinations.Home
+                        } else {
+                            AppDestinations.Onboarding
+                        }
+
+                    navController.navigate(fallbackDestination) {
                         popUpTo(0) {
                             inclusive = true
                         }
@@ -256,60 +277,7 @@ fun AppNavHost() {
                         launchSingleTop = true
                     }
                 }
-
-                else -> {
-
-                    if (
-                        currentRoute !=
-                        AppDestinations.Onboarding
-                    ) {
-
-                        navController.navigate(
-                            AppDestinations.Onboarding
-                        ) {
-
-                            popUpTo(0) {
-                                inclusive = true
-                            }
-
-                            launchSingleTop = true
-                        }
-                    }
-                }
-            }
-        }
-
-        else if (
-            currentRoute ==
-            AppDestinations.Splash
-        ) {
-
-            val destination =
-                if (
-                    onboardingPreferences
-                        .hasAuthenticatedBefore()
-                ) {
-
-                    AppDestinations.Login
-
-                } else {
-
-                    AppDestinations.Onboarding
-                }
-
-            navController.navigate(
-                destination
-            ) {
-
-                popUpTo(
-                    AppDestinations.Splash
-                ) {
-                    inclusive = true
-                }
-
-                launchSingleTop = true
-            }
-        }
+            )
     }
 
     AppScaffold(
@@ -370,13 +338,10 @@ fun AppNavHost() {
                 val existingMessage =
                     if (
                         currentUser != null &&
-                        existingUserPreferences != null
+                        showExistingPreferencesMessage
                     ) {
-
                         "We found dietary preferences already saved for this account. Review them below and continue to keep or update them."
-
                     } else {
-
                         null
                     }
 
@@ -408,30 +373,57 @@ fun AppNavHost() {
                         }
 
                         else {
+                            coroutineScope.launch {
+                                userRepository
+                                    .updateProfile(
+                                        dietaryPreferences =
+                                            selection
+                                                .dietaryPreferences
+                                                .toList(),
+                                        avoidedIngredients =
+                                            selection
+                                                .avoidedIngredients
+                                                .toList()
+                                    )
+                                    .fold(
+                                        onSuccess = { profile ->
+                                            onboardingPreferences
+                                                .saveUserPreferences(
+                                                    uid = currentUser.uid,
+                                                    selection =
+                                                        profile
+                                                            .toOnboardingSelection()
+                                                )
 
-                            onboardingPreferences
-                                .saveUserPreferences(
-                                    uid =
-                                        currentUser.uid,
-                                    selection =
-                                        selection
-                                )
+                                            onboardingPreferences
+                                                .markAuthenticatedBefore()
 
-                            onboardingPreferences
-                                .markAuthenticatedBefore()
+                                            onboardingPreferences
+                                                .clearPendingSelection()
 
-                            onboardingPreferences
-                                .clearPendingSelection()
+                                            showExistingPreferencesMessage = false
 
-                            navController.navigate(
-                                AppDestinations.Home
-                            ) {
+                                            navController.navigate(
+                                                AppDestinations.Home
+                                            ) {
+                                                popUpTo(0) {
+                                                    inclusive = true
+                                                }
 
-                                popUpTo(0) {
-                                    inclusive = true
-                                }
-
-                                launchSingleTop = true
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        onFailure = { failure ->
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    failure.message
+                                                        ?: "Unable to save your preferences. Please try again.",
+                                                    Toast.LENGTH_LONG
+                                                )
+                                                .show()
+                                        }
+                                    )
                             }
                         }
                     },
@@ -476,6 +468,8 @@ fun AppNavHost() {
 
                             onboardingPreferences
                                 .clearPendingSelection()
+
+                            showExistingPreferencesMessage = false
 
                             navController.navigate(
                                 AppDestinations.Home
@@ -747,8 +741,36 @@ fun AppNavHost() {
                 AppDestinations.Home
             ) {
 
-                PlaceholderScreen(
-                    title = "Home"
+                val homeViewModel: HomeViewModel = viewModel()
+                val homeState by homeViewModel.uiState.collectAsState()
+
+                LaunchedEffect(Unit) {
+                    homeViewModel.load()
+                }
+
+                HomeScreen(
+                    state = homeState,
+                    onNotifications = {
+                        navController.navigate(AppDestinations.Notifications)
+                    },
+                    onKitchenTimer = {
+                        navController.navigate(AppDestinations.KitchenTimer)
+                    },
+                    onWhatCanIMake = {
+                        navController.navigate(AppDestinations.WhatCanIMake)
+                    },
+                    onShoppingList = {
+                        navController.navigate(AppDestinations.ShoppingList)
+                    },
+                    onRecipes = {
+                        navController.navigate(AppDestinations.Recipes)
+                    },
+                    onRecipeClick = { recipeId ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recipeId))
+                    },
+                    onRetry = {
+                        homeViewModel.load()
+                    }
                 )
             }
 
@@ -762,6 +784,9 @@ fun AppNavHost() {
                     state = recipesState,
                     onQueryChange = recipesViewModel::onQueryChange,
                     onSearch = recipesViewModel::search,
+                    onDietSelected = recipesViewModel::onDietSelected,
+                    onCuisineSelected = recipesViewModel::onCuisineSelected,
+                    onMaxReadyTimeSelected = recipesViewModel::onMaxReadyTimeSelected,
                     onWhatCanIMake = { navController.navigate(AppDestinations.WhatCanIMake) },
                     onSavedRecipes = { navController.navigate(AppDestinations.SavedRecipes) },
                     onRecipeClick = { recipe ->
@@ -799,6 +824,7 @@ fun AppNavHost() {
                 } else {
                     IngredientDetailScreen(
                         item = item,
+                        onBack = { navController.popBackStack() },
                         onEdit = { navController.navigate(AppDestinations.ingredientEditorRoute(item.id)) },
                         onMarkFinished = {
                             pantryViewModel.markFinished(item.id)
@@ -828,6 +854,7 @@ fun AppNavHost() {
                     }
                 } else {
                     IngredientEditorScreen(
+                        onBack = { navController.popBackStack() },
                         initialName = existing?.ingredientName ?: "",
                         initialQuantity = existing?.quantity?.toString() ?: "",
                         initialUnit = existing?.unit ?: "",
@@ -858,57 +885,45 @@ fun AppNavHost() {
             ) {
                 val cookHubState by cookingViewModel.uiState.collectAsState()
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(KitchenQuestDimens.ScreenPadding),
-                    verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)
-                ) {
-                    Text(text = "Cook", style = MaterialTheme.typography.headlineSmall)
-
-                    cookHubState.recipe?.let { recipe ->
-                        KitchenQuestPrimaryButton(
-                            text = "Continue cooking ${recipe.title}",
-                            onClick = { navController.navigate(AppDestinations.CookingMode) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                CookScreen(
+                    recipeTitle = cookHubState.recipe?.title,
+                    activeTimerCount = cookHubState.timers.size,
+                    onContinueCooking = {
+                        navController.navigate(AppDestinations.CookingMode)
+                    },
+                    onKitchenTimer = {
+                        navController.navigate(AppDestinations.KitchenTimer)
+                    },
+                    onActiveTimers = {
+                        navController.navigate(AppDestinations.ActiveTimers)
+                    },
+                    onCookingHistory = {
+                        navController.navigate(AppDestinations.CookingHistory)
                     }
-
-                    KitchenQuestSecondaryButton(
-                        text = "Kitchen timer",
-                        onClick = { navController.navigate(AppDestinations.KitchenTimer) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    if (cookHubState.timers.isNotEmpty()) {
-                        KitchenQuestSecondaryButton(
-                            text = "Active timers (${cookHubState.timers.size})",
-                            onClick = { navController.navigate(AppDestinations.ActiveTimers) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    KitchenQuestSecondaryButton(
-                        text = "Cooking history",
-                        onClick = { navController.navigate(AppDestinations.CookingHistory) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                )
             }
 
             composable(
                 AppDestinations.Profile
             ) {
 
-                PlaceholderScreen(
-                    title = "Profile",
-                    actionText =
-                        "Settings",
-                    onAction = {
+                val profileViewModel: ProfileViewModel = viewModel()
+                val profileState by profileViewModel.uiState.collectAsState()
 
-                        navController.navigate(
-                            AppDestinations.Settings
-                        )
+                LaunchedEffect(Unit) {
+                    profileViewModel.load()
+                }
+
+                ProfileScreen(
+                    state = profileState,
+                    onSettings = {
+                        navController.navigate(AppDestinations.Settings)
+                    },
+                    onCookingHistory = {
+                        navController.navigate(AppDestinations.CookingHistory)
+                    },
+                    onRetry = {
+                        profileViewModel.load()
                     }
                 )
             }
@@ -923,9 +938,11 @@ fun AppNavHost() {
 
                 WhatCanIMakeScreen(
                     state = whatCanIMakeState,
+                    onBack = { navController.popBackStack() },
                     onRecipeClick = { recommendation ->
                         navController.navigate(AppDestinations.recipeDetailsRoute(recommendation.recipeSourceId))
                     },
+                    onAddMissingToShoppingList = whatCanIMakeViewModel::addMissingToShoppingList,
                     onRetry = whatCanIMakeViewModel::load
                 )
             }
@@ -942,6 +959,7 @@ fun AppNavHost() {
 
                 RecipeDetailScreen(
                     state = detailState,
+                    onBack = { navController.popBackStack() },
                     onIncreaseServings = detailViewModel::increaseServings,
                     onDecreaseServings = detailViewModel::decreaseServings,
                     onAddMissingToList = detailViewModel::addMissingIngredientsToList,
@@ -964,6 +982,8 @@ fun AppNavHost() {
 
                 SavedRecipesScreen(
                     state = savedRecipesState,
+                    onBack = { navController.popBackStack() },
+                    onQueryChange = savedRecipesViewModel::onQueryChange,
                     onRecipeClick = { favourite ->
                         navController.navigate(AppDestinations.recipeDetailsRoute(favourite.recipeSourceId))
                     },
@@ -981,6 +1001,7 @@ fun AppNavHost() {
 
                 ShoppingListScreen(
                     state = shoppingState,
+                    onBack = { navController.popBackStack() },
                     onAdd = shoppingViewModel::addItem,
                     onTogglePurchased = shoppingViewModel::togglePurchased,
                     onRemove = shoppingViewModel::removeItem
@@ -1010,6 +1031,7 @@ fun AppNavHost() {
 
                 ActiveTimersScreen(
                     state = cookingState,
+                    onBack = { navController.popBackStack() },
                     onAddMinute = cookingViewModel::addMinuteToTimer,
                     onTogglePause = cookingViewModel::togglePauseTimer,
                     onCancel = cookingViewModel::cancelTimer,
@@ -1022,6 +1044,7 @@ fun AppNavHost() {
                 AppDestinations.KitchenTimer
             ) {
                 KitchenTimerScreen(
+                    onBack = { navController.popBackStack() },
                     onStartTimer = { minutes, label ->
                         cookingViewModel.startStandaloneTimer(minutes, label)
                         navController.navigate(AppDestinations.ActiveTimers)
@@ -1037,6 +1060,7 @@ fun AppNavHost() {
 
                 RecipeCompleteScreen(
                     recipeTitle = recipeTitle,
+                    onBack = { navController.popBackStack() },
                     onSave = { rating, difficulty, note ->
                         cookingViewModel.completeCooking(rating, difficulty, note) {
                             navController.navigate(AppDestinations.Home) {
@@ -1058,7 +1082,20 @@ fun AppNavHost() {
 
                 CookingHistoryScreen(
                     state = cookingHistoryState,
+                    onBack = { navController.popBackStack() },
+                    onRecipeClick = { recipeSourceId ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recipeSourceId))
+                    },
                     onRetry = cookingHistoryViewModel::load
+                )
+            }
+
+            composable(
+                AppDestinations.Notifications
+            ) {
+
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
 

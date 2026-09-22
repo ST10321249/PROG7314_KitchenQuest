@@ -31,6 +31,10 @@ class SavedRecipesViewModel(
         }
     }
 
+    fun onQueryChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
     fun removeFavourite(recipeSourceId: String) {
         viewModelScope.launch {
             favouriteRepository.removeFavourite(recipeSourceId).onSuccess {

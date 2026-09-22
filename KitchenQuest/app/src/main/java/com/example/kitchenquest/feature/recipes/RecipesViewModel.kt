@@ -22,19 +22,62 @@ class RecipesViewModel(
         _uiState.update { it.copy(searchQuery = query) }
     }
 
+    // Tapping a selected chip again clears that filter.
+    fun onDietSelected(diet: String) {
+        _uiState.update {
+            it.copy(selectedDiet = if (it.selectedDiet == diet) null else diet)
+        }
+        search()
+    }
+
+    fun onCuisineSelected(cuisine: String) {
+        _uiState.update {
+            it.copy(selectedCuisine = if (it.selectedCuisine == cuisine) null else cuisine)
+        }
+        search()
+    }
+
+    fun onMaxReadyTimeSelected(minutes: Int) {
+        _uiState.update {
+            it.copy(selectedMaxReadyTime = if (it.selectedMaxReadyTime == minutes) null else minutes)
+        }
+        search()
+    }
+
     fun search() {
-        val query = _uiState.value.searchQuery
-        if (query.isBlank()) return
+        val state = _uiState.value
+
+        // A filter alone (no text) is a valid search - e.g. "show me vegetarian recipes".
+        val hasAnyCriteria = state.searchQuery.isNotBlank() ||
+                state.selectedDiet != null ||
+                state.selectedCuisine != null ||
+                state.selectedMaxReadyTime != null
+
+        if (!hasAnyCriteria) {
+            // The last active filter/query was just cleared - drop stale results
+            // rather than leaving them on screen with nothing selected.
+            _uiState.update {
+                it.copy(isLoading = false, hasSearched = false, results = emptyList(), errorMessage = null)
+            }
+            return
+        }
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            recipeRepository.searchRecipes(query = query).fold(
+            recipeRepository.searchRecipes(
+                query = state.searchQuery.ifBlank { null },
+                diet = state.selectedDiet?.let(RecipeFilterOptions::dietParam),
+                cuisine = state.selectedCuisine?.let(RecipeFilterOptions::cuisineParam),
+                maxReadyTime = state.selectedMaxReadyTime
+            ).fold(
                 onSuccess = { results ->
-                    _uiState.update { it.copy(isLoading = false, results = results) }
+                    _uiState.update { it.copy(isLoading = false, hasSearched = true, results = results) }
                 },
                 onFailure = { failure ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = failure.message) }
+                    _uiState.update {
+                        it.copy(isLoading = false, hasSearched = true, errorMessage = failure.message)
+                    }
                 }
             )
         }

@@ -16,6 +16,9 @@ object AppDestinations {
     const val Cook = "cook"
     const val Profile = "profile"
 
+    // General application destinations
+    const val Notifications = "notifications"
+
     // Recipe features
     const val WhatCanIMake = "what_can_i_make"
     const val RecipeDetails = "recipe_details/{recipeId}"
@@ -27,8 +30,13 @@ object AppDestinations {
     const val IngredientEditor = "ingredient_editor?itemId={itemId}"
 
     fun ingredientDetailsRoute(itemId: String) = "ingredient_details/$itemId"
+
     fun ingredientEditorRoute(itemId: String? = null) =
-        if (itemId != null) "ingredient_editor?itemId=$itemId" else "ingredient_editor"
+        if (itemId != null) {
+            "ingredient_editor?itemId=$itemId"
+        } else {
+            "ingredient_editor"
+        }
 
     const val ShoppingList = "shopping_list"
 

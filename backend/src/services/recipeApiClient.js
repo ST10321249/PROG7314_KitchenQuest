@@ -1,11 +1,13 @@
+const env = require('../config/env');
+
 const SPOONACULAR_BASE_URL = 'https://api.spoonacular.com';
 
 function getApiKey() {
-  const apiKey = process.env.SPOONACULAR_API_KEY;
-  if (!apiKey) {
+  if (!env.spoonacularApiKey) {
     throw new Error('SPOONACULAR_API_KEY is not set');
   }
-  return apiKey;
+
+  return env.spoonacularApiKey;
 }
 
 // Searches recipes by free-text query, with optional filters.

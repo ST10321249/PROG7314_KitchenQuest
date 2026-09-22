@@ -5,9 +5,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import com.example.kitchenquest.ui.components.KitchenQuestErrorState
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
@@ -22,6 +25,13 @@ fun CookingModeScreen(
     onViewAllTimers: () -> Unit,
     onFinish: () -> Unit
 ) {
+    // Keeps the screen from sleeping mid-recipe. Cleared automatically on leaving this screen.
+    val view = LocalView.current
+    DisposableEffect(Unit) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             state.isLoading && state.recipe == null -> {
@@ -29,10 +39,16 @@ fun CookingModeScreen(
             }
 
             state.errorMessage != null && state.recipe == null -> {
-                Text(
-                    text = state.errorMessage,
-                    modifier = Modifier.align(Alignment.Center).padding(KitchenQuestDimens.ScreenPadding)
-                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(KitchenQuestDimens.ScreenPadding)
+                ) {
+                    KitchenQuestErrorState(
+                        message = state.errorMessage,
+                        onRetry = onExit
+                    )
+                }
             }
 
             state.recipe != null && state.recipe.steps.isNotEmpty() -> {
@@ -63,7 +79,8 @@ fun CookingModeScreen(
 
                     Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
 
-                    Text(text = step.instruction, style = MaterialTheme.typography.headlineSmall)
+                    // Part 1 spec requires cooking-step text at least 26sp; headlineMedium is exactly that.
+                    Text(text = step.instruction, style = MaterialTheme.typography.headlineMedium)
 
                     Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 

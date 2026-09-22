@@ -10,52 +10,66 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.kitchenquest.data.history.CookingHistoryDto
+import com.example.kitchenquest.ui.components.KitchenQuestCard
+import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
+import com.example.kitchenquest.ui.components.KitchenQuestErrorState
+import com.example.kitchenquest.ui.components.KitchenQuestSectionTitle
+import com.example.kitchenquest.ui.components.KitchenQuestTopBar
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 @Composable
 fun CookingHistoryScreen(
     state: CookingHistoryUiState,
+    onBack: () -> Unit,
+    onRecipeClick: (String) -> Unit,
     onRetry: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        when {
-            state.isLoading && !state.hasLoaded -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
+    Column(modifier = Modifier.fillMaxSize()) {
 
-            state.errorMessage != null && !state.hasLoaded -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(KitchenQuestDimens.ScreenPadding),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = state.errorMessage)
-                    Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
-                    Button(onClick = onRetry) { Text("Retry") }
+        KitchenQuestTopBar(
+            title = "Cooking History",
+            onBack = onBack,
+            modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
+        )
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            when {
+                state.isLoading && !state.hasLoaded -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-            }
 
-            state.entries.isEmpty() -> {
-                Text(
-                    text = "You haven't finished any recipes yet.",
-                    modifier = Modifier.align(Alignment.Center).padding(KitchenQuestDimens.ScreenPadding),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                state.errorMessage != null && !state.hasLoaded -> {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(KitchenQuestDimens.ScreenPadding)
+                    ) {
+                        KitchenQuestErrorState(message = state.errorMessage, onRetry = onRetry)
+                    }
+                }
 
-            else -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Text(
-                        text = "Cooking history",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
+                state.entries.isEmpty() -> {
+                    KitchenQuestEmptyState(
+                        title = "No cooks yet",
+                        message = "Finish a recipe in Cooking Mode and it'll show up here.",
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(KitchenQuestDimens.ScreenPadding)
                     )
+                }
+
+                else -> {
+                    val groups = groupHistoryByMonth(state.entries)
 
                     LazyColumn(
-                        contentPadding = PaddingValues(horizontal = KitchenQuestDimens.ScreenPadding),
+                        contentPadding = PaddingValues(KitchenQuestDimens.ScreenPadding),
                         verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
                     ) {
-                        items(state.entries, key = { it.id }) { entry ->
-                            HistoryRow(entry)
+                        groups.forEach { (monthLabel, entries) ->
+                            item { KitchenQuestSectionTitle(title = monthLabel.uppercase()) }
+                            items(entries, key = { it.id }) { entry ->
+                                HistoryRow(entry, onClick = { onRecipeClick(entry.recipeSourceId) })
+                            }
                         }
                     }
                 }
@@ -65,22 +79,27 @@ fun CookingHistoryScreen(
 }
 
 @Composable
-private fun HistoryRow(entry: CookingHistoryDto) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column {
-            Text(text = entry.recipeTitle, style = MaterialTheme.typography.bodyLarge)
-            entry.difficultyFeedback?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun HistoryRow(
+    entry: CookingHistoryDto,
+    onClick: () -> Unit
+) {
+    KitchenQuestCard(onClick = onClick) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(text = entry.recipeTitle, style = MaterialTheme.typography.bodyLarge)
+                entry.difficultyFeedback?.let {
+                    Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-        }
 
-        if (entry.rating != null) {
-            Row {
-                repeat(entry.rating) {
-                    Icon(Icons.Filled.Star, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            if (entry.rating != null) {
+                Row {
+                    repeat(entry.rating) {
+                        Icon(Icons.Filled.Star, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }
