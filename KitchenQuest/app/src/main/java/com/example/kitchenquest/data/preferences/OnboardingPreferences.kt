@@ -2,21 +2,10 @@ package com.example.kitchenquest.data.preferences
 
 import android.content.Context
 import com.example.kitchenquest.feature.onboarding.OnboardingSelection
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 class OnboardingPreferences(
     context: Context
 ) {
-
-    private val _userPreferencesVersion =
-        MutableStateFlow(0)
-
-    // Changes every time saveUserPreferences runs, so callers can react to it.
-    val userPreferencesVersion: StateFlow<Int> =
-        _userPreferencesVersion.asStateFlow()
 
     private val flowPreferences =
         context.getSharedPreferences(
@@ -49,8 +38,7 @@ class OnboardingPreferences(
     }
 
     fun savePendingSelection(
-        selection:
-        OnboardingSelection
+        selection: OnboardingSelection
     ) {
         flowPreferences
             .edit()
@@ -60,20 +48,16 @@ class OnboardingPreferences(
             )
             .putStringSet(
                 KEY_PENDING_DIETARY,
-                selection
-                    .dietaryPreferences
+                selection.dietaryPreferences.toSet()
             )
             .putStringSet(
                 KEY_PENDING_AVOIDED,
-                selection
-                    .avoidedIngredients
+                selection.avoidedIngredients.toSet()
             )
             .apply()
     }
 
-    fun getPendingSelection():
-            OnboardingSelection? {
-
+    fun getPendingSelection(): OnboardingSelection? {
         val hasPending =
             flowPreferences
                 .getBoolean(
@@ -89,14 +73,10 @@ class OnboardingPreferences(
             flowPreferences
                 .getStringSet(
                     KEY_PENDING_DIETARY,
-                    setOf(
-                        "No restrictions"
-                    )
+                    setOf("No restrictions")
                 )
                 ?.toSet()
-                ?: setOf(
-                    "No restrictions"
-                )
+                ?: setOf("No restrictions")
 
         val avoided =
             flowPreferences
@@ -108,25 +88,17 @@ class OnboardingPreferences(
                 ?: emptySet()
 
         return OnboardingSelection(
-            dietaryPreferences =
-                dietary,
-            avoidedIngredients =
-                avoided
+            dietaryPreferences = dietary,
+            avoidedIngredients = avoided
         )
     }
 
     fun clearPendingSelection() {
         flowPreferences
             .edit()
-            .remove(
-                KEY_HAS_PENDING_SELECTION
-            )
-            .remove(
-                KEY_PENDING_DIETARY
-            )
-            .remove(
-                KEY_PENDING_AVOIDED
-            )
+            .remove(KEY_HAS_PENDING_SELECTION)
+            .remove(KEY_PENDING_DIETARY)
+            .remove(KEY_PENDING_AVOIDED)
             .apply()
     }
 
@@ -135,95 +107,66 @@ class OnboardingPreferences(
     ): Boolean {
         return userPreferences
             .getBoolean(
-                userKey(
-                    uid,
-                    "complete"
-                ),
+                userKey(uid, "complete"),
                 false
             )
     }
 
     fun saveUserPreferences(
         uid: String,
-        selection:
-        OnboardingSelection
+        selection: OnboardingSelection
     ) {
+        val existing = getUserPreferences(uid)
+
+        if (existing == selection) {
+            return
+        }
+
         userPreferences
             .edit()
             .putStringSet(
-                userKey(
-                    uid,
-                    "dietary"
-                ),
-                selection
-                    .dietaryPreferences
+                userKey(uid, "dietary"),
+                selection.dietaryPreferences.toSet()
             )
             .putStringSet(
-                userKey(
-                    uid,
-                    "avoided"
-                ),
-                selection
-                    .avoidedIngredients
+                userKey(uid, "avoided"),
+                selection.avoidedIngredients.toSet()
             )
             .putBoolean(
-                userKey(
-                    uid,
-                    "complete"
-                ),
+                userKey(uid, "complete"),
                 true
             )
             .apply()
-
-        _userPreferencesVersion
-            .update { it + 1 }
     }
 
     fun getUserPreferences(
         uid: String
     ): OnboardingSelection? {
-
-        if (
-            !hasCompletedPreferences(
-                uid
-            )
-        ) {
+        if (!hasCompletedPreferences(uid)) {
             return null
         }
 
         val dietary =
             userPreferences
                 .getStringSet(
-                    userKey(
-                        uid,
-                        "dietary"
-                    ),
-                    setOf(
-                        "No restrictions"
-                    )
+                    userKey(uid, "dietary"),
+                    setOf("No restrictions")
                 )
                 ?.toSet()
-                ?: setOf(
-                    "No restrictions"
-                )
+                ?: setOf("No restrictions")
 
         val avoided =
             userPreferences
                 .getStringSet(
-                    userKey(
-                        uid,
-                        "avoided"
-                    ),
+                    userKey(uid, "avoided"),
                     emptySet()
                 )
                 ?.toSet()
                 ?: emptySet()
 
         return OnboardingSelection(
-            dietaryPreferences =
-                dietary,
-            avoidedIngredients =
-                avoided
+            dietaryPreferences = dietary,
+            avoidedIngredients = avoided
         )
     }
 
@@ -235,7 +178,6 @@ class OnboardingPreferences(
     }
 
     companion object {
-
         private const val FLOW_PREFS_NAME =
             "kitchenquest_flow_preferences"
 

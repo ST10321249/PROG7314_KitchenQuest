@@ -6,6 +6,7 @@ import com.example.kitchenquest.data.network.ApiException
 import com.example.kitchenquest.feature.onboarding.OnboardingSelection
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,41 +14,40 @@ import org.junit.Test
 class UserSyncTest {
 
     private class FakeUserRepository(
-        var syncResult: Result<UserProfileDto>,
-        var updateResult: Result<UserProfileDto> = Result.success(UserProfileDto())
+        var profileResult: Result<UserProfileDto>,
+        var syncResult: Result<UserProfileDto> =
+            Result.success(UserProfileDto())
     ) : UserRepository {
 
+        var getProfileCalls = 0
+        var syncCalls = 0
         var syncedDisplayName: String? = "unset"
         var syncedDietary: List<String>? = listOf("unset")
         var syncedAvoided: List<String>? = listOf("unset")
-        var updateCalls = 0
-        var updatedDietary: List<String>? = null
-        var updatedAvoided: List<String>? = null
 
         override suspend fun syncUser(
             displayName: String?,
             dietaryPreferences: List<String>?,
             avoidedIngredients: List<String>?
         ): Result<UserProfileDto> {
+            syncCalls++
             syncedDisplayName = displayName
             syncedDietary = dietaryPreferences
             syncedAvoided = avoidedIngredients
             return syncResult
         }
 
-        override suspend fun getProfile(): Result<UserProfileDto> =
-            error("not used")
+        override suspend fun getProfile(): Result<UserProfileDto> {
+            getProfileCalls++
+            return profileResult
+        }
 
         override suspend fun updateProfile(
             displayName: String?,
             dietaryPreferences: List<String>?,
             avoidedIngredients: List<String>?
-        ): Result<UserProfileDto> {
-            updateCalls++
-            updatedDietary = dietaryPreferences
-            updatedAvoided = avoidedIngredients
-            return updateResult
-        }
+        ): Result<UserProfileDto> =
+            error("not used")
     }
 
     private val user = AuthUser(
@@ -71,96 +71,143 @@ class UserSyncTest {
         avoidedIngredients = avoided
     )
 
+    private fun notFound(): Result<UserProfileDto> =
+        Result.failure(
+            ApiException(
+                ApiErrorType.NOT_FOUND,
+                "Profile not found"
+            )
+        )
+
     @Test
-    fun aNewProfileIsCreatedFromTheLocalChoicesWithNoExtraUpdate() = runBlocking {
+    fun anExistingServerProfileWinsOverDifferentLocalChoices() = runBlocking {
+        val serverProfile =
+            profile(
+                dietary = listOf("Halal"),
+                avoided = listOf("Shellfish")
+            )
+
         val repository = FakeUserRepository(
-            Result.success(profile(listOf("Vegan"), listOf("Nuts")))
+            profileResult = Result.success(serverProfile)
         )
 
         val result = repository.syncSignedInUser(user, local)
 
         assertTrue(result.isSuccess)
+        assertFalse(result.getOrThrow().created)
+        assertEquals(serverProfile, result.getOrThrow().profile)
+        assertEquals(1, repository.getProfileCalls)
+        assertEquals(0, repository.syncCalls)
+    }
+
+    @Test
+    fun aMissingServerProfileIsCreatedFromLocalOnboardingChoices() = runBlocking {
+        val createdProfile =
+            profile(
+                dietary = listOf("Vegan"),
+                avoided = listOf("Nuts")
+            )
+
+        val repository = FakeUserRepository(
+            profileResult = notFound(),
+            syncResult = Result.success(createdProfile)
+        )
+
+        val result = repository.syncSignedInUser(user, local)
+
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrThrow().created)
+        assertEquals(createdProfile, result.getOrThrow().profile)
         assertEquals("Test User", repository.syncedDisplayName)
         assertEquals(listOf("Vegan"), repository.syncedDietary)
         assertEquals(listOf("Nuts"), repository.syncedAvoided)
-        assertEquals(0, repository.updateCalls)
+        assertEquals(1, repository.syncCalls)
     }
 
     @Test
-    fun aServerProfileThatDiffersIsUpdatedToMatchTheDevice() = runBlocking {
+    fun aMissingProfileCanBeCreatedWithoutLocalChoices() = runBlocking {
+        val createdProfile = profile(emptyList(), emptyList())
+
         val repository = FakeUserRepository(
-            Result.success(profile(emptyList(), emptyList()))
+            profileResult = notFound(),
+            syncResult = Result.success(createdProfile)
         )
 
-        repository.syncSignedInUser(user, local)
+        val result = repository.syncSignedInUser(user, null)
 
-        assertEquals(1, repository.updateCalls)
-        assertEquals(listOf("Vegan"), repository.updatedDietary)
-        assertEquals(listOf("Nuts"), repository.updatedAvoided)
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrThrow().created)
+        assertNull(repository.syncedDietary)
+        assertNull(repository.syncedAvoided)
     }
 
     @Test
-    fun theOrderOfChoicesDoesNotCauseAnUpdate() = runBlocking {
+    fun aBlankDisplayNameIsNotSentWhenCreatingTheProfile() = runBlocking {
         val repository = FakeUserRepository(
-            Result.success(profile(listOf("Halal", "Vegan"), listOf("Soy", "Nuts")))
+            profileResult = notFound(),
+            syncResult = Result.success(profile(emptyList(), emptyList()))
         )
 
         repository.syncSignedInUser(
-            user,
-            OnboardingSelection(
-                dietaryPreferences = setOf("Vegan", "Halal"),
-                avoidedIngredients = setOf("Nuts", "Soy")
-            )
+            user.copy(displayName = "  "),
+            local
         )
-
-        assertEquals(0, repository.updateCalls)
-    }
-
-    @Test
-    fun withNoLocalChoicesOnlyTheSyncHappens() = runBlocking {
-        val repository = FakeUserRepository(
-            Result.success(profile(listOf("Vegetarian"), emptyList()))
-        )
-
-        repository.syncSignedInUser(user, null)
-
-        assertNull(repository.syncedDietary)
-        assertNull(repository.syncedAvoided)
-        assertEquals(0, repository.updateCalls)
-    }
-
-    @Test
-    fun aBlankDisplayNameIsNotSent() = runBlocking {
-        val repository = FakeUserRepository(
-            Result.success(profile(emptyList(), emptyList()))
-        )
-
-        repository.syncSignedInUser(user.copy(displayName = "  "), null)
 
         assertNull(repository.syncedDisplayName)
     }
 
     @Test
-    fun aFailedSyncIsReturnedAndNothingIsUpdated() = runBlocking {
-        val failure = ApiException(ApiErrorType.NO_CONNECTION, "offline")
-        val repository = FakeUserRepository(Result.failure(failure))
+    fun aProfileLookupFailureOtherThanNotFoundIsReturned() = runBlocking {
+        val failure =
+            ApiException(
+                ApiErrorType.NO_CONNECTION,
+                "offline"
+            )
 
-        val result = repository.syncSignedInUser(user, local)
-
-        assertEquals(failure, result.exceptionOrNull())
-        assertEquals(0, repository.updateCalls)
-    }
-
-    @Test
-    fun aFailedUpdateIsReturned() = runBlocking {
-        val failure = ApiException(ApiErrorType.SERVER, "down")
         val repository = FakeUserRepository(
-            syncResult = Result.success(profile(emptyList(), emptyList())),
-            updateResult = Result.failure(failure)
+            profileResult = Result.failure(failure)
         )
 
         val result = repository.syncSignedInUser(user, local)
 
         assertEquals(failure, result.exceptionOrNull())
+        assertEquals(0, repository.syncCalls)
+    }
+
+    @Test
+    fun aFailedProfileCreationIsReturned() = runBlocking {
+        val failure =
+            ApiException(
+                ApiErrorType.SERVER,
+                "server error"
+            )
+
+        val repository = FakeUserRepository(
+            profileResult = notFound(),
+            syncResult = Result.failure(failure)
+        )
+
+        val result = repository.syncSignedInUser(user, local)
+
+        assertEquals(failure, result.exceptionOrNull())
+        assertEquals(1, repository.syncCalls)
+    }
+
+    @Test
+    fun anEmptyServerDietaryListBecomesNoRestrictionsLocally() {
+        val selection =
+            profile(
+                dietary = emptyList(),
+                avoided = listOf("Soy")
+            ).toOnboardingSelection()
+
+        assertEquals(
+            setOf("No restrictions"),
+            selection.dietaryPreferences
+        )
+        assertEquals(
+            setOf("Soy"),
+            selection.avoidedIngredients
+        )
     }
 }

@@ -2,25 +2,33 @@ package com.example.kitchenquest.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Main KitchenQuest colours
-val KitchenOrange = Color(0xFFFF7A1A)
-val KitchenOrangeDark = Color(0xFFE86400)
-val KitchenOrangeLight = Color(0xFFFFE1CC)
+// KitchenQuest brand colours used throughout the Part 2 designs.
+val KitchenOrange = Color(0xFFFF7417)
+val KitchenOrangeDark = Color(0xFFE85E00)
+val KitchenOrangeLight = Color(0xFFFFE8D8)
+val KitchenOrangeSoft = Color(0xFFFFF3E9)
 
-// Light theme
-val KitchenBackground = Color(0xFFFFFBF7)
+// Main surfaces.
+val KitchenBackground = Color(0xFFFBF9F6)
 val KitchenSurface = Color(0xFFFFFFFF)
-val KitchenSurfaceMuted = Color(0xFFF8F3EE)
+val KitchenSurfaceMuted = Color(0xFFF5F2EE)
 
-val KitchenText = Color(0xFF241F1B)
-val KitchenTextSecondary = Color(0xFF756D67)
-val KitchenBorder = Color(0xFFE6DED8)
+// Text and borders.
+val KitchenText = Color(0xFF28231F)
+val KitchenTextSecondary = Color(0xFF756E68)
+val KitchenTextTertiary = Color(0xFF9B938D)
+val KitchenBorder = Color(0xFFE9E2DC)
 
-// Supporting status colours
-val KitchenGreen = Color(0xFF2F9E63)
+// Supporting status colours.
+val KitchenGreen = Color(0xFF2FA867)
+val KitchenGreenLight = Color(0xFFE6F5EC)
+val KitchenAmber = Color(0xFFE99A20)
+val KitchenAmberLight = Color(0xFFFFF2DA)
 val KitchenRed = Color(0xFFBA1A1A)
+val KitchenRedLight = Color(0xFFFFE9E7)
 
-// Dark theme
+// Dark palette retained for future use. Part 2 currently follows the supplied
+// light Figma designs by default.
 val KitchenDarkBackground = Color(0xFF19120E)
 val KitchenDarkSurface = Color(0xFF241B16)
 val KitchenDarkSurfaceMuted = Color(0xFF30251F)

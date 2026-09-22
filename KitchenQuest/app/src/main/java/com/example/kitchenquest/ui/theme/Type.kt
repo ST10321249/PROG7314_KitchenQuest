@@ -7,16 +7,34 @@ import androidx.compose.ui.unit.sp
 
 val KitchenQuestTypography = Typography(
 
-    headlineLarge = TextStyle(
-        fontSize = 32.sp,
+    displayLarge = TextStyle(
+        fontSize = 52.sp,
         fontWeight = FontWeight.Bold,
-        lineHeight = 38.sp
+        lineHeight = 58.sp
+    ),
+
+    displayMedium = TextStyle(
+        fontSize = 40.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 46.sp
+    ),
+
+    headlineLarge = TextStyle(
+        fontSize = 30.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 36.sp
     ),
 
     headlineMedium = TextStyle(
-        fontSize = 28.sp,
+        fontSize = 26.sp,
         fontWeight = FontWeight.Bold,
-        lineHeight = 34.sp
+        lineHeight = 32.sp
+    ),
+
+    headlineSmall = TextStyle(
+        fontSize = 22.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 28.sp
     ),
 
     titleLarge = TextStyle(
@@ -31,6 +49,12 @@ val KitchenQuestTypography = Typography(
         lineHeight = 24.sp
     ),
 
+    titleSmall = TextStyle(
+        fontSize = 16.sp,
+        fontWeight = FontWeight.SemiBold,
+        lineHeight = 22.sp
+    ),
+
     bodyLarge = TextStyle(
         fontSize = 16.sp,
         fontWeight = FontWeight.Normal,
@@ -43,6 +67,12 @@ val KitchenQuestTypography = Typography(
         lineHeight = 22.sp
     ),
 
+    bodySmall = TextStyle(
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Normal,
+        lineHeight = 20.sp
+    ),
+
     labelLarge = TextStyle(
         fontSize = 16.sp,
         fontWeight = FontWeight.SemiBold,
@@ -53,5 +83,11 @@ val KitchenQuestTypography = Typography(
         fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         lineHeight = 18.sp
+    ),
+
+    labelSmall = TextStyle(
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
+        lineHeight = 16.sp
     )
 )
