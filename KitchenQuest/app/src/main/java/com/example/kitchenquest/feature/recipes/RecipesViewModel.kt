@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class RecipesViewModel(
-    private val recipeRepository: RecipeRepository =
-        DefaultRecipeRepository()
+    private val recipeRepository: RecipeRepository = DefaultRecipeRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipesUiState())
@@ -22,24 +21,17 @@ class RecipesViewModel(
         _uiState.update { it.copy(searchQuery = query) }
     }
 
-    // Tapping a selected chip again clears that filter.
-    fun onDietSelected(diet: String) {
-        _uiState.update {
-            it.copy(selectedDiet = if (it.selectedDiet == diet) null else diet)
-        }
+    fun onFilterSelected(filter: String) {
+        _uiState.update { it.copy(selectedFilter = filter) }
         search()
     }
 
-    fun onCuisineSelected(cuisine: String) {
+    fun searchCategory(category: String) {
         _uiState.update {
-            it.copy(selectedCuisine = if (it.selectedCuisine == cuisine) null else cuisine)
-        }
-        search()
-    }
-
-    fun onMaxReadyTimeSelected(minutes: Int) {
-        _uiState.update {
-            it.copy(selectedMaxReadyTime = if (it.selectedMaxReadyTime == minutes) null else minutes)
+            it.copy(
+                searchQuery = category,
+                selectedFilter = "All"
+            )
         }
         search()
     }
@@ -47,43 +39,42 @@ class RecipesViewModel(
     fun search() {
         val state = _uiState.value
 
-        // A filter alone (no text) is a valid search - e.g. "show me vegetarian recipes".
-        val hasAnyCriteria = state.searchQuery.isNotBlank() ||
-                state.selectedDiet != null ||
-                state.selectedCuisine != null ||
-                state.selectedMaxReadyTime != null
-
-        if (!hasAnyCriteria) {
-            // The last active filter/query was just cleared - drop stale results
-            // rather than leaving them on screen with nothing selected.
-            _uiState.update {
-                it.copy(isLoading = false, hasSearched = false, results = emptyList(), errorMessage = null)
-            }
-            return
+        val query = when {
+            state.searchQuery.isNotBlank() -> state.searchQuery.trim()
+            state.selectedFilter == "Chicken" -> "chicken"
+            else -> null
         }
+
+        val diet = if (state.selectedFilter == "Vegetarian") "vegetarian" else null
+        val maxReadyTime = if (state.selectedFilter == "Under 30 min") 30 else null
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
             recipeRepository.searchRecipes(
-                query = state.searchQuery.ifBlank { null },
-                diet = state.selectedDiet?.let(RecipeFilterOptions::dietParam),
-                cuisine = state.selectedCuisine?.let(RecipeFilterOptions::cuisineParam),
-                maxReadyTime = state.selectedMaxReadyTime
+                query = query,
+                diet = diet,
+                maxReadyTime = maxReadyTime
             ).fold(
                 onSuccess = { results ->
-                    _uiState.update { it.copy(isLoading = false, hasSearched = true, results = results) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            results = results
+                        )
+                    }
                 },
                 onFailure = { failure ->
                     _uiState.update {
-                        it.copy(isLoading = false, hasSearched = true, errorMessage = failure.message)
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            errorMessage = failure.message
+                        )
                     }
                 }
             )
         }
-    }
-
-    fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
     }
 }

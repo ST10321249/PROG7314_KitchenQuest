@@ -2,21 +2,10 @@ package com.example.kitchenquest.navigation
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import com.example.kitchenquest.feature.recipes.RecipeDetailViewModel
-import com.example.kitchenquest.feature.recipes.RecipeDetailScreen
-import com.example.kitchenquest.feature.recipes.WhatCanIMakeViewModel
-import com.example.kitchenquest.feature.recipes.WhatCanIMakeScreen
-import com.example.kitchenquest.feature.recipes.SavedRecipesViewModel
-import com.example.kitchenquest.feature.recipes.SavedRecipesScreen
-import com.example.kitchenquest.feature.cooking.CookingViewModel
-import com.example.kitchenquest.feature.cooking.CookScreen
-import com.example.kitchenquest.feature.cooking.CookingModeScreen
-import com.example.kitchenquest.feature.cooking.ActiveTimersScreen
-import com.example.kitchenquest.feature.cooking.KitchenTimerScreen
-import com.example.kitchenquest.feature.cooking.RecipeCompleteScreen
-import com.example.kitchenquest.feature.cooking.CookingHistoryScreen
-import com.example.kitchenquest.feature.cooking.CookingHistoryViewModel
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,13 +14,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.kitchenquest.data.auth.GoogleSignInClient
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
 import com.example.kitchenquest.data.user.DefaultUserRepository
@@ -42,35 +34,42 @@ import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
 import com.example.kitchenquest.feature.auth.SessionLoadingScreen
-import com.example.kitchenquest.feature.onboarding.OnboardingScreen
-import com.example.kitchenquest.feature.onboarding.OnboardingSelection
-import com.example.kitchenquest.feature.settings.SettingsScreen
-import com.example.kitchenquest.feature.settings.SettingsViewModel
-import com.example.kitchenquest.ui.components.AppScaffold
-import kotlinx.coroutines.launch
-import com.example.kitchenquest.feature.pantry.PantryViewModel
-import com.example.kitchenquest.feature.pantry.MyKitchenScreen
-import com.example.kitchenquest.feature.pantry.IngredientEditorScreen
-import com.example.kitchenquest.feature.shopping.ShoppingListScreen
-import com.example.kitchenquest.feature.shopping.ShoppingViewModel
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import com.example.kitchenquest.feature.pantry.IngredientDetailScreen
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
-import com.example.kitchenquest.feature.recipes.RecipesScreen
-import com.example.kitchenquest.feature.recipes.RecipesViewModel
+import com.example.kitchenquest.feature.cooking.ActiveTimersScreen
+import com.example.kitchenquest.feature.cooking.CookScreen
+import com.example.kitchenquest.feature.cooking.CookingHistoryScreen
+import com.example.kitchenquest.feature.cooking.CookingHistoryViewModel
+import com.example.kitchenquest.feature.cooking.CookingModeScreen
+import com.example.kitchenquest.feature.cooking.CookingViewModel
+import com.example.kitchenquest.feature.cooking.KitchenTimerScreen
+import com.example.kitchenquest.feature.cooking.RecipeCompleteScreen
 import com.example.kitchenquest.feature.home.HomeScreen
 import com.example.kitchenquest.feature.home.HomeViewModel
 import com.example.kitchenquest.feature.notifications.NotificationsScreen
+import com.example.kitchenquest.feature.notifications.NotificationsViewModel
+import com.example.kitchenquest.feature.onboarding.OnboardingScreen
+import com.example.kitchenquest.feature.onboarding.OnboardingSelection
+import com.example.kitchenquest.feature.pantry.IngredientDetailScreen
+import com.example.kitchenquest.feature.pantry.IngredientEditorScreen
+import com.example.kitchenquest.feature.pantry.MyKitchenScreen
+import com.example.kitchenquest.feature.pantry.PantryViewModel
 import com.example.kitchenquest.feature.profile.ProfileScreen
 import com.example.kitchenquest.feature.profile.ProfileViewModel
+import com.example.kitchenquest.feature.recipes.RecipeDetailScreen
+import com.example.kitchenquest.feature.recipes.RecipeDetailViewModel
+import com.example.kitchenquest.feature.recipes.RecipesScreen
+import com.example.kitchenquest.feature.recipes.RecipesViewModel
+import com.example.kitchenquest.feature.recipes.SavedRecipesScreen
+import com.example.kitchenquest.feature.recipes.SavedRecipesViewModel
+import com.example.kitchenquest.feature.recipes.WhatCanIMakeScreen
+import com.example.kitchenquest.feature.recipes.WhatCanIMakeViewModel
+import com.example.kitchenquest.feature.settings.SettingsScreen
+import com.example.kitchenquest.feature.settings.SettingsViewModel
+import com.example.kitchenquest.feature.shopping.ShoppingListScreen
+import com.example.kitchenquest.feature.shopping.ShoppingViewModel
+import com.example.kitchenquest.ui.components.AppScaffold
+import kotlinx.coroutines.launch
 
 @Composable
-
-
 fun AppNavHost() {
 
     val navController =
@@ -113,10 +112,37 @@ fun AppNavHost() {
             DefaultUserRepository()
         }
 
-    var showExistingPreferencesMessage by
-    remember {
-        mutableStateOf(false)
+    val launchGoogleSignIn: () -> Unit = {
+        if (activity == null) {
+            authViewModel.googleSignInFailed(
+                "Google sign-in is unavailable."
+            )
+        } else {
+            authViewModel.startGoogleSignIn()
+
+            coroutineScope.launch {
+                try {
+                    val idToken = googleSignInClient
+                        .getGoogleIdToken(activity)
+
+                    authViewModel.signInWithGoogle(idToken)
+                } catch (error: GetCredentialCancellationException) {
+                    authViewModel.googleSignInFailed(
+                        "Google sign-in was cancelled."
+                    )
+                } catch (error: Exception) {
+                    authViewModel.googleSignInFailed(
+                        "Google sign-in failed. Please try again."
+                    )
+                }
+            }
+        }
     }
+
+    var showExistingPreferencesMessage by
+        remember {
+            mutableStateOf(false)
+        }
 
     // Authentication and profile synchronisation are handled together so the
     // server can decide whether this is a new or returning KitchenQuest user
@@ -504,60 +530,7 @@ fun AppNavHost() {
                         )
                     },
 
-                    onGoogleSignIn = {
-
-                        if (
-                            activity == null
-                        ) {
-
-                            authViewModel
-                                .googleSignInFailed(
-                                    "Google sign-in is unavailable."
-                                )
-                        }
-
-                        else {
-
-                            authViewModel
-                                .startGoogleSignIn()
-
-                            coroutineScope.launch {
-
-                                try {
-
-                                    val idToken =
-                                        googleSignInClient
-                                            .getGoogleIdToken(
-                                                activity
-                                            )
-
-                                    authViewModel
-                                        .signInWithGoogle(
-                                            idToken
-                                        )
-
-                                } catch (
-                                    error:
-                                    GetCredentialCancellationException
-                                ) {
-
-                                    authViewModel
-                                        .googleSignInFailed(
-                                            "Google sign-in was cancelled."
-                                        )
-
-                                } catch (
-                                    error: Exception
-                                ) {
-
-                                    authViewModel
-                                        .googleSignInFailed(
-                                            "Google sign-in failed. Please try again."
-                                        )
-                                }
-                            }
-                        }
-                    },
+                    onGoogleSignIn = launchGoogleSignIn,
 
                     onForgotPassword = {
 
@@ -650,6 +623,8 @@ fun AppNavHost() {
                         )
                     },
 
+                    onGoogleSignIn = launchGoogleSignIn,
+
                     onBackToLogin = {
 
                         authViewModel
@@ -740,13 +715,10 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Home
             ) {
-
                 val homeViewModel: HomeViewModel = viewModel()
                 val homeState by homeViewModel.uiState.collectAsState()
 
-                LaunchedEffect(Unit) {
-                    homeViewModel.load()
-                }
+                LaunchedEffect(Unit) { homeViewModel.load() }
 
                 HomeScreen(
                     state = homeState,
@@ -762,15 +734,39 @@ fun AppNavHost() {
                     onShoppingList = {
                         navController.navigate(AppDestinations.ShoppingList)
                     },
-                    onRecipes = {
+                    onSearchRecipes = {
                         navController.navigate(AppDestinations.Recipes)
                     },
-                    onRecipeClick = { recipeId ->
-                        navController.navigate(AppDestinations.recipeDetailsRoute(recipeId))
+                    onMyKitchen = {
+                        navController.navigate(AppDestinations.MyKitchen)
                     },
-                    onRetry = {
-                        homeViewModel.load()
-                    }
+                    onRecipeClick = { recipe ->
+                        navController.navigate(
+                            AppDestinations.recipeDetailsRoute(recipe.recipeSourceId)
+                        )
+                    },
+                    onRetry = homeViewModel::refresh
+                )
+            }
+
+            composable(
+                AppDestinations.Notifications
+            ) {
+                val notificationsViewModel: NotificationsViewModel = viewModel()
+                val notificationsState by notificationsViewModel.uiState.collectAsState()
+
+                LaunchedEffect(Unit) { notificationsViewModel.load() }
+
+                NotificationsScreen(
+                    state = notificationsState,
+                    onBack = { navController.popBackStack() },
+                    onOpenKitchen = {
+                        navController.navigate(AppDestinations.MyKitchen)
+                    },
+                    onOpenShoppingList = {
+                        navController.navigate(AppDestinations.ShoppingList)
+                    },
+                    onRetry = notificationsViewModel::load
                 )
             }
 
@@ -780,13 +776,14 @@ fun AppNavHost() {
                 val recipesViewModel: RecipesViewModel = viewModel()
                 val recipesState by recipesViewModel.uiState.collectAsState()
 
+                LaunchedEffect(Unit) { recipesViewModel.search() }
+
                 RecipesScreen(
                     state = recipesState,
                     onQueryChange = recipesViewModel::onQueryChange,
                     onSearch = recipesViewModel::search,
-                    onDietSelected = recipesViewModel::onDietSelected,
-                    onCuisineSelected = recipesViewModel::onCuisineSelected,
-                    onMaxReadyTimeSelected = recipesViewModel::onMaxReadyTimeSelected,
+                    onFilterSelected = recipesViewModel::onFilterSelected,
+                    onCategorySelected = recipesViewModel::searchCategory,
                     onWhatCanIMake = { navController.navigate(AppDestinations.WhatCanIMake) },
                     onSavedRecipes = { navController.navigate(AppDestinations.SavedRecipes) },
                     onRecipeClick = { recipe ->
@@ -803,6 +800,7 @@ fun AppNavHost() {
                 MyKitchenScreen(
                     state = pantryState,
                     onAddIngredient = { navController.navigate(AppDestinations.ingredientEditorRoute()) },
+                    onShoppingList = { navController.navigate(AppDestinations.ShoppingList) },
                     onIngredientClick = { navController.navigate(AppDestinations.ingredientDetailsRoute(it.id)) },
                     onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) },
                     onRetry = pantryViewModel::loadPantry
@@ -814,14 +812,24 @@ fun AppNavHost() {
                 arguments = listOf(navArgument("itemId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val pantryViewModel: PantryViewModel = viewModel()
+                val pantryState by pantryViewModel.uiState.collectAsState()
                 val itemId = backStackEntry.arguments?.getString("itemId")
-                val item = itemId?.let { pantryViewModel.findItem(it) }
 
-                if (item == null) {
-                    // Pantry hasn't loaded into this ViewModel instance yet (e.g. deep link or process death).
-                    LaunchedEffect(Unit) { pantryViewModel.loadPantry() }
-                    CircularProgressIndicator()
-                } else {
+                LaunchedEffect(Unit) {
+                    if (!pantryState.hasLoaded) {
+                        pantryViewModel.loadPantry()
+                    }
+                }
+
+                val item = itemId?.let { id ->
+                    pantryState.items.firstOrNull { it.id == id }
+                }
+
+                if (item == null && !pantryState.hasLoaded) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                } else if (item != null) {
                     IngredientDetailScreen(
                         item = item,
                         onBack = { navController.popBackStack() },
@@ -832,6 +840,10 @@ fun AppNavHost() {
                         },
                         onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) }
                     )
+                } else {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
                 }
             }
 
@@ -854,7 +866,6 @@ fun AppNavHost() {
                     }
                 } else {
                     IngredientEditorScreen(
-                        onBack = { navController.popBackStack() },
                         initialName = existing?.ingredientName ?: "",
                         initialQuantity = existing?.quantity?.toString() ?: "",
                         initialUnit = existing?.unit ?: "",
@@ -862,6 +873,7 @@ fun AppNavHost() {
                         initialExpiryDate = existing?.expiryDate,
                         isEditing = existing != null,
                         knownIngredients = pantryState.items,
+                        onBack = { navController.popBackStack() },
                         onSave = { name, quantity, unit, category, expiryDate ->
                             if (existing != null) {
                                 pantryViewModel.updateItem(existing.id, name, quantity, unit, category, expiryDate)
@@ -906,25 +918,23 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Profile
             ) {
-
                 val profileViewModel: ProfileViewModel = viewModel()
                 val profileState by profileViewModel.uiState.collectAsState()
 
-                LaunchedEffect(Unit) {
-                    profileViewModel.load()
-                }
+                LaunchedEffect(Unit) { profileViewModel.load() }
 
                 ProfileScreen(
                     state = profileState,
                     onSettings = {
                         navController.navigate(AppDestinations.Settings)
                     },
+                    onSavedRecipes = {
+                        navController.navigate(AppDestinations.SavedRecipes)
+                    },
                     onCookingHistory = {
                         navController.navigate(AppDestinations.CookingHistory)
                     },
-                    onRetry = {
-                        profileViewModel.load()
-                    }
+                    onRetry = profileViewModel::refresh
                 )
             }
 
@@ -939,10 +949,15 @@ fun AppNavHost() {
                 WhatCanIMakeScreen(
                     state = whatCanIMakeState,
                     onBack = { navController.popBackStack() },
+                    onSavedRecipes = { navController.navigate(AppDestinations.SavedRecipes) },
+                    onToggleIngredient = whatCanIMakeViewModel::toggleIngredient,
+                    onAddIngredient = {
+                        navController.navigate(AppDestinations.ingredientEditorRoute())
+                    },
+                    onAddMissingToList = whatCanIMakeViewModel::addMissingToShoppingList,
                     onRecipeClick = { recommendation ->
                         navController.navigate(AppDestinations.recipeDetailsRoute(recommendation.recipeSourceId))
                     },
-                    onAddMissingToShoppingList = whatCanIMakeViewModel::addMissingToShoppingList,
                     onRetry = whatCanIMakeViewModel::load
                 )
             }
@@ -983,7 +998,7 @@ fun AppNavHost() {
                 SavedRecipesScreen(
                     state = savedRecipesState,
                     onBack = { navController.popBackStack() },
-                    onQueryChange = savedRecipesViewModel::onQueryChange,
+                    onBrowseRecipes = { navController.navigate(AppDestinations.Recipes) },
                     onRecipeClick = { favourite ->
                         navController.navigate(AppDestinations.recipeDetailsRoute(favourite.recipeSourceId))
                     },
@@ -1004,7 +1019,9 @@ fun AppNavHost() {
                     onBack = { navController.popBackStack() },
                     onAdd = shoppingViewModel::addItem,
                     onTogglePurchased = shoppingViewModel::togglePurchased,
-                    onRemove = shoppingViewModel::removeItem
+                    onMoveToPantry = shoppingViewModel::moveToPantry,
+                    onRemove = shoppingViewModel::removeItem,
+                    onClear = shoppingViewModel::clearList
                 )
             }
 
@@ -1031,7 +1048,6 @@ fun AppNavHost() {
 
                 ActiveTimersScreen(
                     state = cookingState,
-                    onBack = { navController.popBackStack() },
                     onAddMinute = cookingViewModel::addMinuteToTimer,
                     onTogglePause = cookingViewModel::togglePauseTimer,
                     onCancel = cookingViewModel::cancelTimer,
@@ -1057,10 +1073,11 @@ fun AppNavHost() {
             ) {
                 val cookingState by cookingViewModel.uiState.collectAsState()
                 val recipeTitle = cookingState.recipe?.title ?: "Recipe"
+                val readyInMinutes = cookingState.recipe?.readyInMinutes
 
                 RecipeCompleteScreen(
                     recipeTitle = recipeTitle,
-                    onBack = { navController.popBackStack() },
+                    readyInMinutes = readyInMinutes,
                     onSave = { rating, difficulty, note ->
                         cookingViewModel.completeCooking(rating, difficulty, note) {
                             navController.navigate(AppDestinations.Home) {
@@ -1083,19 +1100,13 @@ fun AppNavHost() {
                 CookingHistoryScreen(
                     state = cookingHistoryState,
                     onBack = { navController.popBackStack() },
-                    onRecipeClick = { recipeSourceId ->
-                        navController.navigate(AppDestinations.recipeDetailsRoute(recipeSourceId))
+                    onFilterSelected = cookingHistoryViewModel::selectFilter,
+                    onRecipeClick = { entry ->
+                        navController.navigate(
+                            AppDestinations.recipeDetailsRoute(entry.recipeSourceId)
+                        )
                     },
                     onRetry = cookingHistoryViewModel::load
-                )
-            }
-
-            composable(
-                AppDestinations.Notifications
-            ) {
-
-                NotificationsScreen(
-                    onBack = { navController.popBackStack() }
                 )
             }
 

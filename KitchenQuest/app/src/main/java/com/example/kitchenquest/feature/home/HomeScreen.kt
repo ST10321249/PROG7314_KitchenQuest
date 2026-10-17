@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,36 +12,35 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.RestaurantMenu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.data.recipes.RecipeRecommendationDto
-import com.example.kitchenquest.ui.components.KitchenQuestCard
-import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
+import com.example.kitchenquest.feature.pantry.daysUntilExpiry
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
+import com.example.kitchenquest.ui.components.KitchenQuestIconButton
 import com.example.kitchenquest.ui.components.KitchenQuestSectionTitle
+import com.example.kitchenquest.ui.theme.KitchenAmberLight
+import com.example.kitchenquest.ui.theme.KitchenGreen
+import com.example.kitchenquest.ui.theme.KitchenGreenLight
+import com.example.kitchenquest.ui.theme.KitchenOrangeLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
+import com.example.kitchenquest.ui.theme.KitchenRed
+import com.example.kitchenquest.ui.theme.KitchenRedLight
+import java.time.LocalTime
 
 @Composable
 fun HomeScreen(
@@ -49,165 +49,151 @@ fun HomeScreen(
     onKitchenTimer: () -> Unit,
     onWhatCanIMake: () -> Unit,
     onShoppingList: () -> Unit,
-    onRecipes: () -> Unit,
-    onRecipeClick: (String) -> Unit,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    onSearchRecipes: () -> Unit,
+    onMyKitchen: () -> Unit,
+    onRecipeClick: (RecipeRecommendationDto) -> Unit,
+    onRetry: () -> Unit
 ) {
+    val greeting = when (LocalTime.now().hour) {
+        in 5..11 -> "Good morning"
+        in 12..17 -> "Good afternoon"
+        else -> "Good evening"
+    }
+
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(KitchenQuestDimens.ScreenPadding)
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = KitchenQuestDimens.ScreenPadding,
+            end = KitchenQuestDimens.ScreenPadding,
+            top = KitchenQuestDimens.MediumSpacing,
+            bottom = KitchenQuestDimens.SectionSpacing
+        ),
+        verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SectionSpacing)
     ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = greeting,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = state.displayName.ifBlank { "KitchenQuest" },
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+
+                KitchenQuestIconButton(
+                    icon = Icons.Filled.Notifications,
+                    contentDescription = "Notifications",
+                    onClick = onNotifications
+                )
+            }
+        }
 
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
             ) {
-                Column {
-                    Text(
-                        text = "KitchenQuest",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                QuickAction("⏱", "Timer", onKitchenTimer, Modifier.weight(1f))
+                QuickAction("🍳", "What can I make?", onWhatCanIMake, Modifier.weight(1f))
+                QuickAction("🛒", "Shopping list", onShoppingList, Modifier.weight(1f))
+                QuickAction("🔎", "Search recipes", onSearchRecipes, Modifier.weight(1f))
+            }
+        }
 
-                    Text(
-                        text = if (state.displayName.isNotBlank()) {
-                            "Hello, ${state.displayName}"
-                        } else {
-                            "Hello"
-                        },
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                }
-
-                IconButton(onClick = onNotifications) {
-                    Icon(
-                        imageVector = Icons.Filled.Notifications,
-                        contentDescription = "Notifications"
-                    )
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(KitchenQuestDimens.LargeCorner),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                Row(
+                    modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    SummaryValue("${state.pantryCount}", "In my kitchen", Modifier.weight(1f))
+                    SummaryValue("${state.expiringSoon.size}", "Expiring soon", Modifier.weight(1f), KitchenRed)
+                    SummaryValue("${state.shoppingCount}", "To buy", Modifier.weight(1f))
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
+        if (state.errorMessage != null && !state.hasLoaded) {
+            item {
+                KitchenQuestErrorState(
+                    message = state.errorMessage,
+                    onRetry = onRetry
+                )
+            }
+        }
+
+        if (state.expiringSoon.isNotEmpty()) {
+            item {
+                KitchenQuestSectionTitle(
+                    title = "Use soon",
+                    actionText = "View kitchen",
+                    onAction = onMyKitchen
+                )
+            }
+
+            item {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+                ) {
+                    items(state.expiringSoon.take(6), key = { it.id }) { item ->
+                        ExpiringCard(item)
+                    }
+                }
+            }
+        }
+
+        item {
+            KitchenQuestSectionTitle(
+                title = "Quick picks",
+                actionText = "See all",
+                onAction = onWhatCanIMake
+            )
         }
 
         if (state.isLoading && !state.hasLoaded) {
             item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(160.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                Text(
+                    text = "Loading your kitchen...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-        } else if (state.errorMessage != null && !state.hasLoaded) {
+        } else if (state.recommendations.isEmpty()) {
             item {
-                KitchenQuestErrorState(message = state.errorMessage, onRetry = onRetry)
+                Surface(
+                    onClick = onWhatCanIMake,
+                    shape = RoundedCornerShape(KitchenQuestDimens.LargeCorner),
+                    color = KitchenGreenLight
+                ) {
+                    Column(modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing)) {
+                        Text(
+                            text = "Find recipes from your ingredients",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = KitchenGreen
+                        )
+                        Spacer(Modifier.height(KitchenQuestDimens.TinySpacing))
+                        Text(
+                            text = "Add ingredients to My Kitchen and KitchenQuest will rank recipes by what you already have.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
         } else {
-
-            item {
-                KitchenQuestSectionTitle(title = "QUICK ACTIONS")
-                Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)
-                ) {
-                    QuickAction(
-                        icon = Icons.Filled.Timer,
-                        label = "Kitchen Timer",
-                        onClick = onKitchenTimer,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickAction(
-                        icon = Icons.Filled.Search,
-                        label = "What Can I Make?",
-                        onClick = onWhatCanIMake,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)
-                ) {
-                    QuickAction(
-                        icon = Icons.Filled.ListAlt,
-                        label = "Shopping List",
-                        onClick = onShoppingList,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickAction(
-                        icon = Icons.Filled.RestaurantMenu,
-                        label = "Recipes",
-                        onClick = onRecipes,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
-            }
-
-            item {
-                KitchenQuestSectionTitle(title = "YOUR KITCHEN")
-                Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-
-                KitchenQuestCard {
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        StatTile(
-                            value = state.pantryItemCount.toString(),
-                            label = "Pantry items",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatTile(
-                            value = state.expiringSoonCount.toString(),
-                            label = "Expiring soon",
-                            highlight = state.expiringSoonCount > 0,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
-            }
-
-            item {
-                KitchenQuestSectionTitle(title = "RECIPES YOU CAN MAKE")
-                Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-            }
-
-            when {
-                state.recommendationsLoading -> item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                state.recommendations.isEmpty() -> item {
-                    KitchenQuestEmptyState(
-                        title = "No matches yet",
-                        message = "Add ingredients to My Kitchen and recipe recommendations will show up here."
-                    )
-                }
-
-                else -> item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)) {
-                        items(state.recommendations) { recommendation ->
-                            RecommendationCard(
-                                recommendation = recommendation,
-                                onClick = { onRecipeClick(recommendation.recipeSourceId) }
-                            )
-                        }
-                    }
-                }
+            items(state.recommendations.take(4), key = { it.recipeSourceId }) { recipe ->
+                RecommendationCard(recipe = recipe, onClick = { onRecipeClick(recipe) })
             }
         }
     }
@@ -215,123 +201,120 @@ fun HomeScreen(
 
 @Composable
 private fun QuickAction(
-    icon: ImageVector,
+    emoji: String,
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        onClick = onClick,
         modifier = modifier,
+        onClick = onClick,
         shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(
-            KitchenQuestDimens.CardBorderWidth,
-            MaterialTheme.colorScheme.outline
-        )
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(KitchenQuestDimens.MediumSpacing),
+            modifier = Modifier.padding(vertical = KitchenQuestDimens.MediumSpacing),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-
+            Text(text = emoji, style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelMedium,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
 }
 
 @Composable
-private fun StatTile(
+private fun SummaryValue(
     value: String,
     label: String,
     modifier: Modifier = Modifier,
-    highlight: Boolean = false
+    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
 ) {
-    Column(
-        modifier = modifier.padding(KitchenQuestDimens.SmallSpacing),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineMedium,
-            color = if (highlight) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-        )
-
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = value, style = MaterialTheme.typography.titleLarge, color = valueColor)
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
+private fun ExpiringCard(item: PantryItemDto) {
+    val days = daysUntilExpiry(item)
+    val message = when (days) {
+        0L -> "Expires today"
+        1L -> "Expires tomorrow"
+        null -> "Expiry soon"
+        else -> "$days days left"
+    }
+
+    Surface(
+        modifier = Modifier.size(width = 116.dp, height = 118.dp),
+        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+        color = KitchenRedLight,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.18f))
+    ) {
+        Column(
+            modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "🥕", style = MaterialTheme.typography.headlineSmall)
+            Text(text = item.ingredientName, style = MaterialTheme.typography.labelLarge)
+            Text(text = message, style = MaterialTheme.typography.labelSmall, color = KitchenRed)
+        }
+    }
+}
+
+@Composable
 private fun RecommendationCard(
-    recommendation: RecipeRecommendationDto,
+    recipe: RecipeRecommendationDto,
     onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(width = 200.dp, height = 140.dp),
-        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(KitchenQuestDimens.LargeCorner),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(
-            KitchenQuestDimens.CardBorderWidth,
-            MaterialTheme.colorScheme.outline
-        )
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(KitchenQuestDimens.MediumSpacing)) {
-            Text(
-                text = recommendation.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-
-            if (recommendation.missingIngredients.isNotEmpty()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${recommendation.missingIngredients.size} missing",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+        Row(
+            modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+                    color = KitchenOrangeLight
+                ) {}
+                Text(text = "🍲", style = MaterialTheme.typography.headlineSmall)
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = KitchenQuestDimens.MediumSpacing)
+            ) {
+                Text(text = recipe.title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = "${(recipe.matchRatio * 100).toInt()}% ingredient match",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = KitchenGreen
+                )
+            }
 
-            LinearProgressIndicator(
-                progress = { recommendation.matchRatio.toFloat() },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Text(
-                text = "${(recommendation.matchRatio * 100).toInt()}% match",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(text = "›", style = MaterialTheme.typography.titleLarge)
         }
     }
 }

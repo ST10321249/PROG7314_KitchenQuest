@@ -6,6 +6,8 @@ import com.example.kitchenquest.data.pantry.DefaultPantryRepository
 import com.example.kitchenquest.data.pantry.PantryRepository
 import com.example.kitchenquest.data.recipes.DefaultRecipeRepository
 import com.example.kitchenquest.data.recipes.RecipeRepository
+import com.example.kitchenquest.data.shopping.DefaultShoppingRepository
+import com.example.kitchenquest.data.shopping.ShoppingRepository
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.UserRepository
 import com.example.kitchenquest.feature.pantry.daysUntilExpiry
@@ -18,64 +20,58 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val userRepository: UserRepository = DefaultUserRepository(),
     private val pantryRepository: PantryRepository = DefaultPantryRepository(),
+    private val shoppingRepository: ShoppingRepository = DefaultShoppingRepository(),
     private val recipeRepository: RecipeRepository = DefaultRecipeRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    fun load() {
-        if (_uiState.value.isLoading) {
-            return
-        }
+    fun load(force: Boolean = false) {
+        if (_uiState.value.isLoading || (_uiState.value.hasLoaded && !force)) return
 
         _uiState.update {
-            it.copy(isLoading = true, recommendationsLoading = true, errorMessage = null)
-        }
-
-        viewModelScope.launch {
-            userRepository.getProfile().fold(
-                onSuccess = { profile ->
-                    _uiState.update { it.copy(displayName = profile.displayName) }
-                },
-                onFailure = { /* the top bar just shows a generic greeting without a name */ }
-            )
-
-            pantryRepository.getPantryItems().fold(
-                onSuccess = { items ->
-                    val expiringSoon = items.count { item ->
-                        val days = daysUntilExpiry(item)
-                        days != null && days <= 3
-                    }
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            hasLoaded = true,
-                            pantryItemCount = items.size,
-                            expiringSoonCount = expiringSoon
-                        )
-                    }
-                },
-                onFailure = { failure ->
-                    _uiState.update {
-                        it.copy(isLoading = false, hasLoaded = true, errorMessage = failure.message)
-                    }
-                }
+            it.copy(
+                isLoading = true,
+                errorMessage = null
             )
         }
 
         viewModelScope.launch {
-            recipeRepository.getRecommendations().fold(
-                onSuccess = { recommendations ->
-                    _uiState.update {
-                        it.copy(recommendationsLoading = false, recommendations = recommendations)
-                    }
-                },
-                onFailure = {
-                    _uiState.update { it.copy(recommendationsLoading = false, recommendations = emptyList()) }
+            val profileResult = userRepository.getProfile()
+            val pantryResult = pantryRepository.getPantryItems()
+            val shoppingResult = shoppingRepository.getShoppingItems()
+            val recommendationResult = recipeRepository.getRecommendations()
+
+            val pantryItems = pantryResult.getOrDefault(emptyList())
+            val expiringSoon = pantryItems
+                .filter { item ->
+                    val days = daysUntilExpiry(item)
+                    days != null && days in 0L..3L
                 }
-            )
+                .sortedBy { daysUntilExpiry(it) }
+
+            val firstFailure = listOf(
+                profileResult.exceptionOrNull(),
+                pantryResult.exceptionOrNull(),
+                shoppingResult.exceptionOrNull(),
+                recommendationResult.exceptionOrNull()
+            ).firstOrNull { it != null }
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    hasLoaded = true,
+                    displayName = profileResult.getOrNull()?.displayName.orEmpty(),
+                    pantryCount = pantryItems.size,
+                    shoppingCount = shoppingResult.getOrDefault(emptyList()).count { item -> !item.isPurchased },
+                    expiringSoon = expiringSoon,
+                    recommendations = recommendationResult.getOrDefault(emptyList()),
+                    errorMessage = firstFailure?.message
+                )
+            }
         }
     }
+
+    fun refresh() = load(force = true)
 }

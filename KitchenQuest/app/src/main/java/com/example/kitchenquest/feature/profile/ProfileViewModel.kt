@@ -27,48 +27,45 @@ class ProfileViewModel(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    fun load() {
-        if (_uiState.value.isLoading) {
-            return
-        }
+    fun load(force: Boolean = false) {
+        if (_uiState.value.isLoading || (_uiState.value.hasLoaded && !force)) return
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            userRepository.getProfile().onSuccess { profile ->
-                _uiState.update { it.copy(displayName = profile.displayName, email = profile.email) }
-            }
+            val profileResult = userRepository.getProfile()
+            val historyResult = historyRepository.getHistory()
+            val favouritesResult = favouriteRepository.getFavourites()
+            val pantryResult = pantryRepository.getPantryItems()
 
-            historyRepository.getHistory().onSuccess { history ->
-                _uiState.update { it.copy(mealsCooked = history.size) }
-            }
+            val history = historyResult.getOrDefault(emptyList())
+            val pantry = pantryResult.getOrDefault(emptyList())
+            val ratings = history.mapNotNull { it.rating }
+            val error = listOf(
+                profileResult.exceptionOrNull(),
+                historyResult.exceptionOrNull(),
+                favouritesResult.exceptionOrNull(),
+                pantryResult.exceptionOrNull()
+            ).firstOrNull { it != null }
 
-            favouriteRepository.getFavourites().onSuccess { favourites ->
-                _uiState.update { it.copy(savedRecipesCount = favourites.size) }
-            }
-
-            pantryRepository.getPantryItems().fold(
-                onSuccess = { items ->
-                    val expiringSoon = items.count { item ->
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    hasLoaded = true,
+                    displayName = profileResult.getOrNull()?.displayName.orEmpty(),
+                    email = profileResult.getOrNull()?.email.orEmpty(),
+                    mealsCooked = history.size,
+                    savedRecipes = favouritesResult.getOrDefault(emptyList()).size,
+                    expiringSoon = pantry.count { item ->
                         val days = daysUntilExpiry(item)
-                        days != null && days <= 3
-                    }
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            hasLoaded = true,
-                            pantryItemCount = items.size,
-                            expiringSoonCount = expiringSoon
-                        )
-                    }
-                },
-                onFailure = { failure ->
-                    _uiState.update {
-                        it.copy(isLoading = false, hasLoaded = true, errorMessage = failure.message)
-                    }
-                }
-            )
+                        days != null && days in 0L..3L
+                    },
+                    averageRating = ratings.takeIf { list -> list.isNotEmpty() }?.average(),
+                    errorMessage = error?.message
+                )
+            }
         }
     }
+
+    fun refresh() = load(force = true)
 }

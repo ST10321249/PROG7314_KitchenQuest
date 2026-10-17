@@ -23,13 +23,13 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,22 +43,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.kitchenquest.feature.onboarding.PreferenceOptions
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
+import com.example.kitchenquest.ui.components.KitchenQuestErrorState
+import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
-import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTextField
 import com.example.kitchenquest.ui.components.KitchenQuestTopBar
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
-import com.example.kitchenquest.ui.theme.KitchenQuestTheme
 
 private enum class SettingsDialog {
     Name,
@@ -78,35 +75,41 @@ fun SettingsScreen(
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showSignOutConfirmation by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(KitchenQuestDimens.ScreenPadding)
     ) {
-
         KitchenQuestTopBar(
             title = "Settings",
-            onBack = onBack,
-            modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
+            onBack = onBack
         )
 
         when {
-            // Also covers the first frame, before loading has started.
-            !state.hasLoaded && (state.isLoading || state.errorMessage == null) -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+            !state.hasLoaded && state.isLoading -> {
+                KitchenQuestLoadingState(
+                    message = "Loading your settings...",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            !state.hasLoaded && state.errorMessage != null -> {
+                KitchenQuestErrorState(
+                    message = state.errorMessage,
+                    onRetry = onRetry,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             !state.hasLoaded -> {
-                LoadFailed(
-                    message = state.errorMessage,
-                    onRetry = onRetry
+                KitchenQuestLoadingState(
+                    message = "Loading your settings...",
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -116,17 +119,38 @@ fun SettingsScreen(
                     onDisplayNameChange = onDisplayNameChange,
                     onDietaryPreferencesChange = onDietaryPreferencesChange,
                     onAvoidedIngredientsChange = onAvoidedIngredientsChange,
-                    onSave = onSave
+                    onSave = onSave,
+                    onSignOut = { showSignOutConfirmation = true }
                 )
             }
         }
+    }
 
-        SignOutButton(
-            onClick = onSignOut,
-            modifier = Modifier.padding(
-                horizontal = KitchenQuestDimens.MediumSpacing,
-                vertical = KitchenQuestDimens.SectionSpacing
-            )
+    if (showSignOutConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirmation = false },
+            title = { Text("Sign out?") },
+            text = {
+                Text("You can sign back in at any time. Your saved KitchenQuest data will remain in your account.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSignOutConfirmation = false
+                        onSignOut()
+                    }
+                ) {
+                    Text(
+                        text = "Sign out",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }
@@ -138,73 +162,121 @@ private fun SettingsContent(
     onDisplayNameChange: (String) -> Unit,
     onDietaryPreferencesChange: (Set<String>) -> Unit,
     onAvoidedIngredientsChange: (Set<String>) -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onSignOut: () -> Unit
 ) {
     var openDialog by rememberSaveable {
         mutableStateOf<SettingsDialog?>(null)
     }
 
-    Column(
-        modifier = Modifier.padding(
-            horizontal = KitchenQuestDimens.MediumSpacing
+    SectionHeader("ACCOUNT")
+
+    SettingsGroup {
+        SettingsRow(
+            icon = Icons.Outlined.Person,
+            title = state.displayName.ifBlank { "Add your name" },
+            subtitle = state.email.ifBlank { "No email available" },
+            onClick = { openDialog = SettingsDialog.Name }
         )
-    ) {
+    }
 
-        SectionHeader("ACCOUNT")
+    SectionHeader("PREFERENCES")
 
-        SettingsCard {
-            SettingsRow(
-                icon = Icons.Outlined.Person,
-                title = state.displayName.ifBlank { "Add your name" },
-                subtitle = state.email.ifBlank { "No email on this account" },
-                onClick = { openDialog = SettingsDialog.Name }
+    SettingsGroup {
+        SettingsRow(
+            icon = Icons.Outlined.Restaurant,
+            title = "Dietary preferences",
+            subtitle = PreferenceOptions.summary(
+                state.dietaryPreferences,
+                PreferenceOptions.NO_RESTRICTIONS
+            ),
+            onClick = { openDialog = SettingsDialog.Dietary }
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(
+                horizontal = KitchenQuestDimens.MediumSpacing
+            ),
+            color = MaterialTheme.colorScheme.outline
+        )
+
+        SettingsRow(
+            icon = Icons.Outlined.Block,
+            title = "Avoided ingredients",
+            subtitle = PreferenceOptions.summary(
+                state.avoidedIngredients,
+                "None"
+            ),
+            onClick = { openDialog = SettingsDialog.Avoided }
+        )
+    }
+
+    Text(
+        text = "These choices are stored with your account and are used as the default recipe preferences.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(
+            top = KitchenQuestDimens.SmallSpacing
+        )
+    )
+
+    when {
+        state.errorMessage != null -> {
+            FeedbackMessage(
+                text = state.errorMessage,
+                isError = true
             )
         }
 
-        SectionHeader("PREFERENCES")
-
-        SettingsCard {
-            SettingsRow(
-                icon = Icons.Outlined.Restaurant,
-                title = "Dietary preferences",
-                subtitle = PreferenceOptions.summary(
-                    state.dietaryPreferences,
-                    PreferenceOptions.NO_RESTRICTIONS
-                ),
-                onClick = { openDialog = SettingsDialog.Dietary }
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(
-                    horizontal = KitchenQuestDimens.MediumSpacing
-                ),
-                color = MaterialTheme.colorScheme.outline
-            )
-
-            SettingsRow(
-                icon = Icons.Outlined.Block,
-                title = "Avoided ingredients",
-                subtitle = PreferenceOptions.summary(
-                    state.avoidedIngredients,
-                    "None"
-                ),
-                onClick = { openDialog = SettingsDialog.Avoided }
-            )
-        }
-
-        Feedback(state)
-
-        if (state.hasUnsavedChanges || state.isSaving) {
-            KitchenQuestPrimaryButton(
-                text = if (state.isSaving) "Saving..." else "Save changes",
-                onClick = onSave,
-                enabled = !state.isSaving,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = KitchenQuestDimens.MediumSpacing)
+        state.saveSucceeded -> {
+            FeedbackMessage(
+                text = "Changes saved",
+                isError = false
             )
         }
     }
+
+    if (state.hasUnsavedChanges || state.isSaving) {
+        Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
+
+        KitchenQuestPrimaryButton(
+            text = if (state.isSaving) "Saving..." else "Save changes",
+            onClick = onSave,
+            enabled = !state.isSaving,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    Spacer(modifier = Modifier.height(KitchenQuestDimens.LargeSpacing))
+
+    SectionHeader("ACCOUNT ACTION")
+
+    OutlinedButton(
+        onClick = onSignOut,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(KitchenQuestDimens.ButtonHeight),
+        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+        border = BorderStroke(
+            KitchenQuestDimens.CardBorderWidth,
+            MaterialTheme.colorScheme.error
+        ),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.error
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.WarningAmber,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+
+        Spacer(modifier = Modifier.size(KitchenQuestDimens.SmallSpacing))
+
+        Text("Sign out")
+    }
+
+    Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 
     when (openDialog) {
         SettingsDialog.Name -> NameDialog(
@@ -257,36 +329,32 @@ private fun SettingsContent(
 }
 
 @Composable
-private fun SectionHeader(
-    text: String
-) {
+private fun SectionHeader(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        letterSpacing = 0.4.sp,
-        modifier = Modifier
-            .padding(
-                top = KitchenQuestDimens.SectionSpacing,
-                bottom = KitchenQuestDimens.SmallSpacing
-            )
-            .semantics { heading() }
+        modifier = Modifier.padding(
+            top = KitchenQuestDimens.SectionSpacing,
+            bottom = KitchenQuestDimens.SmallSpacing
+        )
     )
 }
 
 @Composable
-private fun SettingsCard(
+private fun SettingsGroup(
     content: @Composable () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(KitchenQuestDimens.LargeCorner),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth()
+        border = BorderStroke(
+            KitchenQuestDimens.CardBorderWidth,
+            MaterialTheme.colorScheme.outline
+        )
     ) {
-        Column {
-            content()
-        }
+        Column(content = { content() })
     }
 }
 
@@ -300,19 +368,18 @@ private fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(
-                horizontal = KitchenQuestDimens.MediumSpacing,
-                vertical = KitchenQuestDimens.FieldSpacing
-            ),
+            .heightIn(min = 72.dp)
+            .clickable(
+                role = Role.Button,
+                onClick = onClick
+            )
+            .padding(KitchenQuestDimens.MediumSpacing),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Surface(
-            shape = RoundedCornerShape(11.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(40.dp),
+            shape = RoundedCornerShape(KitchenQuestDimens.SmallCorner),
+            color = MaterialTheme.colorScheme.surfaceVariant
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
@@ -332,14 +399,13 @@ private fun SettingsRow(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -355,84 +421,24 @@ private fun SettingsRow(
 }
 
 @Composable
-private fun Feedback(
-    state: SettingsUiState
+private fun FeedbackMessage(
+    text: String,
+    isError: Boolean
 ) {
-    val message = state.errorMessage
-
-    when {
-        message != null -> Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier
-                .padding(top = KitchenQuestDimens.MediumSpacing)
-                .semantics { liveRegion = LiveRegionMode.Polite }
-        )
-
-        state.saveSucceeded -> Text(
-            text = "Changes saved",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier
-                .padding(top = KitchenQuestDimens.MediumSpacing)
-                .semantics { liveRegion = LiveRegionMode.Polite }
-        )
-    }
-}
-
-@Composable
-private fun LoadFailed(
-    message: String?,
-    onRetry: () -> Unit
-) {
-    Column(
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (isError) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.secondary
+        },
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(KitchenQuestDimens.ScreenPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(
-            KitchenQuestDimens.MediumSpacing
-        )
-    ) {
-        Text(
-            text = message ?: "Your settings couldn't be loaded.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.semantics {
+            .padding(top = KitchenQuestDimens.MediumSpacing)
+            .semantics {
                 liveRegion = LiveRegionMode.Polite
             }
-        )
-
-        KitchenQuestSecondaryButton(
-            text = "Try again",
-            onClick = onRetry,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun SignOutButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(KitchenQuestDimens.ButtonHeight),
-        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.error
-        )
-    ) {
-        Text(
-            text = "Sign out",
-            style = MaterialTheme.typography.labelLarge
-        )
-    }
+    )
 }
 
 @Composable
@@ -483,7 +489,11 @@ private fun ChoiceDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            FlowRow {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(
+                    KitchenQuestDimens.TinySpacing
+                )
+            ) {
                 options.forEach { option ->
                     KitchenQuestChoiceChip(
                         text = option,
@@ -499,94 +509,4 @@ private fun ChoiceDialog(
             }
         }
     )
-}
-
-private val previewState = SettingsUiState(
-    hasLoaded = true,
-    displayName = "Akeev",
-    email = "akeev@example.com",
-    dietaryPreferences = setOf("Vegetarian", "Gluten-free"),
-    avoidedIngredients = setOf("Nuts", "Shellfish")
-)
-
-@Composable
-private fun PreviewScreen(state: SettingsUiState) {
-    KitchenQuestTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            SettingsScreen(
-                state = state,
-                onBack = {},
-                onDisplayNameChange = {},
-                onDietaryPreferencesChange = {},
-                onAvoidedIngredientsChange = {},
-                onSave = {},
-                onRetry = {},
-                onSignOut = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Loaded")
-@Composable
-private fun SettingsScreenLoadedPreview() {
-    PreviewScreen(previewState)
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Unsaved changes")
-@Composable
-private fun SettingsScreenUnsavedPreview() {
-    PreviewScreen(previewState.copy(hasUnsavedChanges = true))
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Save failed")
-@Composable
-private fun SettingsScreenSaveFailedPreview() {
-    PreviewScreen(
-        previewState.copy(
-            hasUnsavedChanges = true,
-            errorMessage = "Can't reach the server. Check your connection and try again."
-        )
-    )
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Saved")
-@Composable
-private fun SettingsScreenSavedPreview() {
-    PreviewScreen(previewState.copy(saveSucceeded = true))
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Loading")
-@Composable
-private fun SettingsScreenLoadingPreview() {
-    PreviewScreen(SettingsUiState(isLoading = true))
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Load failed")
-@Composable
-private fun SettingsScreenLoadFailedPreview() {
-    PreviewScreen(
-        SettingsUiState(
-            errorMessage = "Can't reach the server. Check your connection and try again."
-        )
-    )
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Dark")
-@Composable
-private fun SettingsScreenDarkPreview() {
-    KitchenQuestTheme(darkTheme = true) {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            SettingsScreen(
-                state = previewState,
-                onBack = {},
-                onDisplayNameChange = {},
-                onDietaryPreferencesChange = {},
-                onAvoidedIngredientsChange = {},
-                onSave = {},
-                onRetry = {},
-                onSignOut = {}
-            )
-        }
-    }
 }

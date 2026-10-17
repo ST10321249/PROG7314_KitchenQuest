@@ -1,23 +1,45 @@
 package com.example.kitchenquest.feature.shopping
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
-import com.example.kitchenquest.ui.components.KitchenQuestCard
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
-import com.example.kitchenquest.ui.components.KitchenQuestSectionTitle
+import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTextField
 import com.example.kitchenquest.ui.components.KitchenQuestTopBar
+import com.example.kitchenquest.ui.theme.KitchenGreen
+import com.example.kitchenquest.ui.theme.KitchenGreenLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
-import androidx.compose.ui.Alignment
 
 @Composable
 fun ShoppingListScreen(
@@ -25,118 +47,163 @@ fun ShoppingListScreen(
     onBack: () -> Unit,
     onAdd: (String) -> Unit,
     onTogglePurchased: (ShoppingItemDto) -> Unit,
-    onRemove: (String) -> Unit
+    onMoveToPantry: (ShoppingItemDto) -> Unit,
+    onRemove: (String) -> Unit,
+    onClear: () -> Unit
 ) {
     var newItemText by remember { mutableStateOf("") }
+    var confirmClear by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-
         KitchenQuestTopBar(
-            title = "Shopping List",
+            title = "Shopping list",
             onBack = onBack,
-            modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = KitchenQuestDimens.ScreenPadding)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                KitchenQuestTextField(
-                    value = newItemText,
-                    onValueChange = { newItemText = it },
-                    label = "Add an item",
-                    modifier = Modifier.weight(1f)
-                )
-
-                Spacer(modifier = Modifier.width(KitchenQuestDimens.SmallSpacing))
-
-                FilledIconButton(onClick = {
-                    onAdd(newItemText)
-                    newItemText = ""
-                }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add item")
+            modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding),
+            actions = {
+                if (state.items.isNotEmpty()) {
+                    TextButton(onClick = { confirmClear = true }) {
+                        Text("Clear", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
+        )
 
-            if (state.errorMessage != null) {
-                Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-                Text(text = state.errorMessage, color = MaterialTheme.colorScheme.error)
+        Row(
+            modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+        ) {
+            KitchenQuestTextField(
+                value = newItemText,
+                onValueChange = { newItemText = it },
+                label = "Add an item...",
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(
+                onClick = {
+                    val item = newItemText.trim()
+                    if (item.isNotEmpty()) {
+                        onAdd(item)
+                        newItemText = ""
+                    }
+                }
+            ) {
+                Text("Add")
             }
         }
 
-        Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
+        state.message?.let { message ->
+            Text(
+                text = message,
+                modifier = Modifier.padding(
+                    horizontal = KitchenQuestDimens.ScreenPadding,
+                    vertical = KitchenQuestDimens.SmallSpacing
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = KitchenGreen
+            )
+        }
 
-        if (state.items.isEmpty()) {
+        state.errorMessage?.let { message ->
+            Text(
+                text = message,
+                modifier = Modifier.padding(
+                    horizontal = KitchenQuestDimens.ScreenPadding,
+                    vertical = KitchenQuestDimens.SmallSpacing
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
+
+        if (state.items.isEmpty() && !state.isLoading) {
             KitchenQuestEmptyState(
-                title = "Your list is empty",
-                message = "Add items above, or add missing ingredients from a recipe.",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(KitchenQuestDimens.ScreenPadding)
+                title = "Your shopping list is empty",
+                message = "Add items manually or send missing recipe ingredients here.",
+                modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
             )
         } else {
-            val outstanding = state.items.filterNot { it.isPurchased }
-            val purchased = state.items.filter { it.isPurchased }
-
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = KitchenQuestDimens.ScreenPadding),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(KitchenQuestDimens.ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
             ) {
-                if (outstanding.isNotEmpty()) {
-                    item { KitchenQuestSectionTitle(title = "TO BUY") }
-                    items(outstanding, key = { it.id }) { shoppingItem ->
-                        ShoppingRow(shoppingItem, onTogglePurchased, onRemove)
+                items(state.items, key = { it.id }) { item ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Column(modifier = Modifier.padding(KitchenQuestDimens.SmallSpacing)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = item.isPurchased,
+                                    onCheckedChange = { onTogglePurchased(item) }
+                                )
+                                Text(
+                                    text = item.ingredientName,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    textDecoration = if (item.isPurchased) TextDecoration.LineThrough else TextDecoration.None
+                                )
+                                IconButton(onClick = { onRemove(item.id) }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Remove item")
+                                }
+                            }
+
+                            if (item.isPurchased) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+                                    color = KitchenGreenLight
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(KitchenQuestDimens.SmallSpacing),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Purchased",
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = KitchenGreen
+                                        )
+                                        KitchenQuestPrimaryButton(
+                                            text = "Add to My Kitchen",
+                                            onClick = { onMoveToPantry(item) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-
-                if (purchased.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-                        KitchenQuestSectionTitle(title = "IN YOUR KITCHEN")
-                    }
-                    items(purchased, key = { it.id }) { shoppingItem ->
-                        ShoppingRow(shoppingItem, onTogglePurchased, onRemove)
-                    }
-                }
-
-                item { Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing)) }
             }
         }
     }
-}
 
-@Composable
-private fun ShoppingRow(
-    shoppingItem: ShoppingItemDto,
-    onTogglePurchased: (ShoppingItemDto) -> Unit,
-    onRemove: (String) -> Unit
-) {
-    KitchenQuestCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Checkbox(
-                    checked = shoppingItem.isPurchased,
-                    onCheckedChange = { onTogglePurchased(shoppingItem) }
-                )
-                Text(
-                    text = shoppingItem.ingredientName,
-                    textDecoration = if (shoppingItem.isPurchased) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (shoppingItem.isPurchased) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Clear shopping list?") },
+            text = { Text("This will remove every item currently on your shopping list.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmClear = false
+                        onClear()
                     }
-                )
+                ) {
+                    Text("Clear")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClear = false }) {
+                    Text("Cancel")
+                }
             }
-            IconButton(onClick = { onRemove(shoppingItem.id) }) {
-                Icon(Icons.Filled.Delete, contentDescription = "Remove item")
-            }
-        }
+        )
     }
 }

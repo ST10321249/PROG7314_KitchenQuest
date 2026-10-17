@@ -25,43 +25,124 @@ class WhatCanIMakeViewModel(
     val uiState: StateFlow<WhatCanIMakeUiState> = _uiState.asStateFlow()
 
     fun load() {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null,
+                actionMessage = null
+            )
+        }
 
         viewModelScope.launch {
-            pantryRepository.getPantryItems().onSuccess { items ->
-                _uiState.update {
-                    it.copy(pantryIngredientNames = items.map { item -> item.ingredientName })
-                }
-            }
+            pantryRepository.getPantryItems().fold(
+                onSuccess = { items ->
+                    val ingredients = items
+                        .map { it.ingredientName }
+                        .distinctBy { it.lowercase() }
 
-            recipeRepository.getRecommendations().fold(
-                onSuccess = { recommendations ->
                     _uiState.update {
-                        it.copy(isLoading = false, hasLoaded = true, recommendations = recommendations)
+                        it.copy(
+                            pantryIngredients = ingredients,
+                            selectedIngredients = ingredients.toSet()
+                        )
                     }
+
+                    loadRecommendations(ingredients)
                 },
                 onFailure = { failure ->
                     _uiState.update {
-                        it.copy(isLoading = false, hasLoaded = true, errorMessage = failure.message)
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            errorMessage = failure.message
+                        )
                     }
                 }
             )
         }
     }
 
-    fun addMissingToShoppingList(recommendation: RecipeRecommendationDto) {
-        if (recommendation.recipeSourceId in _uiState.value.addedToShoppingList) {
-            return
+    fun toggleIngredient(name: String) {
+        val selected = _uiState.value.selectedIngredients.toMutableSet()
+        if (!selected.add(name)) selected.remove(name)
+
+        _uiState.update {
+            it.copy(
+                selectedIngredients = selected,
+                actionMessage = null
+            )
         }
 
+        if (selected.isEmpty()) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    hasLoaded = true,
+                    recommendations = emptyList()
+                )
+            }
+        } else {
+            loadRecommendations(selected.toList())
+        }
+    }
+
+    fun resetIngredients() {
+        val ingredients = _uiState.value.pantryIngredients
+        _uiState.update { it.copy(selectedIngredients = ingredients.toSet()) }
+        loadRecommendations(ingredients)
+    }
+
+    fun addMissingToShoppingList(recommendation: RecipeRecommendationDto) {
+        if (recommendation.missingIngredients.isEmpty()) return
+
         viewModelScope.launch {
-            recommendation.missingIngredients.forEach { ingredientName ->
-                shoppingRepository.addShoppingItem(ingredientName, null, null)
+            var added = 0
+            recommendation.missingIngredients.distinct().forEach { ingredient ->
+                shoppingRepository
+                    .addShoppingItem(ingredient, null, null)
+                    .onSuccess { added += 1 }
             }
 
             _uiState.update {
-                it.copy(addedToShoppingList = it.addedToShoppingList + recommendation.recipeSourceId)
+                it.copy(
+                    actionMessage = if (added > 0) {
+                        "Added $added missing ingredient${if (added == 1) "" else "s"} to your shopping list."
+                    } else {
+                        "We couldn't add those ingredients right now."
+                    }
+                )
             }
+        }
+    }
+
+    fun clearActionMessage() {
+        _uiState.update { it.copy(actionMessage = null) }
+    }
+
+    private fun loadRecommendations(ingredients: List<String>) {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+        viewModelScope.launch {
+            recipeRepository.getRecommendations(ingredients).fold(
+                onSuccess = { recommendations ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            recommendations = recommendations
+                        )
+                    }
+                },
+                onFailure = { failure ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            errorMessage = failure.message
+                        )
+                    }
+                }
+            )
         }
     }
 }

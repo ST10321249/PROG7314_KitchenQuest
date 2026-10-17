@@ -6,8 +6,8 @@ data class ProfileUiState(
     val displayName: String = "",
     val email: String = "",
     val mealsCooked: Int = 0,
-    val savedRecipesCount: Int = 0,
-    val pantryItemCount: Int = 0,
-    val expiringSoonCount: Int = 0,
+    val savedRecipes: Int = 0,
+    val expiringSoon: Int = 0,
+    val averageRating: Double? = null,
     val errorMessage: String? = null
 )

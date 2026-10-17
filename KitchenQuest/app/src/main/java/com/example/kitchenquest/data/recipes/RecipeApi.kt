@@ -22,6 +22,7 @@ interface RecipeApi {
 
     @GET("api/recipes/recommendations")
     suspend fun getRecommendations(
+        @Query("ingredients") ingredients: String? = null,
         @Query("number") number: Int? = null
     ): RecipeRecommendationsResponseDto
 }

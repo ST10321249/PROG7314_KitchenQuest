@@ -82,15 +82,29 @@ async function getRecipeById(req, res, next) {
 
 async function getRecommendations(req, res, next) {
   try {
-    const pantryItems = await PantryItem.find({ userId: req.user.uid });
+    // The normal flow uses every ingredient stored in the user's pantry.
+    // Part 2's "What Can I Make?" screen can also pass a temporary
+    // comma-separated ingredient list when the user removes a chip. This
+    // changes the recommendation search without deleting pantry data.
+    const requestedIngredients = typeof req.query.ingredients === 'string'
+      ? req.query.ingredients
+          .split(',')
+          .map((name) => name.trim())
+          .filter(Boolean)
+      : [];
 
-    if (pantryItems.length === 0) {
+    let ingredientNames = requestedIngredients;
+
+    if (ingredientNames.length === 0) {
+      const pantryItems = await PantryItem.find({ userId: req.user.uid });
+      ingredientNames = pantryItems.map((item) => item.ingredientName);
+    }
+
+    if (ingredientNames.length === 0) {
       return res.status(200).json({ recipes: [] });
     }
 
-    const ingredientNames = pantryItems.map((item) => item.ingredientName);
     const number = req.query.number ? Number(req.query.number) : 10;
-
     const results = await recipeApiClient.findByIngredients(ingredientNames, number);
 
     res.status(200).json({ recipes: results.map(toRecommendationDto) });

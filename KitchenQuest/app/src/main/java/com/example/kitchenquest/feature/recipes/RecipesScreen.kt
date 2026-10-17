@@ -1,10 +1,10 @@
 package com.example.kitchenquest.feature.recipes
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,38 +12,48 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.recipes.RecipeSearchResultDto
-import com.example.kitchenquest.ui.components.KitchenQuestCard
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
+import com.example.kitchenquest.ui.components.KitchenQuestIconButton
+import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
 import com.example.kitchenquest.ui.components.KitchenQuestSearchField
 import com.example.kitchenquest.ui.components.KitchenQuestSectionTitle
+import com.example.kitchenquest.ui.theme.KitchenGreen
+import com.example.kitchenquest.ui.theme.KitchenOrangeLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
-@OptIn(ExperimentalLayoutApi::class)
+private val recipeFilters = listOf("All", "Under 30 min", "Chicken", "Vegetarian")
+private val recipeCategories = listOf(
+    "Breakfast" to "🍳",
+    "Lunch" to "🥗",
+    "Dinner" to "🍲",
+    "Healthy" to "🥑"
+)
+
 @Composable
 fun RecipesScreen(
     state: RecipesUiState,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
-    onDietSelected: (String) -> Unit,
-    onCuisineSelected: (String) -> Unit,
-    onMaxReadyTimeSelected: (Int) -> Unit,
+    onFilterSelected: (String) -> Unit,
+    onCategorySelected: (String) -> Unit,
     onWhatCanIMake: () -> Unit,
     onSavedRecipes: () -> Unit,
     onRecipeClick: (RecipeSearchResultDto) -> Unit
@@ -52,21 +62,29 @@ fun RecipesScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(KitchenQuestDimens.ScreenPadding),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(
+                    start = KitchenQuestDimens.ScreenPadding,
+                    end = KitchenQuestDimens.ScreenPadding,
+                    top = KitchenQuestDimens.MediumSpacing
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "Recipes", style = MaterialTheme.typography.headlineSmall)
-
-            IconButton(onClick = onSavedRecipes) {
-                Icon(Icons.Filled.Favorite, contentDescription = "Saved recipes")
-            }
+            Text(
+                text = "Recipes",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.headlineMedium
+            )
+            KitchenQuestIconButton(
+                icon = Icons.Filled.Favorite,
+                contentDescription = "Saved recipes",
+                onClick = onSavedRecipes
+            )
         }
 
+        Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
+
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = KitchenQuestDimens.ScreenPadding)
+            modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding)
         ) {
             KitchenQuestSearchField(
                 value = state.searchQuery,
@@ -75,93 +93,114 @@ fun RecipesScreen(
                 onSearch = onSearch
             )
 
-            Spacer(modifier = Modifier.height(KitchenQuestDimens.FieldSpacing))
+            Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
 
-            KitchenQuestSectionTitle(title = "FILTERS")
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onWhatCanIMake,
+                shape = RoundedCornerShape(KitchenQuestDimens.LargeCorner),
+                color = KitchenGreen
+            ) {
+                Row(
+                    modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "What Can I Make?",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = androidx.compose.ui.graphics.Color.White
+                        )
+                        Text(
+                            text = "Find recipes using ingredients in My Kitchen",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f)
+                        )
+                    }
+                    Text("›", style = MaterialTheme.typography.titleLarge, color = androidx.compose.ui.graphics.Color.White)
+                }
+            }
 
-            Spacer(modifier = Modifier.height(KitchenQuestDimens.TinySpacing))
+            Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
 
-            FlowRow {
-                RecipeFilterOptions.diets.forEach { diet ->
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState())
+            ) {
+                recipeFilters.forEach { filter ->
                     KitchenQuestChoiceChip(
-                        text = diet,
-                        selected = state.selectedDiet == diet,
-                        onClick = { onDietSelected(diet) }
+                        text = filter,
+                        selected = state.selectedFilter == filter,
+                        onClick = { onFilterSelected(filter) }
                     )
                 }
             }
 
-            FlowRow {
-                RecipeFilterOptions.cuisines.forEach { cuisine ->
-                    KitchenQuestChoiceChip(
-                        text = cuisine,
-                        selected = state.selectedCuisine == cuisine,
-                        onClick = { onCuisineSelected(cuisine) }
-                    )
+            Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
+
+            Text("Categories", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+            ) {
+                recipeCategories.forEach { (category, emoji) ->
+                    Surface(
+                        onClick = { onCategorySelected(category) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+                        color = KitchenOrangeLight
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = KitchenQuestDimens.MediumSpacing),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(emoji, style = MaterialTheme.typography.titleLarge)
+                            Text(category, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
                 }
             }
 
-            FlowRow {
-                RecipeFilterOptions.readyTimes.forEach { minutes ->
-                    KitchenQuestChoiceChip(
-                        text = "Under $minutes min",
-                        selected = state.selectedMaxReadyTime == minutes,
-                        onClick = { onMaxReadyTimeSelected(minutes) }
-                    )
-                }
-            }
+            Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
-            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
-
-            KitchenQuestCard(onClick = onWhatCanIMake) {
-                Text(
-                    text = "What Can I Make?",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Find recipes using ingredients in My Kitchen",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            KitchenQuestSectionTitle(title = "Popular this week")
         }
-
-        Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
 
         Box(modifier = Modifier.weight(1f)) {
             when {
-                state.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                state.errorMessage != null -> {
-                    Box(
+                state.isLoading && !state.hasLoaded -> {
+                    KitchenQuestLoadingState(
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .padding(KitchenQuestDimens.ScreenPadding)
-                    ) {
-                        KitchenQuestErrorState(message = state.errorMessage, onRetry = onSearch)
-                    }
-                }
-
-                !state.hasSearched -> {
-                    KitchenQuestEmptyState(
-                        title = "Find something to cook",
-                        message = "Search by name or ingredient, or tap a filter above.",
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(KitchenQuestDimens.ScreenPadding)
+                            .padding(KitchenQuestDimens.ScreenPadding),
+                        message = "Finding recipes..."
                     )
                 }
 
-                state.results.isEmpty() -> {
+                state.errorMessage != null -> {
+                    KitchenQuestErrorState(
+                        message = state.errorMessage,
+                        onRetry = onSearch,
+                        modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
+                    )
+                }
+
+                state.results.isEmpty() && state.hasLoaded -> {
                     KitchenQuestEmptyState(
                         title = "No recipes found",
-                        message = "Try a different search or fewer filters.",
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(KitchenQuestDimens.ScreenPadding)
+                        message = "Try another search or remove a filter.",
+                        modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
+                    )
+                }
+
+                !state.hasLoaded -> {
+                    KitchenQuestEmptyState(
+                        title = "Find something to cook",
+                        message = "Search for a recipe, choose a category, or browse recipes based on your kitchen.",
+                        modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding),
+                        actionText = "Browse recipes",
+                        onAction = onSearch
                     )
                 }
 
@@ -171,7 +210,7 @@ fun RecipesScreen(
                         verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
                     ) {
                         items(state.results, key = { it.recipeSourceId }) { recipe ->
-                            RecipeResultRow(recipe = recipe, onClick = { onRecipeClick(recipe) })
+                            RecipeResultRow(recipe, onClick = { onRecipeClick(recipe) })
                         }
                     }
                 }
@@ -185,31 +224,44 @@ private fun RecipeResultRow(
     recipe: RecipeSearchResultDto,
     onClick: () -> Unit
 ) {
-    KitchenQuestCard(onClick = onClick) {
-        Text(
-            text = recipe.title,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)) {
-            recipe.readyInMinutes?.let {
-                Text(
-                    text = "$it min",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(KitchenQuestDimens.LargeCorner),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Row(
+            modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(56.dp),
+                shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+                color = KitchenOrangeLight
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("🍲", style = MaterialTheme.typography.headlineSmall)
+                }
             }
-            recipe.servings?.let {
-                Text(
-                    text = "$it servings",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = KitchenQuestDimens.MediumSpacing)
+            ) {
+                Text(recipe.title, style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)) {
+                    recipe.readyInMinutes?.let {
+                        Text("$it min", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    recipe.servings?.let {
+                        Text("$it servings", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
+
+            Text("›", style = MaterialTheme.typography.titleLarge)
         }
     }
 }

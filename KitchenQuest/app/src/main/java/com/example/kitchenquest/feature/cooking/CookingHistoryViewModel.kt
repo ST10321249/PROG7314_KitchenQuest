@@ -18,16 +18,59 @@ class CookingHistoryViewModel(
     val uiState: StateFlow<CookingHistoryUiState> = _uiState.asStateFlow()
 
     fun load() {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null
+            )
+        }
+
         viewModelScope.launch {
             historyRepository.getHistory().fold(
                 onSuccess = { entries ->
-                    _uiState.update { it.copy(isLoading = false, hasLoaded = true, entries = entries) }
+                    val notes = buildMap {
+                        entries.forEach { entry ->
+                            historyRepository
+                                .getNote(entry.recipeSourceId)
+                                .getOrNull()
+                                ?.note
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { note ->
+                                    put(entry.recipeSourceId, note)
+                                }
+                        }
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            entries = entries,
+                            notesByRecipeId = notes,
+                            errorMessage = null
+                        )
+                    }
                 },
                 onFailure = { failure ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = failure.message) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = failure.message
+                                ?: "Your cooking history couldn't be loaded."
+                        )
+                    }
                 }
             )
+        }
+    }
+
+    fun selectFilter(filter: CookingHistoryFilter) {
+        _uiState.update {
+            it.copy(selectedFilter = filter)
         }
     }
 }
