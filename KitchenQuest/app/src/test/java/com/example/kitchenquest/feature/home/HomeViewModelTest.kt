@@ -4,6 +4,8 @@ import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.data.pantry.PantryRepository
 import com.example.kitchenquest.data.recipes.RecipeRecommendationDto
 import com.example.kitchenquest.data.recipes.RecipeRepository
+import com.example.kitchenquest.data.shopping.ShoppingItemDto
+import com.example.kitchenquest.data.shopping.ShoppingRepository
 import com.example.kitchenquest.data.user.UserProfileDto
 import com.example.kitchenquest.data.user.UserRepository
 import java.time.LocalDate
@@ -24,7 +26,9 @@ import org.junit.Test
 class HomeViewModelTest {
 
     private class FakeUserRepository(
-        private val result: Result<UserProfileDto> = Result.success(UserProfileDto(displayName = "Akeev"))
+        private val result: Result<UserProfileDto> = Result.success(
+            UserProfileDto(displayName = "Akeev")
+        )
     ) : UserRepository {
         override suspend fun syncUser(
             displayName: String?,
@@ -52,22 +56,45 @@ class HomeViewModelTest {
             gate?.await()
             return result
         }
+
         override suspend fun addPantryItem(
-            ingredientName: String, quantity: Double, unit: String, category: String, expiryDate: String?
+            ingredientName: String,
+            quantity: Double,
+            unit: String,
+            category: String,
+            expiryDate: String?
         ) = error("not used")
 
         override suspend fun updatePantryItem(
-            id: String, ingredientName: String?, quantity: Double?, unit: String?, category: String?, expiryDate: String?
+            id: String,
+            ingredientName: String?,
+            quantity: Double?,
+            unit: String?,
+            category: String?,
+            expiryDate: String?
         ) = error("not used")
 
         override suspend fun deletePantryItem(id: String) = error("not used")
     }
 
+    private class FakeShoppingRepository(
+        private val result: Result<List<ShoppingItemDto>> = Result.success(emptyList())
+    ) : ShoppingRepository {
+        override suspend fun getShoppingItems() = result
+        override suspend fun addShoppingItem(name: String, quantity: Double?, unit: String?) = error("not used")
+        override suspend fun setPurchased(id: String, purchased: Boolean) = error("not used")
+        override suspend fun deleteShoppingItem(id: String) = error("not used")
+    }
+
     private class FakeRecipeRepository(
         private val result: Result<List<RecipeRecommendationDto>> = Result.success(emptyList())
     ) : RecipeRepository {
-        override suspend fun searchRecipes(query: String?, diet: String?, cuisine: String?, maxReadyTime: Int?) =
-            error("not used")
+        override suspend fun searchRecipes(
+            query: String?,
+            diet: String?,
+            cuisine: String?,
+            maxReadyTime: Int?
+        ) = error("not used")
 
         override suspend fun getRecipeById(id: String) = error("not used")
         override suspend fun getRecommendations() = result
@@ -84,7 +111,7 @@ class HomeViewModelTest {
     }
 
     private fun pantryItem(days: Long?) = PantryItemDto(
-        id = "id",
+        id = "id-$days",
         ingredientName = "Milk",
         quantity = 1.0,
         unit = "l",
@@ -93,12 +120,21 @@ class HomeViewModelTest {
     )
 
     @Test
-    fun loadingComputesPantryCountsAndDisplayNameFromRealRepositories() {
-        val pantryItems = listOf(pantryItem(days = 1), pantryItem(days = 10), pantryItem(days = null))
+    fun loadingComputesPantryAndShoppingSummaryFromRepositories() {
+        val pantryItems = listOf(
+            pantryItem(days = 1),
+            pantryItem(days = 10),
+            pantryItem(days = null)
+        )
+        val shoppingItems = listOf(
+            ShoppingItemDto(id = "1", ingredientName = "Bread", isPurchased = false),
+            ShoppingItemDto(id = "2", ingredientName = "Milk", isPurchased = true)
+        )
 
         val viewModel = HomeViewModel(
             userRepository = FakeUserRepository(),
             pantryRepository = FakePantryRepository(Result.success(pantryItems)),
+            shoppingRepository = FakeShoppingRepository(Result.success(shoppingItems)),
             recipeRepository = FakeRecipeRepository()
         )
 
@@ -106,14 +142,15 @@ class HomeViewModelTest {
         val state = viewModel.uiState.value
 
         assertEquals("Akeev", state.displayName)
-        assertEquals(3, state.pantryItemCount)
-        assertEquals(1, state.expiringSoonCount)
+        assertEquals(3, state.pantryCount)
+        assertEquals(1, state.shoppingCount)
+        assertEquals(1, state.expiringSoon.size)
         assertTrue(state.hasLoaded)
         assertFalse(state.isLoading)
     }
 
     @Test
-    fun recommendationsLoadIndependentlyOfPantryStats() {
+    fun recommendationsAreStoredWhenTheyLoadSuccessfully() {
         val recommendations = listOf(
             RecipeRecommendationDto(
                 recipeSourceId = "1",
@@ -127,14 +164,16 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             userRepository = FakeUserRepository(),
             pantryRepository = FakePantryRepository(Result.success(emptyList())),
+            shoppingRepository = FakeShoppingRepository(),
             recipeRepository = FakeRecipeRepository(Result.success(recommendations))
         )
 
         viewModel.load()
         val state = viewModel.uiState.value
 
-        assertFalse(state.recommendationsLoading)
         assertEquals(recommendations, state.recommendations)
+        assertTrue(state.hasLoaded)
+        assertFalse(state.isLoading)
     }
 
     @Test
@@ -142,6 +181,7 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             userRepository = FakeUserRepository(),
             pantryRepository = FakePantryRepository(Result.failure(RuntimeException("offline"))),
+            shoppingRepository = FakeShoppingRepository(),
             recipeRepository = FakeRecipeRepository()
         )
 
@@ -150,7 +190,8 @@ class HomeViewModelTest {
 
         assertTrue(state.hasLoaded)
         assertEquals("offline", state.errorMessage)
-        assertEquals(0, state.pantryItemCount)
+        assertEquals(0, state.pantryCount)
+        assertTrue(state.expiringSoon.isEmpty())
     }
 
     @Test
@@ -161,31 +202,36 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             userRepository = FakeUserRepository(),
             pantryRepository = pantryRepository,
+            shoppingRepository = FakeShoppingRepository(),
             recipeRepository = FakeRecipeRepository()
         )
 
-        viewModel.load() // suspends inside getPantryItems(), still "loading"
-        viewModel.load() // should be a no-op: isLoading is already true
-
-        gate.complete(Unit) // let the first call finish
+        viewModel.load()
+        viewModel.load()
+        gate.complete(Unit)
 
         assertEquals(1, pantryRepository.fetchCount)
         assertTrue(viewModel.uiState.value.hasLoaded)
     }
 
     @Test
-    fun callingLoadAgainAfterCompletionRefreshesTheData() {
-        val pantryRepository = FakePantryRepository(Result.success(listOf(pantryItem(days = 1))))
+    fun loadAfterCompletionIsIgnoredUntilRefreshIsRequested() {
+        val pantryRepository = FakePantryRepository(
+            Result.success(listOf(pantryItem(days = 1)))
+        )
 
         val viewModel = HomeViewModel(
             userRepository = FakeUserRepository(),
             pantryRepository = pantryRepository,
+            shoppingRepository = FakeShoppingRepository(),
             recipeRepository = FakeRecipeRepository()
         )
 
         viewModel.load()
-        viewModel.load() // Home refreshes on re-entry, unlike Settings
+        viewModel.load()
+        assertEquals(1, pantryRepository.fetchCount)
 
+        viewModel.refresh()
         assertEquals(2, pantryRepository.fetchCount)
     }
 }

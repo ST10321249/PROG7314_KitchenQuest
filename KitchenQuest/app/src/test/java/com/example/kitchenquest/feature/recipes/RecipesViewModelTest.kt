@@ -25,6 +25,14 @@ class RecipesViewModelTest {
         var lastCuisine: String? = "unset"
         var lastMaxReadyTime: Int? = -1
         var callCount = 0
+        var result: Result<List<RecipeSearchResultDto>> = Result.success(
+            listOf(
+                RecipeSearchResultDto(
+                    recipeSourceId = "1",
+                    title = "Result"
+                )
+            )
+        )
 
         override suspend fun searchRecipes(
             query: String?,
@@ -37,7 +45,7 @@ class RecipesViewModelTest {
             lastDiet = diet
             lastCuisine = cuisine
             lastMaxReadyTime = maxReadyTime
-            return Result.success(listOf(RecipeSearchResultDto(recipeSourceId = "1", title = "Result")))
+            return result
         }
 
         override suspend fun getRecipeById(id: String): Result<RecipeDetailDto> = error("not used")
@@ -62,65 +70,71 @@ class RecipesViewModelTest {
     private val state get() = viewModel.uiState.value
 
     @Test
-    fun searchingWithNoQueryAndNoFiltersDoesNothing() {
+    fun aPlainSearchWithNoQueryUsesNoFilters() {
         viewModel.search()
-
-        assertEquals(0, repository.callCount)
-        assertEquals(false, state.hasSearched)
-    }
-
-    @Test
-    fun selectingADietTriggersASearchWithNoTextQuery() {
-        viewModel.onDietSelected("Vegan")
 
         assertEquals(1, repository.callCount)
         assertNull(repository.lastQuery)
-        assertEquals("vegan", repository.lastDiet)
-        assertEquals("Vegan", state.selectedDiet)
+        assertNull(repository.lastDiet)
+        assertNull(repository.lastCuisine)
+        assertNull(repository.lastMaxReadyTime)
+        assertTrue(state.hasLoaded)
+        assertEquals(1, state.results.size)
     }
 
     @Test
-    fun clearingTheOnlyActiveFilterDropsStaleResultsInsteadOfSearchingAgain() {
-        viewModel.onCuisineSelected("Italian")
+    fun vegetarianFilterTriggersADietSearch() {
+        viewModel.onFilterSelected("Vegetarian")
+
         assertEquals(1, repository.callCount)
-        assertTrue(state.hasSearched)
-
-        viewModel.onCuisineSelected("Italian") // toggling the same chip clears it
-
-        assertNull(state.selectedCuisine)
-        assertEquals(1, repository.callCount) // no point searching with zero criteria
-        assertTrue(state.results.isEmpty())
-        assertEquals(false, state.hasSearched) // back to the "search for something" prompt
-    }
-
-    @Test
-    fun allThreeFilterKindsAreForwardedTogether() {
-        viewModel.onDietSelected("Vegetarian")
-        viewModel.onCuisineSelected("Mexican")
-        viewModel.onMaxReadyTimeSelected(30)
-
+        assertNull(repository.lastQuery)
         assertEquals("vegetarian", repository.lastDiet)
-        assertEquals("mexican", repository.lastCuisine)
+        assertEquals("Vegetarian", state.selectedFilter)
+    }
+
+    @Test
+    fun underThirtyMinutesFilterIsForwarded() {
+        viewModel.onFilterSelected("Under 30 min")
+
+        assertEquals(1, repository.callCount)
         assertEquals(30, repository.lastMaxReadyTime)
-        assertEquals(3, repository.callCount)
     }
 
     @Test
-    fun textQueryAndFiltersCanCombine() {
-        viewModel.onQueryChange("pasta")
-        viewModel.onDietSelected("Vegan")
+    fun chickenFilterUsesChickenAsTheSearchQuery() {
+        viewModel.onFilterSelected("Chicken")
 
-        assertEquals("pasta", repository.lastQuery)
-        assertEquals("vegan", repository.lastDiet)
+        assertEquals(1, repository.callCount)
+        assertEquals("chicken", repository.lastQuery)
     }
 
     @Test
-    fun aSuccessfulSearchMarksHasSearchedAndStoresResults() {
+    fun typedQueryTakesPriorityOverTheChickenFilterQuery() {
+        viewModel.onFilterSelected("Chicken")
         viewModel.onQueryChange("pasta")
         viewModel.search()
 
-        assertTrue(state.hasSearched)
-        assertEquals(1, state.results.size)
+        assertEquals("pasta", repository.lastQuery)
+    }
+
+    @Test
+    fun searchCategorySetsTheQueryAndResetsTheFilter() {
+        viewModel.onFilterSelected("Vegetarian")
+        viewModel.searchCategory("Breakfast")
+
+        assertEquals("Breakfast", state.searchQuery)
+        assertEquals("All", state.selectedFilter)
+        assertEquals("Breakfast", repository.lastQuery)
+    }
+
+    @Test
+    fun failedSearchStoresTheErrorAndStopsLoading() {
+        repository.result = Result.failure(RuntimeException("offline"))
+
+        viewModel.search()
+
+        assertEquals("offline", state.errorMessage)
+        assertTrue(state.hasLoaded)
         assertEquals(false, state.isLoading)
     }
 }

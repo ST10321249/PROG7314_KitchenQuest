@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -23,26 +24,56 @@ class WhatCanIMakeViewModelTest {
     private class FakeRecipeRepository(
         private val result: Result<List<RecipeRecommendationDto>>
     ) : RecipeRepository {
-        override suspend fun searchRecipes(query: String?, diet: String?, cuisine: String?, maxReadyTime: Int?) =
-            error("not used")
+        val recommendationRequests = mutableListOf<List<String>>()
+
+        override suspend fun searchRecipes(
+            query: String?,
+            diet: String?,
+            cuisine: String?,
+            maxReadyTime: Int?
+        ) = error("not used")
 
         override suspend fun getRecipeById(id: String) = error("not used")
         override suspend fun getRecommendations() = result
+
+        override suspend fun getRecommendations(
+            ingredients: List<String>
+        ): Result<List<RecipeRecommendationDto>> {
+            recommendationRequests += ingredients
+            return result
+        }
     }
 
     private class FakePantryRepository(
         private val names: List<String>
     ) : PantryRepository {
         override suspend fun getPantryItems() = Result.success(
-            names.map { PantryItemDto(id = it, ingredientName = it, quantity = 1.0, unit = "unit", category = "Meat") }
+            names.map {
+                PantryItemDto(
+                    id = it,
+                    ingredientName = it,
+                    quantity = 1.0,
+                    unit = "unit",
+                    category = "Other"
+                )
+            }
         )
 
         override suspend fun addPantryItem(
-            ingredientName: String, quantity: Double, unit: String, category: String, expiryDate: String?
+            ingredientName: String,
+            quantity: Double,
+            unit: String,
+            category: String,
+            expiryDate: String?
         ) = error("not used")
 
         override suspend fun updatePantryItem(
-            id: String, ingredientName: String?, quantity: Double?, unit: String?, category: String?, expiryDate: String?
+            id: String,
+            ingredientName: String?,
+            quantity: Double?,
+            unit: String?,
+            category: String?,
+            expiryDate: String?
         ) = error("not used")
 
         override suspend fun deletePantryItem(id: String) = error("not used")
@@ -53,9 +84,18 @@ class WhatCanIMakeViewModelTest {
 
         override suspend fun getShoppingItems() = error("not used")
 
-        override suspend fun addShoppingItem(name: String, quantity: Double?, unit: String?): Result<ShoppingItemDto> {
+        override suspend fun addShoppingItem(
+            name: String,
+            quantity: Double?,
+            unit: String?
+        ): Result<ShoppingItemDto> {
             added.add(name)
-            return Result.success(ShoppingItemDto(id = name, ingredientName = name))
+            return Result.success(
+                ShoppingItemDto(
+                    id = name,
+                    ingredientName = name
+                )
+            )
         }
 
         override suspend fun setPurchased(id: String, purchased: Boolean) = error("not used")
@@ -81,9 +121,12 @@ class WhatCanIMakeViewModelTest {
     )
 
     @Test
-    fun loadPopulatesBothPantryNamesAndRecommendations() {
+    fun loadPopulatesPantrySelectionsAndRecommendations() {
+        val recipeRepository = FakeRecipeRepository(
+            Result.success(listOf(recommendation(listOf("Cream"))))
+        )
         val viewModel = WhatCanIMakeViewModel(
-            recipeRepository = FakeRecipeRepository(Result.success(listOf(recommendation(listOf("Cream"))))),
+            recipeRepository = recipeRepository,
             pantryRepository = FakePantryRepository(listOf("Milk", "Eggs")),
             shoppingRepository = FakeShoppingRepository()
         )
@@ -91,41 +134,83 @@ class WhatCanIMakeViewModelTest {
         viewModel.load()
         val state = viewModel.uiState.value
 
-        assertEquals(listOf("Milk", "Eggs"), state.pantryIngredientNames)
+        assertEquals(listOf("Milk", "Eggs"), state.pantryIngredients)
+        assertEquals(setOf("Milk", "Eggs"), state.selectedIngredients)
+        assertEquals(listOf("Milk", "Eggs"), recipeRepository.recommendationRequests.single())
         assertEquals(1, state.recommendations.size)
         assertTrue(state.hasLoaded)
     }
 
     @Test
-    fun addingMissingIngredientsSendsEachOneToTheShoppingList() {
-        val shoppingRepository = FakeShoppingRepository()
-
+    fun togglingAnIngredientRefreshesRecommendationsWithTheNewSelection() {
+        val recipeRepository = FakeRecipeRepository(Result.success(emptyList()))
         val viewModel = WhatCanIMakeViewModel(
-            recipeRepository = FakeRecipeRepository(Result.success(emptyList())),
-            pantryRepository = FakePantryRepository(emptyList()),
-            shoppingRepository = shoppingRepository
+            recipeRepository = recipeRepository,
+            pantryRepository = FakePantryRepository(listOf("Milk", "Eggs")),
+            shoppingRepository = FakeShoppingRepository()
         )
 
-        viewModel.addMissingToShoppingList(recommendation(listOf("Cream", "Garlic")))
+        viewModel.load()
+        viewModel.toggleIngredient("Eggs")
 
-        assertEquals(listOf("Cream", "Garlic"), shoppingRepository.added)
-        assertTrue("recipe-1" in viewModel.uiState.value.addedToShoppingList)
+        assertEquals(setOf("Milk"), viewModel.uiState.value.selectedIngredients)
+        assertEquals(listOf("Milk"), recipeRepository.recommendationRequests.last())
     }
 
     @Test
-    fun addingTheSameRecipesMissingIngredientsTwiceOnlySendsThemOnce() {
-        val shoppingRepository = FakeShoppingRepository()
+    fun removingTheLastSelectedIngredientClearsRecommendationsWithoutAnotherApiCall() {
+        val recipeRepository = FakeRecipeRepository(
+            Result.success(listOf(recommendation(emptyList())))
+        )
+        val viewModel = WhatCanIMakeViewModel(
+            recipeRepository = recipeRepository,
+            pantryRepository = FakePantryRepository(listOf("Milk")),
+            shoppingRepository = FakeShoppingRepository()
+        )
 
+        viewModel.load()
+        val callsBeforeToggle = recipeRepository.recommendationRequests.size
+
+        viewModel.toggleIngredient("Milk")
+
+        assertTrue(viewModel.uiState.value.selectedIngredients.isEmpty())
+        assertTrue(viewModel.uiState.value.recommendations.isEmpty())
+        assertEquals(callsBeforeToggle, recipeRepository.recommendationRequests.size)
+    }
+
+    @Test
+    fun addingMissingIngredientsAddsDistinctItemsAndShowsAConfirmationMessage() {
+        val shoppingRepository = FakeShoppingRepository()
         val viewModel = WhatCanIMakeViewModel(
             recipeRepository = FakeRecipeRepository(Result.success(emptyList())),
             pantryRepository = FakePantryRepository(emptyList()),
             shoppingRepository = shoppingRepository
         )
 
-        val recipe = recommendation(listOf("Cream"))
-        viewModel.addMissingToShoppingList(recipe)
-        viewModel.addMissingToShoppingList(recipe)
+        viewModel.addMissingToShoppingList(
+            recommendation(listOf("Cream", "Garlic", "Cream"))
+        )
 
-        assertEquals(listOf("Cream"), shoppingRepository.added)
+        assertEquals(listOf("Cream", "Garlic"), shoppingRepository.added)
+        assertEquals(
+            "Added 2 missing ingredients to your shopping list.",
+            viewModel.uiState.value.actionMessage
+        )
+    }
+
+    @Test
+    fun clearActionMessageRemovesThePreviousConfirmation() {
+        val shoppingRepository = FakeShoppingRepository()
+        val viewModel = WhatCanIMakeViewModel(
+            recipeRepository = FakeRecipeRepository(Result.success(emptyList())),
+            pantryRepository = FakePantryRepository(emptyList()),
+            shoppingRepository = shoppingRepository
+        )
+
+        viewModel.addMissingToShoppingList(recommendation(listOf("Cream")))
+        assertFalse(viewModel.uiState.value.actionMessage.isNullOrBlank())
+
+        viewModel.clearActionMessage()
+        assertTrue(viewModel.uiState.value.actionMessage == null)
     }
 }
