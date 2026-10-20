@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
@@ -85,7 +87,7 @@ fun IngredientDetailScreen(
                     color = KitchenOrangeLight
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Text("🥕", style = MaterialTheme.typography.displayMedium)
+                        Text(ingredientEmoji(item.ingredientName), style = MaterialTheme.typography.displayMedium)
                     }
                 }
             }
@@ -96,8 +98,33 @@ fun IngredientDetailScreen(
                 .fillMaxSize()
                 .padding(KitchenQuestDimens.ScreenPadding)
         ) {
-            Text(item.ingredientName, style = MaterialTheme.typography.headlineMedium)
-            Text(item.category, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(item.ingredientName, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        item.category,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (days != null && days <= 3) {
+                    Surface(
+                        shape = RoundedCornerShape(KitchenQuestDimens.ChipCorner),
+                        color = com.example.kitchenquest.ui.theme.KitchenRedLight
+                    ) {
+                        Text(
+                            text = expiryStatus,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = KitchenRed
+                        )
+                    }
+                }
+            }
 
             Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
@@ -108,8 +135,19 @@ fun IngredientDetailScreen(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing)) {
+                    Text(
+                        text = "Details",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(top = KitchenQuestDimens.SmallSpacing),
+                        color = MaterialTheme.colorScheme.outline
+                    )
                     DetailRow("Quantity", "${formatQuantity(item.quantity)} ${item.unit}")
-                    DetailRow("Expiry date", item.expiryDate ?: "Not set")
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                    DetailRow("Expiry date", item.expiryDate ?: "Not set", if (days != null && days <= 3) KitchenRed else MaterialTheme.colorScheme.onSurface)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     DetailRow(
                         "Expiry reminder",
                         expiryStatus,
@@ -160,3 +198,20 @@ private fun DetailRow(
 
 private fun formatQuantity(value: Double): String =
     if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(value)
+
+private fun ingredientEmoji(name: String): String {
+    val lower = name.lowercase()
+    return when {
+        "chicken" in lower -> "🍗"
+        "milk" in lower -> "🥛"
+        "spinach" in lower || "lettuce" in lower -> "🥬"
+        "tomato" in lower -> "🍅"
+        "egg" in lower -> "🥚"
+        "rice" in lower -> "🍚"
+        "pasta" in lower -> "🍝"
+        "cheese" in lower -> "🧀"
+        "onion" in lower -> "🧅"
+        "garlic" in lower -> "🧄"
+        else -> "🥕"
+    }
+}

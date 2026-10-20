@@ -1,5 +1,8 @@
 package com.example.kitchenquest.ui.components
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Kitchen
@@ -19,12 +22,14 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.kitchenquest.navigation.AppDestinations
+import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 private data class BottomNavigationItem(
     val title: String,
@@ -100,6 +105,42 @@ internal fun shouldShowBottomNavigation(
     return bottomNavigationRootForRoute(route) != null
 }
 
+/**
+ * Bottom tabs always return to the root screen for that section.
+ *
+ * This is intentionally not using saveState/restoreState. KitchenQuest has one
+ * NavHost rather than separate nested graphs per tab, so restoring a tab state
+ * could also restore a child destination such as Shopping List. That made the
+ * Home tab appear selected incorrectly and made repeated tab presses feel
+ * inconsistent. Popping to Home first gives each tab normal, predictable app
+ * behaviour: Home means Home, My Kitchen means the My Kitchen root, etc.
+ */
+private fun navigateToBottomRoot(
+    navController: NavHostController,
+    route: String
+) {
+    if (route == AppDestinations.Home) {
+        val popped = navController.popBackStack(
+            route = AppDestinations.Home,
+            inclusive = false
+        )
+
+        if (!popped && navController.currentDestination?.route != AppDestinations.Home) {
+            navController.navigate(AppDestinations.Home) {
+                launchSingleTop = true
+            }
+        }
+        return
+    }
+
+    navController.navigate(route) {
+        popUpTo(AppDestinations.Home) {
+            inclusive = false
+        }
+        launchSingleTop = true
+    }
+}
+
 @Composable
 fun BottomNavigationBar(
     navController: NavHostController
@@ -113,12 +154,13 @@ fun BottomNavigationBar(
     val selectedRoot =
         bottomNavigationRootForRoute(currentRoute)
 
-    androidx.compose.foundation.layout.Column {
+    Column {
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
         )
 
         NavigationBar(
+            modifier = Modifier.height(KitchenQuestDimens.BottomNavigationHeight),
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp
@@ -130,14 +172,10 @@ fun BottomNavigationBar(
                     selected = selected,
                     onClick = {
                         if (currentRoute != item.route) {
-                            navController.navigate(item.route) {
-                                popUpTo(AppDestinations.Home) {
-                                    saveState = true
-                                }
-
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            navigateToBottomRoot(
+                                navController = navController,
+                                route = item.route
+                            )
                         }
                     },
                     icon = {
@@ -148,7 +186,8 @@ fun BottomNavigationBar(
                                 } else {
                                     item.unselectedIcon
                                 },
-                            contentDescription = item.title
+                            contentDescription = item.title,
+                            modifier = Modifier.size(22.dp)
                         )
                     },
                     label = {

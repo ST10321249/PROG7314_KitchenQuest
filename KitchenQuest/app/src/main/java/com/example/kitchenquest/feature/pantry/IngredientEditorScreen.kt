@@ -1,6 +1,8 @@
 package com.example.kitchenquest.feature.pantry
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -13,8 +15,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,6 +28,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
@@ -60,6 +71,7 @@ fun IngredientEditorScreen(
     var errors by remember { mutableStateOf(IngredientFormErrors()) }
     var unitMenuExpanded by remember { mutableStateOf(false) }
     var nameMenuExpanded by remember { mutableStateOf(false) }
+    var showExpiryDatePicker by remember { mutableStateOf(false) }
 
     val suggestions = remember(name, knownIngredients) {
         if (name.isBlank()) {
@@ -103,7 +115,7 @@ fun IngredientEditorScreen(
                 supportingText = errors.name ?: "Start typing to match a known ingredient, or keep your own name.",
                 trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
                     .fillMaxWidth()
             )
 
@@ -158,7 +170,7 @@ fun IngredientEditorScreen(
                         label = { Text("Unit") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitMenuExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -202,14 +214,92 @@ fun IngredientEditorScreen(
         Text("EXPIRY DATE", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
-        KitchenQuestTextField(
-            value = expiryDate,
-            onValueChange = { expiryDate = it },
-            label = "YYYY-MM-DD",
-            isError = errors.expiryDate != null,
-            supportingText = errors.expiryDate,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            KitchenQuestTextField(
+                value = expiryDate,
+                onValueChange = {},
+                label = if (expiryDate.isBlank()) "Select expiry date" else "Expiry date",
+                isError = errors.expiryDate != null,
+                supportingText = errors.expiryDate ?: "Tap to choose a date",
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.CalendarMonth,
+                        contentDescription = "Choose expiry date"
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // The text field stays visually consistent with the rest of the form, while
+            // this overlay makes the whole field open the date picker instead of asking
+            // the user to type an ISO date manually.
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable { showExpiryDatePicker = true }
+            )
+        }
+
+        if (showExpiryDatePicker) {
+            val initialDateMillis = expiryDate
+                .takeIf { it.isNotBlank() }
+                ?.let { value ->
+                    runCatching {
+                        LocalDate.parse(value)
+                            .atStartOfDay(ZoneOffset.UTC)
+                            .toInstant()
+                            .toEpochMilli()
+                    }.getOrNull()
+                }
+
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = initialDateMillis
+            )
+
+            DatePickerDialog(
+                onDismissRequest = { showExpiryDatePicker = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { selectedMillis ->
+                                expiryDate = Instant.ofEpochMilli(selectedMillis)
+                                    .atZone(ZoneOffset.UTC)
+                                    .toLocalDate()
+                                    .toString()
+                                errors = errors.copy(expiryDate = null)
+                            }
+                            showExpiryDatePicker = false
+                        },
+                        enabled = datePickerState.selectedDateMillis != null
+                    ) {
+                        Text("Use date")
+                    }
+                },
+                dismissButton = {
+                    Row {
+                        if (expiryDate.isNotBlank()) {
+                            TextButton(
+                                onClick = {
+                                    expiryDate = ""
+                                    errors = errors.copy(expiryDate = null)
+                                    showExpiryDatePicker = false
+                                }
+                            ) {
+                                Text("Clear")
+                            }
+                        }
+
+                        TextButton(
+                            onClick = { showExpiryDatePicker = false }
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                }
+            ) {
+                DatePicker(state = datePickerState)
+            }
+        }
 
         Spacer(Modifier.height(KitchenQuestDimens.ExtraLargeSpacing))
 
