@@ -78,6 +78,8 @@ import com.example.kitchenquest.feature.shopping.ShoppingListScreen
 import com.example.kitchenquest.feature.shopping.ShoppingViewModel
 import com.example.kitchenquest.ui.components.AppScaffold
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun AppNavHost() {
@@ -144,6 +146,16 @@ fun AppNavHost() {
         unlockedUid = unlockedUid,
         justSignedIn = signedOutSinceLaunch
     )
+
+    // The system launch splash finishes first. On a cold start we briefly show
+    // KitchenQuest branding before opening the biometric prompt. The splash is
+    // NOT replayed for language changes or when returning from background.
+    LaunchedEffect(authState.isAuthChecked, signedInUid, requiresBiometricUnlock) {
+        if (authState.isAuthChecked && requiresBiometricUnlock && !biometricGate.startupSplashShown) {
+            delay(550)
+            biometricGate.finishStartupSplash()
+        }
+    }
 
     val coroutineScope =
         rememberCoroutineScope()
@@ -213,10 +225,16 @@ fun AppNavHost() {
             return@LaunchedEffect
         }
 
-        val currentRoute =
-            navController
-                .currentDestination
-                ?.route
+        // Wait until the NavHost has restored its back stack. On an Activity
+        // recreation (e.g. a locale change), the current route is Settings,
+        // Recipe Details, etc., NOT the initial splash destination.
+        val currentRoute = navController.currentBackStackEntryFlow.first().destination.route
+
+        // A restored authenticated destination is already authorized. Do not
+        // rerun initial profile sync + navigate(Home) just because language changed.
+        // This preserves Settings, current scrolling and navigation history.
+        val alreadyInsideApp = SessionNavigationRules.isAlreadyInsideApp(currentRoute)
+        if (authState.user != null && alreadyInsideApp) return@LaunchedEffect
 
         val currentUser =
             authState.user
@@ -363,6 +381,12 @@ fun AppNavHost() {
     }
 
     if (requiresBiometricUnlock && signedInUid != null) {
+        // Never compose protected destinations while the user is locked.
+        // A cold-start splash leads into the system biometric prompt.
+        if (!biometricGate.startupSplashShown) {
+            SessionLoadingScreen()
+            return
+        }
         // Only the lock screen is composed until the returning user verifies.
         BiometricUnlockScreen(
             userId = signedInUid,

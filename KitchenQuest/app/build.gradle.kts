@@ -83,6 +83,9 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.play.services)
 
+    // On-device text translation between English and Afrikaans (models downloaded on demand).
+    implementation("com.google.mlkit:translate:17.0.3")
+
     // Biometric unlock (fingerprint or supported face recognition)
     implementation("androidx.biometric:biometric:1.1.0")
 

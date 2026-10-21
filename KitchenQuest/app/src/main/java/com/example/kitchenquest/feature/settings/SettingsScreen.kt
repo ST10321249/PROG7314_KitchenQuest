@@ -374,7 +374,7 @@ private fun SettingsContent(
 
     SectionHeader(stringResource(R.string.settings_preferences))
 
-    // Language is stored locally for now. Account/backend sync follows in R7.
+    // Interface language remains a local preference; server preference sync is R8.
     SettingsGroup {
         SettingsRow(
             icon = Icons.Outlined.Language,
@@ -393,6 +393,10 @@ private fun SettingsContent(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = KitchenQuestDimens.SmallSpacing)
+    )
+
+    TranslationModelsPanel(
+        modifier = Modifier.padding(top = KitchenQuestDimens.MediumSpacing)
     )
 
     SettingsGroup {

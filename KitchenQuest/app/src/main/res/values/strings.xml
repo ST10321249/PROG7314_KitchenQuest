@@ -376,4 +376,17 @@
     <string name="nav_sync_failed">Unable to sync your profile. Please try again.</string>
     <string name="nav_save_failed">Unable to save your preferences. Please try again.</string>
     <string name="nav_recipe_fallback">Recipe</string>
+    <!-- Commit 7: offline dynamic content translation -->
+    <string name="translation_title">Offline recipe translation</string>
+    <string name="translation_description">Download the English and Afrikaans language models to translate recipe content on your device. Your original data stays unchanged.</string>
+    <string name="translation_checking">Checking language models…</string>
+    <string name="translation_ready">English and Afrikaans models are installed.</string>
+    <string name="translation_not_downloaded">Download the language models to enable offline translation.</string>
+    <string name="translation_failed">Could not access the translation models. Check your connection and try again.</string>
+    <string name="translation_download">Download models</string>
+    <string name="translation_downloading">Downloading…</string>
+    <string name="translation_test">Translate with Google</string>
+    <string name="translation_test_result">Afrikaans translation preview</string>
+    <string name="translation_google_attribution">Powered by Google Translate</string>
+    <string name="translation_wifi_note">Model downloads require Wi-Fi (about 30 MB per model). Recipe integration follows in a later commit.</string>
 </resources>

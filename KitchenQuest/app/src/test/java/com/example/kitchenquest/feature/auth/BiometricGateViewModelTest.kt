@@ -39,6 +39,17 @@ class BiometricGateViewModelTest {
         assertNull(gate.unlockedUid)
     }
 
+    @Test fun coldLaunchShowsSplashOnceBeforeBiometrics() {
+        val gate = BiometricGateViewModel()
+        assertFalse(gate.startupSplashShown)
+        gate.finishStartupSplash()
+        assertTrue(gate.startupSplashShown)
+        gate.verified("user")
+        gate.lock()
+        // Re-locking on background return must not replay the splash.
+        assertTrue(gate.startupSplashShown)
+    }
+
     @Test fun changingFirebaseAccountNeverReusesUnlock() {
         val gate = BiometricGateViewModel()
         gate.sessionResolved("first")

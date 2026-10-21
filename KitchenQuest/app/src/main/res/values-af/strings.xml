@@ -376,4 +376,17 @@
     <string name="nav_sync_failed">Kon nie jou profiel sinkroniseer nie. Probeer weer.</string>
     <string name="nav_save_failed">Kon nie jou voorkeure stoor nie. Probeer weer.</string>
     <string name="nav_recipe_fallback">Resep</string>
+    <!-- Commit 7: offline dynamic content translation -->
+    <string name="translation_title">Vanlyn resepvertaling</string>
+    <string name="translation_description">Laai die Engelse en Afrikaanse taalmodelle af om resepinhoud op jou toestel te vertaal. Jou oorspronklike data bly onveranderd.</string>
+    <string name="translation_checking">Kontroleer taalmodelle…</string>
+    <string name="translation_ready">Engelse en Afrikaanse modelle is geïnstalleer.</string>
+    <string name="translation_not_downloaded">Laai die taalmodelle af om vanlyn vertaling moontlik te maak.</string>
+    <string name="translation_failed">Kon nie toegang tot die vertaalmodelle kry nie. Gaan jou verbinding na en probeer weer.</string>
+    <string name="translation_download">Laai modelle af</string>
+    <string name="translation_downloading">Laai af…</string>
+    <string name="translation_test">Vertaal met Google</string>
+    <string name="translation_test_result">Afrikaanse vertaalvoorskou</string>
+    <string name="translation_google_attribution">Powered by Google Translate</string>
+    <string name="translation_wifi_note">Modelle vereis Wi-Fi (ongeveer 30 MB per model). Resepintegrasie volg in ’n latere commit.</string>
 </resources>

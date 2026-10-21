@@ -16,6 +16,12 @@ class BiometricGateViewModel : ViewModel() {
         private set
     var passwordFallbackRequested by mutableStateOf(false)
 
+    // Show the branded startup screen once, before first cold-launch biometric prompt.
+    var startupSplashShown by mutableStateOf(false)
+        private set
+
+    fun finishStartupSplash() { startupSplashShown = true }
+
     /** Call only after Firebase has finished its initial auth check. */
     fun sessionResolved(uid: String?) {
         if (uid == null) {
