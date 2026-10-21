@@ -1,5 +1,9 @@
 package com.example.kitchenquest.feature.settings
 
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
+import androidx.biometric.BiometricManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.WarningAmber
@@ -31,16 +36,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
@@ -48,6 +56,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
+import com.example.kitchenquest.data.auth.BiometricAvailability
+import com.example.kitchenquest.data.auth.BiometricSettings
+import com.example.kitchenquest.data.auth.BiometricSupport
 import com.example.kitchenquest.feature.onboarding.PreferenceOptions
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
@@ -73,10 +85,76 @@ fun SettingsScreen(
     onSave: () -> Unit,
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
+    userId: String,
     modifier: Modifier = Modifier
 ) {
     var showSignOutConfirmation by rememberSaveable {
         mutableStateOf(false)
+    }
+    // The preference belongs to this signed-in user on this device only.
+    val context = LocalContext.current
+    val biometricSettings = remember(context) { BiometricSettings(context) }
+    var biometricAvailability by remember(userId) {
+        mutableStateOf(BiometricSupport.check(context))
+    }
+    var biometricEnabled by remember(userId) {
+        mutableStateOf(biometricSettings.isEnabled(userId))
+    }
+    var biometricFeedback by rememberSaveable(userId) { mutableStateOf<String?>(null) }
+    var biometricFeedbackIsError by rememberSaveable(userId) { mutableStateOf(false) }
+
+    val refreshBiometricStatus = {
+        biometricAvailability = BiometricSupport.check(context)
+        if (biometricAvailability != BiometricAvailability.READY) {
+            biometricEnabled = false
+            biometricSettings.setEnabled(userId, false)
+        }
+    }
+    val changeBiometricEnabled: (Boolean) -> Unit = { enabled ->
+        biometricFeedback = null
+        biometricFeedbackIsError = false
+        if (!enabled) {
+            biometricSettings.setEnabled(userId, false)
+            biometricEnabled = false
+            biometricFeedback = "Biometric unlock preference turned off."
+        } else if (userId.isBlank() || biometricAvailability != BiometricAvailability.READY) {
+            biometricFeedback = "Sign in and set up biometrics on your device first."
+            biometricFeedbackIsError = true
+        } else {
+            val activity = context as? FragmentActivity
+            if (activity == null) {
+                biometricFeedback = "Biometric setup is unavailable on this device."
+                biometricFeedbackIsError = true
+            } else {
+                BiometricSetup(activity).confirmEnable { verified, message ->
+                    if (verified) {
+                        biometricSettings.setEnabled(userId, true)
+                        biometricEnabled = true
+                        biometricFeedback = "Biometrics enabled for this account."
+                    } else {
+                        biometricFeedback = message
+                        biometricFeedbackIsError = true
+                    }
+                }
+            }
+        }
+    }
+    val openDeviceBiometricSettings = {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                putExtra(
+                    Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                    BiometricManager.Authenticators.BIOMETRIC_WEAK
+                )
+            }
+        } else {
+            Intent(Settings.ACTION_SECURITY_SETTINGS)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (_: android.content.ActivityNotFoundException) {
+            context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+        }
     }
 
     Column(
@@ -120,7 +198,14 @@ fun SettingsScreen(
                     onDietaryPreferencesChange = onDietaryPreferencesChange,
                     onAvoidedIngredientsChange = onAvoidedIngredientsChange,
                     onSave = onSave,
-                    onSignOut = { showSignOutConfirmation = true }
+                    onSignOut = { showSignOutConfirmation = true },
+                    biometricEnabled = biometricEnabled,
+                    biometricAvailability = biometricAvailability,
+                    biometricFeedback = biometricFeedback,
+                    biometricFeedbackIsError = biometricFeedbackIsError,
+                    onBiometricChange = changeBiometricEnabled,
+                    onCheckBiometrics = refreshBiometricStatus,
+                    onOpenDeviceBiometrics = openDeviceBiometricSettings
                 )
             }
         }
@@ -163,7 +248,14 @@ private fun SettingsContent(
     onDietaryPreferencesChange: (Set<String>) -> Unit,
     onAvoidedIngredientsChange: (Set<String>) -> Unit,
     onSave: () -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    biometricEnabled: Boolean,
+    biometricAvailability: BiometricAvailability,
+    biometricFeedback: String?,
+    biometricFeedbackIsError: Boolean,
+    onBiometricChange: (Boolean) -> Unit,
+    onCheckBiometrics: () -> Unit,
+    onOpenDeviceBiometrics: () -> Unit
 ) {
     var openDialog by rememberSaveable {
         mutableStateOf<SettingsDialog?>(null)
@@ -177,6 +269,82 @@ private fun SettingsContent(
             title = state.displayName.ifBlank { "Add your name" },
             subtitle = state.email.ifBlank { "No email available" },
             onClick = { openDialog = SettingsDialog.Name }
+        )
+    }
+
+    SectionHeader("SECURITY")
+
+    SettingsGroup {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 80.dp)
+                .padding(KitchenQuestDimens.MediumSpacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(KitchenQuestDimens.SmallCorner),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Fingerprint,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = KitchenQuestDimens.FieldSpacing)
+            ) {
+                Text("Biometric unlock", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = when (biometricAvailability) {
+                        BiometricAvailability.READY ->
+                            if (biometricEnabled) "Enabled for this account" else "Verify with your fingerprint or face"
+                        BiometricAvailability.NOT_ENROLLED -> "Add a fingerprint or face in your phone's settings first"
+                        BiometricAvailability.NO_HARDWARE -> "This phone doesn't support biometric unlock"
+                        BiometricAvailability.TEMPORARILY_UNAVAILABLE -> "Biometric sensor is temporarily unavailable"
+                        BiometricAvailability.SECURITY_UPDATE_REQUIRED -> "Device security update needed"
+                        BiometricAvailability.UNSUPPORTED -> "Biometric unlock isn't supported here"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Switch(
+                checked = biometricEnabled,
+                enabled = biometricEnabled || biometricAvailability == BiometricAvailability.READY,
+                onCheckedChange = onBiometricChange
+            )
+        }
+
+        if (biometricAvailability != BiometricAvailability.READY) {
+            Row(
+                modifier = Modifier.padding(
+                    start = KitchenQuestDimens.MediumSpacing,
+                    end = KitchenQuestDimens.MediumSpacing,
+                    bottom = KitchenQuestDimens.SmallSpacing
+                ),
+                horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+            ) {
+                if (biometricAvailability == BiometricAvailability.NOT_ENROLLED) {
+                    TextButton(onClick = onOpenDeviceBiometrics) { Text("Set up on phone") }
+                }
+                TextButton(onClick = onCheckBiometrics) { Text("Check again") }
+            }
+        }
+    }
+
+    if (biometricFeedback != null) {
+        FeedbackMessage(
+            text = biometricFeedback,
+            isError = biometricFeedbackIsError
         )
     }
 

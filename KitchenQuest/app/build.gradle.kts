@@ -83,6 +83,9 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.play.services)
 
+    // Biometric unlock (fingerprint or supported face recognition)
+    implementation("androidx.biometric:biometric:1.1.0")
+
     // Credential Manager
     implementation("androidx.credentials:credentials:1.6.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.6.0")

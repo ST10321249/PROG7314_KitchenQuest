@@ -1161,6 +1161,7 @@ fun AppNavHost() {
                 SettingsScreen(
                     state =
                         settingsState,
+                    userId = authState.user?.uid.orEmpty(),
 
                     onBack = {
                         navController
