@@ -1,6 +1,11 @@
 package com.example.kitchenquest.navigation
 
 import android.app.Activity
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,11 +30,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.kitchenquest.data.auth.GoogleSignInClient
+import com.example.kitchenquest.data.auth.BiometricSettings
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.syncSignedInUser
 import com.example.kitchenquest.data.user.toOnboardingSelection
 import com.example.kitchenquest.feature.auth.AuthViewModel
+import com.example.kitchenquest.feature.auth.BiometricUnlockRules
+import com.example.kitchenquest.feature.auth.BiometricUnlockScreen
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
@@ -92,6 +100,56 @@ fun AppNavHost() {
     val activity =
         context as? Activity
 
+    val biometricSettings = remember(context) {
+        BiometricSettings(context.applicationContext)
+    }
+
+    val signedInUid = authState.user?.uid
+
+    // The current Firebase session was restored by the SDK if the app was
+    // restarted. Only sessions authenticated interactively in this process
+    // can enter without first passing the saved biometric preference.
+    var signedOutSinceLaunch by remember {
+        mutableStateOf(signedInUid == null)
+    }
+    var unlockedUid by remember { mutableStateOf<String?>(null) }
+    var passwordFallbackRequested by remember { mutableStateOf(false) }
+
+    LaunchedEffect(signedInUid) {
+        if (signedInUid == null) {
+            signedOutSinceLaunch = true
+            unlockedUid = null
+        } else if (signedOutSinceLaunch) {
+            // New password/Google sign-in already verified the user's identity.
+            unlockedUid = signedInUid
+            signedOutSinceLaunch = false
+        }
+    }
+
+    // Relock whenever the activity actually leaves the foreground.
+    // This state is deliberately NOT persisted through process recreation.
+    val observedUid by rememberUpdatedState(signedInUid)
+    DisposableEffect(activity) {
+        val owner = activity as? FragmentActivity
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                val uid = observedUid
+                if (uid != null && biometricSettings.isEnabled(uid)) {
+                    unlockedUid = null
+                }
+            }
+        }
+        owner?.lifecycle?.addObserver(observer)
+        onDispose { owner?.lifecycle?.removeObserver(observer) }
+    }
+
+    val requiresBiometricUnlock = BiometricUnlockRules.shouldLock(
+        signedInUid = signedInUid,
+        biometricEnabled = signedInUid != null && biometricSettings.isEnabled(signedInUid),
+        unlockedUid = unlockedUid,
+        justSignedIn = signedOutSinceLaunch
+    )
+
     val coroutineScope =
         rememberCoroutineScope()
 
@@ -149,10 +207,14 @@ fun AppNavHost() {
     // before navigation continues. Existing server preferences always win.
     LaunchedEffect(
         authState.isAuthChecked,
-        authState.user?.uid
+        authState.user?.uid,
+        requiresBiometricUnlock,
+        passwordFallbackRequested
     ) {
 
-        if (!authState.isAuthChecked) {
+        // Do not sync the profile or navigate to protected screens before
+        // biometric verification has completed on a restored session.
+        if (!authState.isAuthChecked || requiresBiometricUnlock) {
             return@LaunchedEffect
         }
 
@@ -167,10 +229,11 @@ fun AppNavHost() {
         if (currentUser == null) {
             showExistingPreferencesMessage = false
 
-            if (currentRoute == AppDestinations.Splash) {
+            if (currentRoute == AppDestinations.Splash ||
+                currentRoute == null || passwordFallbackRequested) {
                 val destination =
                     if (
-                        onboardingPreferences
+                        passwordFallbackRequested || onboardingPreferences
                             .hasAuthenticatedBefore()
                     ) {
                         AppDestinations.Login
@@ -179,12 +242,10 @@ fun AppNavHost() {
                     }
 
                 navController.navigate(destination) {
-                    popUpTo(AppDestinations.Splash) {
-                        inclusive = true
-                    }
-
+                    popUpTo(0) { inclusive = true }
                     launchSingleTop = true
                 }
+                passwordFallbackRequested = false
             }
 
             return@LaunchedEffect
@@ -304,6 +365,33 @@ fun AppNavHost() {
                     }
                 }
             )
+    }
+
+    if (requiresBiometricUnlock && signedInUid != null) {
+        // Only the lock screen is composed until the returning user verifies.
+        BiometricUnlockScreen(
+            userId = signedInUid,
+            onUnlocked = {
+                if (authViewModel.uiState.value.user?.uid == signedInUid &&
+                    (activity as? FragmentActivity)?.lifecycle?.currentState
+                        ?.isAtLeast(Lifecycle.State.STARTED) == true
+                ) {
+                    unlockedUid = signedInUid
+                }
+            },
+            onUseNormalLogin = {
+                // A password fallback must invalidate the existing Firebase
+                // session, not simply dismiss the lock screen.
+                unlockedUid = null
+                passwordFallbackRequested = true
+                authViewModel.signOut()
+                coroutineScope.launch {
+                    try { googleSignInClient.clearCredentialState(context) }
+                    catch (_: Exception) { /* Account picker can still be used. */ }
+                }
+            }
+        )
+        return
     }
 
     AppScaffold(
@@ -1183,8 +1271,15 @@ fun AppNavHost() {
                     onRetry =
                         settingsViewModel::loadProfile,
 
+                    onBiometricsEnabled = {
+                        // Enabling the preference already requested a system
+                        // biometric check. Prompt again on the next app entry.
+                        unlockedUid = authState.user?.uid
+                    },
+
                     onSignOut = {
 
+                        unlockedUid = null
                         authViewModel
                             .signOut()
 

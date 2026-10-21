@@ -85,6 +85,7 @@ fun SettingsScreen(
     onSave: () -> Unit,
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
+    onBiometricsEnabled: () -> Unit = {},
     userId: String,
     modifier: Modifier = Modifier
 ) {
@@ -130,6 +131,7 @@ fun SettingsScreen(
                     if (verified) {
                         biometricSettings.setEnabled(userId, true)
                         biometricEnabled = true
+                        onBiometricsEnabled()
                         biometricFeedback = "Biometrics enabled for this account."
                     } else {
                         biometricFeedback = message
