@@ -1,3 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">KitchenQuest</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_loading">Loading your settings...</string>
+    <string name="settings_account">ACCOUNT</string>
+    <string name="settings_security">SECURITY</string>
+    <string name="settings_preferences">PREFERENCES</string>
+    <string name="settings_account_action">ACCOUNT ACTION</string>
+    <string name="settings_language">App language</string>
+    <string name="settings_language_description">Choose English or Afrikaans</string>
+    <string name="settings_language_dialog">Choose app language</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_afrikaans">Afrikaans</string>
+    <string name="settings_language_device_notice">Your choice is saved on this device.</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sign_out_question">Sign out?</string>
+    <string name="settings_sign_out_explanation">You can sign back in at any time. Your saved KitchenQuest data will remain in your account.</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_done">Done</string>
+    <string name="settings_add_name">Add your name</string>
+    <string name="settings_no_email">No email available</string>
+    <string name="settings_display_name">Display name</string>
+    <string name="settings_biometric_title">Biometric unlock</string>
+    <string name="settings_biometric_enabled">Enabled for this account</string>
+    <string name="settings_biometric_verify">Verify with your fingerprint or face</string>
+    <string name="settings_biometric_enroll">Add a fingerprint or face in your phone settings first</string>
+    <string name="settings_biometric_missing">This phone does not support biometric unlock</string>
+    <string name="settings_biometric_unavailable">Biometric sensor is temporarily unavailable</string>
+    <string name="settings_biometric_security_update">Device security update needed</string>
+    <string name="settings_biometric_unsupported">Biometric unlock is not supported here</string>
+    <string name="settings_biometric_phone_setup">Set up on phone</string>
+    <string name="settings_biometric_check_again">Check again</string>
+    <string name="settings_biometric_disabled_feedback">Biometric unlock preference turned off.</string>
+    <string name="settings_biometric_enroll_feedback">Sign in and set up biometrics on your device first.</string>
+    <string name="settings_biometric_unavailable_feedback">Biometric setup is unavailable on this device.</string>
+    <string name="settings_biometric_success_feedback">Biometrics enabled for this account.</string>
+    <string name="settings_dietary">Dietary preferences</string>
+    <string name="settings_avoided">Avoided ingredients</string>
+    <string name="settings_no_avoided">None</string>
+    <string name="settings_preferences_description">These choices are stored with your account and used as the default recipe preferences.</string>
+    <string name="settings_saved">Changes saved</string>
+    <string name="settings_saving">Saving...</string>
+    <string name="settings_save">Save changes</string>
 </resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KitchenQuest</string>
+    <string name="settings_title">Instellings</string>
+    <string name="settings_loading">Laai jou instellings...</string>
+    <string name="settings_account">REKENING</string>
+    <string name="settings_security">SEKURITEIT</string>
+    <string name="settings_preferences">VOORKEURE</string>
+    <string name="settings_account_action">REKENINGAKSIE</string>
+    <string name="settings_language">Toepassingstaal</string>
+    <string name="settings_language_description">Kies Engels of Afrikaans</string>
+    <string name="settings_language_dialog">Kies toepassingstaal</string>
+    <string name="settings_language_english">Engels</string>
+    <string name="settings_language_afrikaans">Afrikaans</string>
+    <string name="settings_language_device_notice">Jou keuse word op hierdie toestel gestoor.</string>
+    <string name="settings_sign_out">Meld af</string>
+    <string name="settings_sign_out_question">Wil jy afmeld?</string>
+    <string name="settings_sign_out_explanation">Jy kan enige tyd weer aanmeld. Jou gestoorde KitchenQuest-data bly in jou rekening.</string>
+    <string name="settings_cancel">Kanselleer</string>
+    <string name="settings_done">Klaar</string>
+    <string name="settings_add_name">Voeg jou naam by</string>
+    <string name="settings_no_email">Geen e-pos beskikbaar nie</string>
+    <string name="settings_display_name">Vertoonnaam</string>
+    <string name="settings_biometric_title">Biometriese ontsluiting</string>
+    <string name="settings_biometric_enabled">Geaktiveer vir hierdie rekening</string>
+    <string name="settings_biometric_verify">Verifieer met jou vingerafdruk of gesig</string>
+    <string name="settings_biometric_enroll">Voeg eers biometrie in jou foon se instellings by</string>
+    <string name="settings_biometric_missing">Hierdie foon ondersteun nie biometriese ontsluiting nie</string>
+    <string name="settings_biometric_unavailable">Biometriese sensor is tydelik onbeskikbaar</string>
+    <string name="settings_biometric_security_update">Toestelsekuriteitsopdatering benodig</string>
+    <string name="settings_biometric_unsupported">Biometriese ontsluiting word nie hier ondersteun nie</string>
+    <string name="settings_biometric_phone_setup">Stel op foon op</string>
+    <string name="settings_biometric_check_again">Kontroleer weer</string>
+    <string name="settings_biometric_disabled_feedback">Biometriese ontsluiting is afgeskakel.</string>
+    <string name="settings_biometric_enroll_feedback">Meld aan en stel eers biometrie op jou toestel op.</string>
+    <string name="settings_biometric_unavailable_feedback">Biometriese opstelling is nie op hierdie toestel beskikbaar nie.</string>
+    <string name="settings_biometric_success_feedback">Biometrie is vir hierdie rekening geaktiveer.</string>
+    <string name="settings_dietary">Dieetvoorkeure</string>
+    <string name="settings_avoided">Bestanddele om te vermy</string>
+    <string name="settings_no_avoided">Geen</string>
+    <string name="settings_preferences_description">Hierdie keuses word by jou rekening gestoor en as verstekresepvoorkeure gebruik.</string>
+    <string name="settings_saved">Veranderinge gestoor</string>
+    <string name="settings_saving">Stoor...</string>
+    <string name="settings_save">Stoor veranderinge</string>
+</resources>

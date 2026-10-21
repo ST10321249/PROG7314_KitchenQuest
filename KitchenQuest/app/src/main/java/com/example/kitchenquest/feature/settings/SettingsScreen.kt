@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.settings
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.WarningAmber
@@ -49,6 +51,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
+import com.example.kitchenquest.data.preferences.AppLanguage
+import com.example.kitchenquest.data.preferences.AppLanguagePreferences
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
@@ -72,7 +78,8 @@ import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 private enum class SettingsDialog {
     Name,
     Dietary,
-    Avoided
+    Avoided,
+    Language
 }
 
 @Composable
@@ -95,6 +102,17 @@ fun SettingsScreen(
     // The preference belongs to this signed-in user on this device only.
     val context = LocalContext.current
     val biometricSettings = remember(context) { BiometricSettings(context) }
+    val languagePreferences = remember(context) { AppLanguagePreferences(context) }
+    var selectedLanguage by remember(context) {
+        mutableStateOf(languagePreferences.getLanguage())
+    }
+    val changeLanguage: (String) -> Unit = { code ->
+        // Saving first ensures attachBaseContext loads the correct resources.
+        if (languagePreferences.setLanguage(code)) {
+            selectedLanguage = languagePreferences.getLanguage()
+            (context as? Activity)?.recreate()
+        }
+    }
     var biometricAvailability by remember(userId) {
         mutableStateOf(BiometricSupport.check(context))
     }
@@ -117,14 +135,14 @@ fun SettingsScreen(
         if (!enabled) {
             biometricSettings.setEnabled(userId, false)
             biometricEnabled = false
-            biometricFeedback = "Biometric unlock preference turned off."
+            biometricFeedback = context.getString(R.string.settings_biometric_disabled_feedback)
         } else if (userId.isBlank() || biometricAvailability != BiometricAvailability.READY) {
-            biometricFeedback = "Sign in and set up biometrics on your device first."
+            biometricFeedback = context.getString(R.string.settings_biometric_enroll_feedback)
             biometricFeedbackIsError = true
         } else {
             val activity = context as? FragmentActivity
             if (activity == null) {
-                biometricFeedback = "Biometric setup is unavailable on this device."
+                biometricFeedback = context.getString(R.string.settings_biometric_unavailable_feedback)
                 biometricFeedbackIsError = true
             } else {
                 BiometricSetup(activity).confirmEnable { verified, message ->
@@ -132,7 +150,7 @@ fun SettingsScreen(
                         biometricSettings.setEnabled(userId, true)
                         biometricEnabled = true
                         onBiometricsEnabled()
-                        biometricFeedback = "Biometrics enabled for this account."
+                        biometricFeedback = context.getString(R.string.settings_biometric_success_feedback)
                     } else {
                         biometricFeedback = message
                         biometricFeedbackIsError = true
@@ -166,14 +184,14 @@ fun SettingsScreen(
             .padding(KitchenQuestDimens.ScreenPadding)
     ) {
         KitchenQuestTopBar(
-            title = "Settings",
+            title = stringResource(R.string.settings_title),
             onBack = onBack
         )
 
         when {
             !state.hasLoaded && state.isLoading -> {
                 KitchenQuestLoadingState(
-                    message = "Loading your settings...",
+                    message = stringResource(R.string.settings_loading),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -188,7 +206,7 @@ fun SettingsScreen(
 
             !state.hasLoaded -> {
                 KitchenQuestLoadingState(
-                    message = "Loading your settings...",
+                    message = stringResource(R.string.settings_loading),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -201,6 +219,8 @@ fun SettingsScreen(
                     onAvoidedIngredientsChange = onAvoidedIngredientsChange,
                     onSave = onSave,
                     onSignOut = { showSignOutConfirmation = true },
+                    languageCode = selectedLanguage,
+                    onLanguageChange = changeLanguage,
                     biometricEnabled = biometricEnabled,
                     biometricAvailability = biometricAvailability,
                     biometricFeedback = biometricFeedback,
@@ -216,9 +236,9 @@ fun SettingsScreen(
     if (showSignOutConfirmation) {
         AlertDialog(
             onDismissRequest = { showSignOutConfirmation = false },
-            title = { Text("Sign out?") },
+            title = { Text(stringResource(R.string.settings_sign_out_question)) },
             text = {
-                Text("You can sign back in at any time. Your saved KitchenQuest data will remain in your account.")
+                Text(stringResource(R.string.settings_sign_out_explanation))
             },
             confirmButton = {
                 TextButton(
@@ -228,14 +248,14 @@ fun SettingsScreen(
                     }
                 ) {
                     Text(
-                        text = "Sign out",
+                        text = stringResource(R.string.settings_sign_out),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutConfirmation = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.settings_cancel))
                 }
             }
         )
@@ -251,6 +271,8 @@ private fun SettingsContent(
     onAvoidedIngredientsChange: (Set<String>) -> Unit,
     onSave: () -> Unit,
     onSignOut: () -> Unit,
+    languageCode: String,
+    onLanguageChange: (String) -> Unit,
     biometricEnabled: Boolean,
     biometricAvailability: BiometricAvailability,
     biometricFeedback: String?,
@@ -263,18 +285,18 @@ private fun SettingsContent(
         mutableStateOf<SettingsDialog?>(null)
     }
 
-    SectionHeader("ACCOUNT")
+    SectionHeader(stringResource(R.string.settings_account))
 
     SettingsGroup {
         SettingsRow(
             icon = Icons.Outlined.Person,
-            title = state.displayName.ifBlank { "Add your name" },
-            subtitle = state.email.ifBlank { "No email available" },
+            title = state.displayName.ifBlank { stringResource(R.string.settings_add_name) },
+            subtitle = state.email.ifBlank { stringResource(R.string.settings_no_email) },
             onClick = { openDialog = SettingsDialog.Name }
         )
     }
 
-    SectionHeader("SECURITY")
+    SectionHeader(stringResource(R.string.settings_security))
 
     SettingsGroup {
         Row(
@@ -303,16 +325,16 @@ private fun SettingsContent(
                     .weight(1f)
                     .padding(horizontal = KitchenQuestDimens.FieldSpacing)
             ) {
-                Text("Biometric unlock", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.settings_biometric_title), style = MaterialTheme.typography.bodyLarge)
                 Text(
                     text = when (biometricAvailability) {
                         BiometricAvailability.READY ->
-                            if (biometricEnabled) "Enabled for this account" else "Verify with your fingerprint or face"
-                        BiometricAvailability.NOT_ENROLLED -> "Add a fingerprint or face in your phone's settings first"
-                        BiometricAvailability.NO_HARDWARE -> "This phone doesn't support biometric unlock"
-                        BiometricAvailability.TEMPORARILY_UNAVAILABLE -> "Biometric sensor is temporarily unavailable"
-                        BiometricAvailability.SECURITY_UPDATE_REQUIRED -> "Device security update needed"
-                        BiometricAvailability.UNSUPPORTED -> "Biometric unlock isn't supported here"
+                            if (biometricEnabled) stringResource(R.string.settings_biometric_enabled) else stringResource(R.string.settings_biometric_verify)
+                        BiometricAvailability.NOT_ENROLLED -> stringResource(R.string.settings_biometric_enroll)
+                        BiometricAvailability.NO_HARDWARE -> stringResource(R.string.settings_biometric_missing)
+                        BiometricAvailability.TEMPORARILY_UNAVAILABLE -> stringResource(R.string.settings_biometric_unavailable)
+                        BiometricAvailability.SECURITY_UPDATE_REQUIRED -> stringResource(R.string.settings_biometric_security_update)
+                        BiometricAvailability.UNSUPPORTED -> stringResource(R.string.settings_biometric_unsupported)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -336,9 +358,9 @@ private fun SettingsContent(
                 horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
             ) {
                 if (biometricAvailability == BiometricAvailability.NOT_ENROLLED) {
-                    TextButton(onClick = onOpenDeviceBiometrics) { Text("Set up on phone") }
+                    TextButton(onClick = onOpenDeviceBiometrics) { Text(stringResource(R.string.settings_biometric_phone_setup)) }
                 }
-                TextButton(onClick = onCheckBiometrics) { Text("Check again") }
+                TextButton(onClick = onCheckBiometrics) { Text(stringResource(R.string.settings_biometric_check_again)) }
             }
         }
     }
@@ -350,12 +372,33 @@ private fun SettingsContent(
         )
     }
 
-    SectionHeader("PREFERENCES")
+    SectionHeader(stringResource(R.string.settings_preferences))
+
+    // Language is stored locally for now. Account/backend sync follows in R7.
+    SettingsGroup {
+        SettingsRow(
+            icon = Icons.Outlined.Language,
+            title = stringResource(R.string.settings_language),
+            subtitle = if (languageCode == AppLanguage.AFRIKAANS) {
+                stringResource(R.string.settings_language_afrikaans)
+            } else {
+                stringResource(R.string.settings_language_english)
+            },
+            onClick = { openDialog = SettingsDialog.Language }
+        )
+    }
+
+    Text(
+        text = stringResource(R.string.settings_language_device_notice),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = KitchenQuestDimens.SmallSpacing)
+    )
 
     SettingsGroup {
         SettingsRow(
             icon = Icons.Outlined.Restaurant,
-            title = "Dietary preferences",
+            title = stringResource(R.string.settings_dietary),
             subtitle = PreferenceOptions.summary(
                 state.dietaryPreferences,
                 PreferenceOptions.NO_RESTRICTIONS
@@ -372,17 +415,17 @@ private fun SettingsContent(
 
         SettingsRow(
             icon = Icons.Outlined.Block,
-            title = "Avoided ingredients",
+            title = stringResource(R.string.settings_avoided),
             subtitle = PreferenceOptions.summary(
                 state.avoidedIngredients,
-                "None"
+                stringResource(R.string.settings_no_avoided)
             ),
             onClick = { openDialog = SettingsDialog.Avoided }
         )
     }
 
     Text(
-        text = "These choices are stored with your account and are used as the default recipe preferences.",
+        text = stringResource(R.string.settings_preferences_description),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(
@@ -400,7 +443,7 @@ private fun SettingsContent(
 
         state.saveSucceeded -> {
             FeedbackMessage(
-                text = "Changes saved",
+                text = stringResource(R.string.settings_saved),
                 isError = false
             )
         }
@@ -410,7 +453,7 @@ private fun SettingsContent(
         Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
         KitchenQuestPrimaryButton(
-            text = if (state.isSaving) "Saving..." else "Save changes",
+            text = if (state.isSaving) stringResource(R.string.settings_saving) else stringResource(R.string.settings_save),
             onClick = onSave,
             enabled = !state.isSaving,
             modifier = Modifier.fillMaxWidth()
@@ -419,7 +462,7 @@ private fun SettingsContent(
 
     Spacer(modifier = Modifier.height(KitchenQuestDimens.LargeSpacing))
 
-    SectionHeader("ACCOUNT ACTION")
+    SectionHeader(stringResource(R.string.settings_account_action))
 
     OutlinedButton(
         onClick = onSignOut,
@@ -443,7 +486,7 @@ private fun SettingsContent(
 
         Spacer(modifier = Modifier.size(KitchenQuestDimens.SmallSpacing))
 
-        Text("Sign out")
+        Text(stringResource(R.string.settings_sign_out))
     }
 
     Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
@@ -459,7 +502,7 @@ private fun SettingsContent(
         )
 
         SettingsDialog.Dietary -> ChoiceDialog(
-            title = "Dietary preferences",
+            title = stringResource(R.string.settings_dietary),
             options = PreferenceOptions.optionsWith(
                 PreferenceOptions.dietary,
                 state.dietaryPreferences
@@ -477,7 +520,7 @@ private fun SettingsContent(
         )
 
         SettingsDialog.Avoided -> ChoiceDialog(
-            title = "Avoided ingredients",
+            title = stringResource(R.string.settings_avoided),
             options = PreferenceOptions.optionsWith(
                 PreferenceOptions.avoidedIngredients,
                 state.avoidedIngredients
@@ -492,6 +535,32 @@ private fun SettingsContent(
                 )
             },
             onDismiss = { openDialog = null }
+        )
+
+        SettingsDialog.Language -> AlertDialog(
+            onDismissRequest = { openDialog = null },
+            title = { Text(stringResource(R.string.settings_language_dialog)) },
+            text = {
+                Column {
+                    TextButton(onClick = {
+                        openDialog = null
+                        onLanguageChange(AppLanguage.ENGLISH)
+                    }) {
+                        Text(stringResource(R.string.settings_language_english))
+                    }
+                    TextButton(onClick = {
+                        openDialog = null
+                        onLanguageChange(AppLanguage.AFRIKAANS)
+                    }) {
+                        Text(stringResource(R.string.settings_language_afrikaans))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { openDialog = null }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            }
         )
 
         null -> Unit
@@ -621,12 +690,12 @@ private fun NameDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Display name") },
+        title = { Text(stringResource(R.string.settings_display_name)) },
         text = {
             KitchenQuestTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = "Display name",
+                label = stringResource(R.string.settings_display_name),
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -635,12 +704,12 @@ private fun NameDialog(
                 onClick = { onConfirm(text.trim()) },
                 enabled = text.isNotBlank()
             ) {
-                Text("Done")
+                Text(stringResource(R.string.settings_done))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         }
     )
@@ -675,7 +744,7 @@ private fun ChoiceDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Done")
+                Text(stringResource(R.string.settings_done))
             }
         }
     )
