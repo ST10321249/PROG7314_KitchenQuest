@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.auth
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -62,7 +64,7 @@ fun SessionLoadingScreen(
             Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
             Text(
-                text = "Cook smarter. Waste less.",
+                text = stringResource(R.string.auth_slogan),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f)
             )

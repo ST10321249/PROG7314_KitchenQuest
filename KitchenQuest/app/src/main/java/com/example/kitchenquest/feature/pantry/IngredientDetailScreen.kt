@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.pantry
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.pantry.PantryItemDto
+import com.example.kitchenquest.ui.components.localizedChoiceLabel
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.theme.KitchenGreen
@@ -43,12 +46,12 @@ fun IngredientDetailScreen(
 ) {
     val days = daysUntilExpiry(item)
     val expiryStatus = when {
-        item.expiryDate == null -> "No expiry set"
+        item.expiryDate == null -> stringResource(R.string.kitchen_no_expiry)
         days == null -> item.expiryDate
-        days < 0 -> "Expired"
-        days == 0L -> "Expires today"
-        days == 1L -> "Expires tomorrow"
-        else -> "$days days left"
+        days < 0 -> stringResource(R.string.kitchen_expired)
+        days == 0L -> stringResource(R.string.kitchen_today)
+        days == 1L -> stringResource(R.string.kitchen_tomorrow)
+        else -> stringResource(R.string.kitchen_days_left, days)
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -63,7 +66,7 @@ fun IngredientDetailScreen(
                         color = MaterialTheme.colorScheme.surface
                     ) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.detail_back))
                         }
                     }
                     Spacer(Modifier.weight(1f))
@@ -72,7 +75,7 @@ fun IngredientDetailScreen(
                         color = MaterialTheme.colorScheme.surface
                     ) {
                         IconButton(onClick = onEdit) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Edit ingredient")
+                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.detail_edit))
                         }
                     }
                 }
@@ -105,7 +108,7 @@ fun IngredientDetailScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(item.ingredientName, style = MaterialTheme.typography.headlineSmall)
                     Text(
-                        item.category,
+                        localizedChoiceLabel(item.category),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -136,7 +139,7 @@ fun IngredientDetailScreen(
             ) {
                 Column(modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing)) {
                     Text(
-                        text = "Details",
+                        text = stringResource(R.string.detail_details),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -144,12 +147,12 @@ fun IngredientDetailScreen(
                         modifier = Modifier.padding(top = KitchenQuestDimens.SmallSpacing),
                         color = MaterialTheme.colorScheme.outline
                     )
-                    DetailRow("Quantity", "${formatQuantity(item.quantity)} ${item.unit}")
+                    DetailRow(stringResource(R.string.detail_quantity), "${formatQuantity(item.quantity)} ${item.unit}")
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                    DetailRow("Expiry date", item.expiryDate ?: "Not set", if (days != null && days <= 3) KitchenRed else MaterialTheme.colorScheme.onSurface)
+                    DetailRow(stringResource(R.string.detail_expiry), item.expiryDate ?: stringResource(R.string.detail_not_set), if (days != null && days <= 3) KitchenRed else MaterialTheme.colorScheme.onSurface)
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     DetailRow(
-                        "Expiry reminder",
+                        stringResource(R.string.detail_expiry_reminder),
                         expiryStatus,
                         if (days != null && days <= 3) KitchenRed else KitchenGreen
                     )
@@ -160,12 +163,12 @@ fun IngredientDetailScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)) {
                 KitchenQuestSecondaryButton(
-                    text = "Mark finished",
+                    text = stringResource(R.string.detail_mark_finished),
                     onClick = onMarkFinished,
                     modifier = Modifier.weight(1f)
                 )
                 KitchenQuestPrimaryButton(
-                    text = "Find recipes",
+                    text = stringResource(R.string.detail_find_recipes),
                     onClick = onFindRecipes,
                     modifier = Modifier.weight(1f)
                 )

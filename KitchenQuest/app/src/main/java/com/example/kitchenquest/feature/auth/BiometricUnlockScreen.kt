@@ -25,6 +25,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.kitchenquest.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -79,7 +81,7 @@ fun BiometricUnlockScreen(
                     }
 
                     override fun onAuthenticationFailed() {
-                        message = "Fingerprint or face was not recognised. Try again."
+                        message = context.getString(R.string.auth_bio_failed)
                     }
 
                     override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -87,11 +89,11 @@ fun BiometricUnlockScreen(
                             BiometricPrompt.ERROR_NEGATIVE_BUTTON,
                             BiometricPrompt.ERROR_USER_CANCELED,
                             BiometricPrompt.ERROR_CANCELED ->
-                                "Biometric unlock was cancelled. You can retry or sign in normally."
+                                context.getString(R.string.auth_bio_cancelled)
                             BiometricPrompt.ERROR_LOCKOUT,
                             BiometricPrompt.ERROR_LOCKOUT_PERMANENT ->
-                                "Biometrics are temporarily locked. Sign in normally to continue."
-                            else -> "Biometric unlock is unavailable: $errString"
+                                context.getString(R.string.auth_bio_locked)
+                            else -> context.getString(R.string.auth_bio_unavailable_format, errString)
                         }
                     }
                 }
@@ -105,17 +107,17 @@ fun BiometricUnlockScreen(
             try {
                 prompt.authenticate(
                     BiometricPrompt.PromptInfo.Builder()
-                        .setTitle("Unlock KitchenQuest")
-                        .setSubtitle("Confirm your fingerprint or face to continue")
+                        .setTitle(context.getString(R.string.auth_bio_prompt_title))
+                        .setSubtitle(context.getString(R.string.auth_bio_prompt_subtitle))
                         .setAllowedAuthenticators(BiometricSupport.authenticators)
-                        .setNegativeButtonText("Cancel")
+                        .setNegativeButtonText(context.getString(R.string.settings_cancel))
                         .build()
                 )
             } catch (_: Exception) {
-                message = "Unable to start biometric unlock. Please sign in normally."
+                message = context.getString(R.string.auth_bio_cant_start)
             }
         } else {
-            message = "Device biometrics are unavailable. Please sign in normally."
+            message = context.getString(R.string.auth_bio_device_missing)
         }
     }
 
@@ -142,20 +144,20 @@ fun BiometricUnlockScreen(
             )
             Spacer(Modifier.height(24.dp))
             Text(
-                "KitchenQuest is locked",
+                stringResource(R.string.auth_locked_title),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "Use your fingerprint or face to unlock this saved session.",
+                stringResource(R.string.auth_locked_instructions),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center
             )
             if (!message.isNullOrBlank() || !canAuthenticate) {
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    message ?: "Biometrics are not available on this device.",
+                    message ?: stringResource(R.string.auth_bio_not_available),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center
@@ -164,14 +166,14 @@ fun BiometricUnlockScreen(
             Spacer(Modifier.height(28.dp))
             if (canAuthenticate) {
                 KitchenQuestPrimaryButton(
-                    text = "Try biometric unlock",
+                    text = stringResource(R.string.auth_try_biometric),
                     onClick = startPrompt,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
             }
             TextButton(onClick = onUseNormalLogin) {
-                Text("Use password or Google sign-in instead")
+                Text(stringResource(R.string.auth_use_normal_login))
             }
         }
     }

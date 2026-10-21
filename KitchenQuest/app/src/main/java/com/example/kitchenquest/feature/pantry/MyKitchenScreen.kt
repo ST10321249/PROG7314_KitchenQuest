@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.pantry
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -68,7 +70,7 @@ fun MyKitchenScreen(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(KitchenQuestDimens.ScreenPadding),
-                    message = "Loading your kitchen..."
+                    message = stringResource(R.string.home_loading)
                 )
             }
 
@@ -93,7 +95,7 @@ fun MyKitchenScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "My Kitchen",
+                            text = stringResource(R.string.kitchen_title),
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
@@ -101,7 +103,7 @@ fun MyKitchenScreen(
 
                         KitchenQuestIconButton(
                             icon = if (searchActive) Icons.Filled.Close else Icons.Filled.Search,
-                            contentDescription = if (searchActive) "Close search" else "Search ingredients",
+                            contentDescription = if (searchActive) stringResource(R.string.kitchen_close_search) else stringResource(R.string.kitchen_search),
                             onClick = {
                                 searchActive = !searchActive
                                 if (!searchActive) searchQuery = ""
@@ -112,7 +114,7 @@ fun MyKitchenScreen(
 
                         KitchenQuestIconButton(
                             icon = Icons.Filled.ShoppingCart,
-                            contentDescription = "Shopping list",
+                            contentDescription = stringResource(R.string.kitchen_shopping),
                             onClick = onShoppingList
                         )
                     }
@@ -122,7 +124,7 @@ fun MyKitchenScreen(
                         KitchenQuestSearchField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = "Search ingredients",
+                            placeholder = stringResource(R.string.kitchen_search),
                             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding)
                         )
                     }
@@ -145,7 +147,7 @@ fun MyKitchenScreen(
                             ) {
                                 Text("⚠", style = MaterialTheme.typography.titleLarge, color = KitchenRed)
                                 Text(
-                                    text = "${state.expiringSoon.size} item${if (state.expiringSoon.size == 1) "" else "s"} expiring within 3 days",
+                                    text = if (state.expiringSoon.size == 1) stringResource(R.string.kitchen_expiring_one) else stringResource(R.string.kitchen_expiring_count, state.expiringSoon.size),
                                     modifier = Modifier
                                         .weight(1f)
                                         .padding(start = KitchenQuestDimens.MediumSpacing),
@@ -164,16 +166,16 @@ fun MyKitchenScreen(
 
                     if (state.items.isEmpty()) {
                         KitchenQuestEmptyState(
-                            title = "Your kitchen is empty",
-                            message = "Add ingredients to start tracking expiry dates and finding recipes.",
-                            actionText = "Add ingredient",
+                            title = stringResource(R.string.kitchen_empty_title),
+                            message = stringResource(R.string.kitchen_empty_help),
+                            actionText = stringResource(R.string.kitchen_add),
                             onAction = onAddIngredient,
                             modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                         )
                     } else if (noResults) {
                         KitchenQuestEmptyState(
-                            title = "No matching ingredients",
-                            message = "Try another search.",
+                            title = stringResource(R.string.kitchen_no_results),
+                            message = stringResource(R.string.kitchen_try_search),
                             modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                         )
                     } else {
@@ -189,7 +191,7 @@ fun MyKitchenScreen(
                             if (filteredExpiring.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Expiring soon",
+                                        text = stringResource(R.string.home_expiring),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -207,7 +209,7 @@ fun MyKitchenScreen(
                             if (filteredElse.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Everything else",
+                                        text = stringResource(R.string.kitchen_else),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -224,7 +226,7 @@ fun MyKitchenScreen(
                     }
 
                     KitchenQuestPrimaryButton(
-                        text = "Find recipes using my ingredients",
+                        text = stringResource(R.string.kitchen_find),
                         onClick = onFindRecipes,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -248,7 +250,7 @@ fun MyKitchenScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add ingredient")
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.kitchen_add))
                 }
             }
         }
@@ -296,11 +298,11 @@ private fun IngredientRow(
 ) {
     val days = daysUntilExpiry(ingredient)
     val status = when {
-        days == null -> "No expiry set"
-        days < 0 -> "Expired"
-        days == 0L -> "Expires today"
-        days == 1L -> "Expires tomorrow"
-        else -> "$days days left"
+        days == null -> stringResource(R.string.kitchen_no_expiry)
+        days < 0 -> stringResource(R.string.kitchen_expired)
+        days == 0L -> stringResource(R.string.kitchen_today)
+        days == 1L -> stringResource(R.string.kitchen_tomorrow)
+        else -> stringResource(R.string.kitchen_days_left, days)
     }
 
     Surface(

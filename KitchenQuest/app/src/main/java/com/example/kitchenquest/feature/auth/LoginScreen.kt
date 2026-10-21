@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.auth
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,14 +58,14 @@ fun LoginScreen(
 
     val emailError = when {
         !attemptedSubmit -> null
-        email.isBlank() -> "Email is required"
-        !emailIsValid -> "Enter a valid email address"
+        email.isBlank() -> stringResource(R.string.auth_email_required)
+        !emailIsValid -> stringResource(R.string.auth_email_invalid)
         else -> null
     }
 
     val passwordError = when {
         !attemptedSubmit -> null
-        password.isBlank() -> "Password is required"
+        password.isBlank() -> stringResource(R.string.auth_password_required)
         else -> null
     }
 
@@ -93,10 +95,10 @@ fun LoginScreen(
 
         Spacer(Modifier.height(KitchenQuestDimens.ExtraLargeSpacing))
 
-        Text(text = "Welcome back", style = MaterialTheme.typography.headlineLarge)
+        Text(text = stringResource(R.string.auth_welcome), style = MaterialTheme.typography.headlineLarge)
         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
         Text(
-            text = "Sign in to reach your kitchen, saved recipes and cooking progress.",
+            text = stringResource(R.string.auth_login_help),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -106,7 +108,7 @@ fun LoginScreen(
         KitchenQuestTextField(
             value = email,
             onValueChange = { email = it },
-            label = "Email address",
+            label = stringResource(R.string.auth_email),
             modifier = Modifier.fillMaxWidth(),
             isError = emailError != null,
             supportingText = emailError,
@@ -118,7 +120,7 @@ fun LoginScreen(
         KitchenQuestTextField(
             value = password,
             onValueChange = { password = it },
-            label = "Password",
+            label = stringResource(R.string.auth_password),
             modifier = Modifier.fillMaxWidth(),
             isError = passwordError != null,
             supportingText = passwordError,
@@ -126,20 +128,20 @@ fun LoginScreen(
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 TextButton(onClick = { showPassword = !showPassword }) {
-                    Text(if (showPassword) "Hide" else "Show")
+                    Text(if (showPassword) stringResource(R.string.auth_hide) else stringResource(R.string.auth_show))
                 }
             }
         )
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onForgotPassword, enabled = !isLoading) {
-                Text("Forgot password?", color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.auth_forgot_password), color = MaterialTheme.colorScheme.primary)
             }
         }
 
         if (errorMessage != null) {
             Text(
-                text = errorMessage,
+                text = localizedAuthError(errorMessage) ?: errorMessage,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -147,7 +149,7 @@ fun LoginScreen(
         }
 
         KitchenQuestPrimaryButton(
-            text = if (isLoading) "Signing in..." else "Sign in",
+            text = if (isLoading) stringResource(R.string.auth_signing_in) else stringResource(R.string.auth_sign_in),
             onClick = {
                 attemptedSubmit = true
                 if (emailIsValid && passwordIsValid) {
@@ -166,14 +168,14 @@ fun LoginScreen(
             horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.MediumSpacing)
         ) {
             HorizontalDivider(modifier = Modifier.weight(1f))
-            Text("or", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.auth_or), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             HorizontalDivider(modifier = Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
         KitchenQuestSecondaryButton(
-            text = "Continue with Google",
+            text = stringResource(R.string.auth_continue_google),
             onClick = onGoogleSignIn,
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading
@@ -186,7 +188,7 @@ fun LoginScreen(
                 enabled = !isLoading,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Edit dietary preferences")
+                Text(stringResource(R.string.auth_edit_dietary))
             }
         }
 
@@ -197,9 +199,9 @@ fun LoginScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Don't have an account?", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.auth_no_account), style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onCreateAccount, enabled = !isLoading) {
-                Text("Create account")
+                Text(stringResource(R.string.auth_create_account))
             }
         }
     }

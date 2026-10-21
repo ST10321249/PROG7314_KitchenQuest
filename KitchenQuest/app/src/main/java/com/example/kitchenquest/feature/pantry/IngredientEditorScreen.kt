@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.pantry
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +43,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import com.example.kitchenquest.data.pantry.PantryItemDto
+import com.example.kitchenquest.ui.components.localizedChoiceLabel
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
@@ -91,13 +94,13 @@ fun IngredientEditorScreen(
             .padding(horizontal = KitchenQuestDimens.ScreenPadding)
     ) {
         KitchenQuestTopBar(
-            title = if (isEditing) "Edit ingredient" else "Add ingredient",
+            title = if (isEditing) stringResource(R.string.detail_edit) else stringResource(R.string.kitchen_add),
             onBack = onBack
         )
 
         Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
 
-        Text("INGREDIENT NAME", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.editor_name_upper), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
         ExposedDropdownMenuBox(
@@ -110,9 +113,9 @@ fun IngredientEditorScreen(
                     name = it
                     nameMenuExpanded = true
                 },
-                label = "Ingredient name",
+                label = stringResource(R.string.editor_name),
                 isError = errors.name != null,
-                supportingText = errors.name ?: "Start typing to match a known ingredient, or keep your own name.",
+                supportingText = localizedIngredientError(errors.name) ?: stringResource(R.string.editor_name_help),
                 trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 modifier = Modifier
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
@@ -143,21 +146,21 @@ fun IngredientEditorScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("QUANTITY", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.editor_quantity_upper), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
                 KitchenQuestTextField(
                     value = quantity,
                     onValueChange = { quantity = it },
-                    label = "Quantity",
+                    label = stringResource(R.string.detail_quantity),
                     keyboardType = KeyboardType.Decimal,
                     isError = errors.quantity != null,
-                    supportingText = errors.quantity,
+                    supportingText = localizedIngredientError(errors.quantity),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
             Column(modifier = Modifier.weight(1f)) {
-                Text("UNIT", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.editor_unit_upper), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
                 ExposedDropdownMenuBox(
                     expanded = unitMenuExpanded,
@@ -167,7 +170,7 @@ fun IngredientEditorScreen(
                         value = unit,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Unit") },
+                        label = { Text(stringResource(R.string.editor_unit)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitMenuExpanded) },
                         modifier = Modifier
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -179,7 +182,7 @@ fun IngredientEditorScreen(
                     ) {
                         IngredientOptions.units.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = { Text(localizedChoiceLabel(option)) },
                                 onClick = {
                                     unit = option
                                     unitMenuExpanded = false
@@ -193,7 +196,7 @@ fun IngredientEditorScreen(
 
         Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
-        Text("INGREDIENT TYPE", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.editor_type_upper), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
         FlowRow(
@@ -202,7 +205,7 @@ fun IngredientEditorScreen(
         ) {
             IngredientOptions.ingredientTypes.forEach { option ->
                 KitchenQuestChoiceChip(
-                    text = option,
+                    text = localizedChoiceLabel(option),
                     selected = ingredientType == option,
                     onClick = { ingredientType = option }
                 )
@@ -211,20 +214,20 @@ fun IngredientEditorScreen(
 
         Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
-        Text("EXPIRY DATE", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.editor_expiry_upper), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
         Box(modifier = Modifier.fillMaxWidth()) {
             KitchenQuestTextField(
                 value = expiryDate,
                 onValueChange = {},
-                label = if (expiryDate.isBlank()) "Select expiry date" else "Expiry date",
+                label = if (expiryDate.isBlank()) stringResource(R.string.editor_select_date) else stringResource(R.string.detail_expiry),
                 isError = errors.expiryDate != null,
-                supportingText = errors.expiryDate ?: "Tap to choose a date",
+                supportingText = localizedIngredientError(errors.expiryDate) ?: stringResource(R.string.editor_tap_date),
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Filled.CalendarMonth,
-                        contentDescription = "Choose expiry date"
+                        contentDescription = stringResource(R.string.editor_choose_date)
                     )
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -272,7 +275,7 @@ fun IngredientEditorScreen(
                         },
                         enabled = datePickerState.selectedDateMillis != null
                     ) {
-                        Text("Use date")
+                        Text(stringResource(R.string.editor_use_date))
                     }
                 },
                 dismissButton = {
@@ -285,14 +288,14 @@ fun IngredientEditorScreen(
                                     showExpiryDatePicker = false
                                 }
                             ) {
-                                Text("Clear")
+                                Text(stringResource(R.string.editor_clear))
                             }
                         }
 
                         TextButton(
                             onClick = { showExpiryDatePicker = false }
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.settings_cancel))
                         }
                     }
                 }
@@ -306,14 +309,14 @@ fun IngredientEditorScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.FieldSpacing)) {
             if (isEditing && onDelete != null) {
                 KitchenQuestSecondaryButton(
-                    text = "Mark finished",
+                    text = stringResource(R.string.detail_mark_finished),
                     onClick = onDelete,
                     modifier = Modifier.weight(1f)
                 )
             }
 
             KitchenQuestPrimaryButton(
-                text = if (isEditing) "Save changes" else "Add to kitchen",
+                text = if (isEditing) stringResource(R.string.editor_save) else stringResource(R.string.editor_add_kitchen),
                 enabled = !isSaving,
                 onClick = {
                     val trimmedExpiry = expiryDate.trim().ifBlank { null }

@@ -21,6 +21,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,7 +34,7 @@ import com.example.kitchenquest.navigation.AppDestinations
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 private data class BottomNavigationItem(
-    val title: String,
+    val titleResId: Int,
     val route: String,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
@@ -40,31 +42,31 @@ private data class BottomNavigationItem(
 
 private val bottomNavigationItems = listOf(
     BottomNavigationItem(
-        title = "Home",
+        titleResId = R.string.nav_home,
         route = AppDestinations.Home,
         selectedIcon = Icons.Filled.Home,
         unselectedIcon = Icons.Outlined.Home
     ),
     BottomNavigationItem(
-        title = "Recipes",
+        titleResId = R.string.nav_recipes,
         route = AppDestinations.Recipes,
         selectedIcon = Icons.Filled.MenuBook,
         unselectedIcon = Icons.Outlined.MenuBook
     ),
     BottomNavigationItem(
-        title = "My Kitchen",
+        titleResId = R.string.kitchen_title,
         route = AppDestinations.MyKitchen,
         selectedIcon = Icons.Filled.Kitchen,
         unselectedIcon = Icons.Outlined.Kitchen
     ),
     BottomNavigationItem(
-        title = "Cook",
+        titleResId = R.string.nav_cook,
         route = AppDestinations.Cook,
         selectedIcon = Icons.Filled.Timer,
         unselectedIcon = Icons.Outlined.Timer
     ),
     BottomNavigationItem(
-        title = "Profile",
+        titleResId = R.string.nav_profile,
         route = AppDestinations.Profile,
         selectedIcon = Icons.Filled.Person,
         unselectedIcon = Icons.Outlined.Person
@@ -186,13 +188,13 @@ fun BottomNavigationBar(
                                 } else {
                                     item.unselectedIcon
                                 },
-                            contentDescription = item.title,
+                            contentDescription = stringResource(item.titleResId),
                             modifier = Modifier.size(22.dp)
                         )
                     },
                     label = {
                         Text(
-                            text = item.title,
+                            text = stringResource(item.titleResId),
                             style = MaterialTheme.typography.labelSmall
                         )
                     },

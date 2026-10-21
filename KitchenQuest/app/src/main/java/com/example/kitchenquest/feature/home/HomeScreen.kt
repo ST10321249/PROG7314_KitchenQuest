@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.home
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -57,9 +59,9 @@ fun HomeScreen(
     onRetry: () -> Unit
 ) {
     val greeting = when (LocalTime.now().hour) {
-        in 5..11 -> "Good morning"
-        in 12..17 -> "Good afternoon"
-        else -> "Good evening"
+        in 5..11 -> stringResource(R.string.home_greeting_morning)
+        in 12..17 -> stringResource(R.string.home_greeting_afternoon)
+        else -> stringResource(R.string.home_greeting_evening)
     }
 
     LazyColumn(
@@ -92,7 +94,7 @@ fun HomeScreen(
 
                 KitchenQuestIconButton(
                     icon = Icons.Filled.Notifications,
-                    contentDescription = "Notifications",
+                    contentDescription = stringResource(R.string.home_notifications),
                     onClick = onNotifications
                 )
             }
@@ -105,28 +107,28 @@ fun HomeScreen(
             ) {
                 QuickAction(
                     emoji = "⏱",
-                    label = "Timer",
+                    label = stringResource(R.string.home_timer),
                     iconBackground = Color(0xFFFFEEE0),
                     onClick = onKitchenTimer,
                     modifier = Modifier.weight(1f)
                 )
                 QuickAction(
                     emoji = "🍳",
-                    label = "What can\nI make?",
+                    label = stringResource(R.string.home_make),
                     iconBackground = Color(0xFFE5F4EE),
                     onClick = onWhatCanIMake,
                     modifier = Modifier.weight(1f)
                 )
                 QuickAction(
                     emoji = "🛒",
-                    label = "Shopping\nlist",
+                    label = stringResource(R.string.home_shopping),
                     iconBackground = Color(0xFFE9EDF5),
                     onClick = onShoppingList,
                     modifier = Modifier.weight(1f)
                 )
                 QuickAction(
                     emoji = "🔎",
-                    label = "Search\nrecipes",
+                    label = stringResource(R.string.home_search),
                     iconBackground = Color(0xFFF0EAF9),
                     onClick = onSearchRecipes,
                     modifier = Modifier.weight(1f)
@@ -145,16 +147,16 @@ fun HomeScreen(
                     modifier = Modifier.padding(vertical = KitchenQuestDimens.MediumSpacing),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SummaryValue("${state.pantryCount}", "In my kitchen", Modifier.weight(1f))
+                    SummaryValue("${state.pantryCount}", stringResource(R.string.home_my_kitchen), Modifier.weight(1f))
                     SummaryDivider()
                     SummaryValue(
                         "${state.expiringSoon.size}",
-                        "Expiring soon",
+                        stringResource(R.string.home_expiring),
                         Modifier.weight(1f),
                         KitchenRed
                     )
                     SummaryDivider()
-                    SummaryValue("${state.shoppingCount}", "To buy", Modifier.weight(1f))
+                    SummaryValue("${state.shoppingCount}", stringResource(R.string.home_to_buy), Modifier.weight(1f))
                 }
             }
         }
@@ -171,7 +173,7 @@ fun HomeScreen(
         if (state.expiringSoon.isNotEmpty()) {
             item {
                 KitchenQuestSectionTitle(
-                    title = "Use soon"
+                    title = stringResource(R.string.home_use_soon)
                 )
             }
 
@@ -188,14 +190,14 @@ fun HomeScreen(
 
         item {
             KitchenQuestSectionTitle(
-                title = "Quick Picks"
+                title = stringResource(R.string.home_quick_picks)
             )
         }
 
         if (state.isLoading && !state.hasLoaded) {
             item {
                 Text(
-                    text = "Loading your kitchen...",
+                    text = stringResource(R.string.home_loading),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -210,13 +212,13 @@ fun HomeScreen(
                 ) {
                     Column(modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing)) {
                         Text(
-                            text = "Find recipes from your ingredients",
+                            text = stringResource(R.string.home_find_from),
                             style = MaterialTheme.typography.titleSmall,
                             color = KitchenGreen
                         )
                         Spacer(Modifier.height(KitchenQuestDimens.TinySpacing))
                         Text(
-                            text = "Add ingredients to My Kitchen and KitchenQuest will rank recipes by what you already have.",
+                            text = stringResource(R.string.home_find_help),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -312,10 +314,10 @@ private fun SummaryValue(
 private fun ExpiringCard(item: PantryItemDto) {
     val days = daysUntilExpiry(item)
     val message = when (days) {
-        0L -> "Expires today"
-        1L -> "Expires tomorrow"
-        null -> "Expiry soon"
-        else -> "$days days left"
+        0L -> stringResource(R.string.kitchen_today)
+        1L -> stringResource(R.string.kitchen_tomorrow)
+        null -> stringResource(R.string.kitchen_soon)
+        else -> stringResource(R.string.kitchen_days_left, days)
     }
 
     Surface(
@@ -385,7 +387,7 @@ private fun RecommendationCard(
                 )
                 Spacer(Modifier.height(KitchenQuestDimens.TinySpacing))
                 Text(
-                    text = "${(recipe.matchRatio * 100).toInt()}% ingredient match",
+                    text = stringResource(R.string.home_match_ratio, (recipe.matchRatio * 100).toInt()),
                     style = MaterialTheme.typography.labelMedium,
                     color = KitchenGreen
                 )

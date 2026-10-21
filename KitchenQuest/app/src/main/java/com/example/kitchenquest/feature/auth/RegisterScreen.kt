@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.auth
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,17 +63,17 @@ fun RegisterScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = KitchenQuestDimens.ScreenPadding)
     ) {
-        KitchenQuestTopBar(title = "Create account", onBack = onBackToLogin)
+        KitchenQuestTopBar(title = stringResource(R.string.auth_create_account), onBack = onBackToLogin)
 
         Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
 
         KitchenQuestTextField(
             value = displayName,
             onValueChange = { displayName = it },
-            label = "Display name",
+            label = stringResource(R.string.auth_display_name),
             modifier = Modifier.fillMaxWidth(),
             isError = attemptedSubmit && !displayNameIsValid,
-            supportingText = if (attemptedSubmit && !displayNameIsValid) "Display name is required" else null
+            supportingText = if (attemptedSubmit && !displayNameIsValid) stringResource(R.string.auth_display_required) else null
         )
 
         Spacer(Modifier.height(KitchenQuestDimens.FieldSpacing))
@@ -79,11 +81,11 @@ fun RegisterScreen(
         KitchenQuestTextField(
             value = email,
             onValueChange = { email = it },
-            label = "Email address",
+            label = stringResource(R.string.auth_email),
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Email,
             isError = attemptedSubmit && !emailIsValid,
-            supportingText = if (attemptedSubmit && !emailIsValid) "Enter a valid email address" else null
+            supportingText = if (attemptedSubmit && !emailIsValid) stringResource(R.string.auth_email_invalid) else null
         )
 
         Spacer(Modifier.height(KitchenQuestDimens.FieldSpacing))
@@ -91,20 +93,20 @@ fun RegisterScreen(
         KitchenQuestTextField(
             value = password,
             onValueChange = { password = it },
-            label = "Password",
+            label = stringResource(R.string.auth_password),
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 TextButton(onClick = { showPassword = !showPassword }) {
-                    Text(if (showPassword) "Hide" else "Show")
+                    Text(if (showPassword) stringResource(R.string.auth_hide) else stringResource(R.string.auth_show))
                 }
             },
             isError = attemptedSubmit && !passwordIsValid,
             supportingText = if (attemptedSubmit && !passwordIsValid) {
-                "Use at least 8 characters with an uppercase letter, number and symbol"
+                stringResource(R.string.auth_password_rules_error)
             } else {
-                "At least 8 characters, with an uppercase letter, number and symbol."
+                stringResource(R.string.auth_password_rules_hint)
             }
         )
 
@@ -113,12 +115,12 @@ fun RegisterScreen(
         KitchenQuestTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = "Confirm password",
+            label = stringResource(R.string.auth_confirm_password),
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             isError = attemptedSubmit && !confirmationIsValid,
-            supportingText = if (attemptedSubmit && !confirmationIsValid) "Passwords must match" else null
+            supportingText = if (attemptedSubmit && !confirmationIsValid) stringResource(R.string.auth_password_mismatch) else null
         )
 
         Row(
@@ -130,14 +132,14 @@ fun RegisterScreen(
                 onCheckedChange = { acceptedTerms = it }
             )
             Text(
-                text = "I agree to the Terms of Use and Privacy Policy.",
+                text = stringResource(R.string.auth_terms),
                 style = MaterialTheme.typography.labelMedium
             )
         }
 
         if (errorMessage != null) {
             Text(
-                text = errorMessage,
+                text = localizedAuthError(errorMessage) ?: errorMessage,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -145,7 +147,7 @@ fun RegisterScreen(
         }
 
         KitchenQuestPrimaryButton(
-            text = if (isLoading) "Creating account..." else "Create account",
+            text = if (isLoading) stringResource(R.string.auth_creating) else stringResource(R.string.auth_create_account),
             onClick = {
                 attemptedSubmit = true
                 if (formIsValid) {
@@ -164,14 +166,14 @@ fun RegisterScreen(
             horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.MediumSpacing)
         ) {
             HorizontalDivider(modifier = Modifier.weight(1f))
-            Text("or", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.auth_or), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             HorizontalDivider(modifier = Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
         KitchenQuestSecondaryButton(
-            text = "Sign up with Google",
+            text = stringResource(R.string.auth_signup_google),
             onClick = onGoogleSignIn,
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading
@@ -183,7 +185,7 @@ fun RegisterScreen(
                 enabled = !isLoading,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Edit dietary preferences")
+                Text(stringResource(R.string.auth_edit_dietary))
             }
         }
 
@@ -192,9 +194,9 @@ fun RegisterScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Already have an account?", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.auth_have_account), style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onBackToLogin, enabled = !isLoading) {
-                Text("Sign in")
+                Text(stringResource(R.string.auth_sign_in))
             }
         }
 
