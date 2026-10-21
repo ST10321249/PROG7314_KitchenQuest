@@ -1,5 +1,6 @@
 package com.example.kitchenquest.navigation
 
+import com.example.kitchenquest.R
 import android.app.Activity
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -36,6 +37,7 @@ import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.syncSignedInUser
 import com.example.kitchenquest.data.user.toOnboardingSelection
 import com.example.kitchenquest.feature.auth.AuthViewModel
+import com.example.kitchenquest.feature.auth.BiometricGateViewModel
 import com.example.kitchenquest.feature.auth.BiometricUnlockRules
 import com.example.kitchenquest.feature.auth.BiometricUnlockScreen
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
@@ -106,37 +108,30 @@ fun AppNavHost() {
 
     val signedInUid = authState.user?.uid
 
-    // The current Firebase session was restored by the SDK if the app was
-    // restarted. Only sessions authenticated interactively in this process
-    // can enter without first passing the saved biometric preference.
-    var signedOutSinceLaunch by remember {
-        mutableStateOf(signedInUid == null)
-    }
-    var unlockedUid by remember { mutableStateOf<String?>(null) }
-    var passwordFallbackRequested by remember { mutableStateOf(false) }
+    // Activity-scoped ViewModel persists a verified unlock through a language
+    // change. No unlocked state survives a cold start or process death.
+    val biometricGate: BiometricGateViewModel = viewModel()
+    val unlockedUid = biometricGate.unlockedUid
+    val signedOutSinceLaunch = biometricGate.signedOutSinceLaunch
+    val passwordFallbackRequested = biometricGate.passwordFallbackRequested
 
-    LaunchedEffect(signedInUid) {
-        if (signedInUid == null) {
-            signedOutSinceLaunch = true
-            unlockedUid = null
-        } else if (signedOutSinceLaunch) {
-            // New password/Google sign-in already verified the user's identity.
-            unlockedUid = signedInUid
-            signedOutSinceLaunch = false
-        }
+    LaunchedEffect(authState.isAuthChecked, signedInUid) {
+        // Firebase can momentarily report no user while restoring a saved session.
+        // A restored session must NOT be mistaken for a new interactive login.
+        if (authState.isAuthChecked) biometricGate.sessionResolved(signedInUid)
     }
 
-    // Relock whenever the activity actually leaves the foreground.
-    // This state is deliberately NOT persisted through process recreation.
+    // A configuration change (including locale switch) is NOT leaving the app.
+    // True backgrounding clears verification and locks when returning.
     val observedUid by rememberUpdatedState(signedInUid)
     DisposableEffect(activity) {
         val owner = activity as? FragmentActivity
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
+            if (event == Lifecycle.Event.ON_STOP &&
+                owner?.isChangingConfigurations != true
+            ) {
                 val uid = observedUid
-                if (uid != null && biometricSettings.isEnabled(uid)) {
-                    unlockedUid = null
-                }
+                if (uid != null && biometricSettings.isEnabled(uid)) biometricGate.lock()
             }
         }
         owner?.lifecycle?.addObserver(observer)
@@ -245,7 +240,7 @@ fun AppNavHost() {
                     popUpTo(0) { inclusive = true }
                     launchSingleTop = true
                 }
-                passwordFallbackRequested = false
+                biometricGate.passwordFallbackRequested = false
             }
 
             return@LaunchedEffect
@@ -342,7 +337,7 @@ fun AppNavHost() {
                         .makeText(
                             context,
                             failure.message
-                                ?: "Unable to sync your profile. Please try again.",
+                                ?: context.getString(R.string.nav_sync_failed),
                             Toast.LENGTH_LONG
                         )
                         .show()
@@ -376,14 +371,14 @@ fun AppNavHost() {
                     (activity as? FragmentActivity)?.lifecycle?.currentState
                         ?.isAtLeast(Lifecycle.State.STARTED) == true
                 ) {
-                    unlockedUid = signedInUid
+                    biometricGate.verified(signedInUid)
                 }
             },
             onUseNormalLogin = {
                 // A password fallback must invalidate the existing Firebase
                 // session, not simply dismiss the lock screen.
-                unlockedUid = null
-                passwordFallbackRequested = true
+                biometricGate.lock()
+                biometricGate.passwordFallbackRequested = true
                 authViewModel.signOut()
                 coroutineScope.launch {
                     try { googleSignInClient.clearCredentialState(context) }
@@ -454,7 +449,7 @@ fun AppNavHost() {
                         currentUser != null &&
                         showExistingPreferencesMessage
                     ) {
-                        "We found dietary preferences already saved for this account. Review them below and continue to keep or update them."
+                        context.getString(R.string.onboard_existing_saved)
                     } else {
                         null
                     }
@@ -532,7 +527,7 @@ fun AppNavHost() {
                                                 .makeText(
                                                     context,
                                                     failure.message
-                                                        ?: "Unable to save your preferences. Please try again.",
+                                                        ?: context.getString(R.string.nav_save_failed),
                                                     Toast.LENGTH_LONG
                                                 )
                                                 .show()
@@ -1160,7 +1155,7 @@ fun AppNavHost() {
                 AppDestinations.RecipeComplete
             ) {
                 val cookingState by cookingViewModel.uiState.collectAsState()
-                val recipeTitle = cookingState.recipe?.title ?: "Recipe"
+                val recipeTitle = cookingState.recipe?.title ?: context.getString(R.string.nav_recipe_fallback)
                 val readyInMinutes = cookingState.recipe?.readyInMinutes
 
                 RecipeCompleteScreen(
@@ -1274,12 +1269,12 @@ fun AppNavHost() {
                     onBiometricsEnabled = {
                         // Enabling the preference already requested a system
                         // biometric check. Prompt again on the next app entry.
-                        unlockedUid = authState.user?.uid
+                        authState.user?.uid?.let(biometricGate::verified)
                     },
 
                     onSignOut = {
 
-                        unlockedUid = null
+                        biometricGate.lock()
                         authViewModel
                             .signOut()
 

@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.recipes
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.recipes.RecipeSearchResultDto
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
@@ -61,7 +63,7 @@ fun RecipesScreen(
     // details. Keeping the Recipes header uncluttered matches the supplied design.
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
-            text = "Recipes",
+            text = stringResource(R.string.recipes_recipes_0153a1),
             modifier = Modifier.padding(
                 start = KitchenQuestDimens.ScreenPadding,
                 end = KitchenQuestDimens.ScreenPadding,
@@ -79,7 +81,7 @@ fun RecipesScreen(
             KitchenQuestSearchField(
                 value = state.searchQuery,
                 onValueChange = onQueryChange,
-                placeholder = "Search recipes or ingredients",
+                placeholder = stringResource(R.string.recipes_search_recipes_or_ingredients_d98b98),
                 onSearch = onSearch
             )
 
@@ -97,14 +99,14 @@ fun RecipesScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "What Can I Make?",
+                            text = stringResource(R.string.recipes_what_can_i_make_726bfa),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Spacer(Modifier.height(KitchenQuestDimens.TinySpacing))
                         Text(
-                            text = "Find recipes from the ingredients in My Kitchen",
+                            text = stringResource(R.string.recipes_find_recipes_from_the_ingredients_in_my_kitchen_409201),
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White.copy(alpha = 0.92f)
                         )
@@ -124,7 +126,7 @@ fun RecipesScreen(
             ) {
                 recipeFilters.forEach { filter ->
                     KitchenQuestChoiceChip(
-                        text = filter,
+                        text = recipeFilterLabel(filter),
                         selected = state.selectedFilter == filter,
                         onClick = { onFilterSelected(filter) }
                     )
@@ -134,7 +136,7 @@ fun RecipesScreen(
             Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
 
             Text(
-                text = "Categories",
+                text = stringResource(R.string.recipes_categories_af1b98),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -161,7 +163,7 @@ fun RecipesScreen(
                             Text(emoji, style = MaterialTheme.typography.titleLarge)
                             Spacer(Modifier.height(KitchenQuestDimens.TinySpacing))
                             Text(
-                                text = category,
+                                text = recipeCategoryLabel(category),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
@@ -173,7 +175,7 @@ fun RecipesScreen(
 
             Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
-            KitchenQuestSectionTitle(title = "Popular this week")
+            KitchenQuestSectionTitle(title = stringResource(R.string.recipes_popular_this_week_201ff2))
         }
 
         Box(modifier = Modifier.weight(1f)) {
@@ -183,7 +185,7 @@ fun RecipesScreen(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(KitchenQuestDimens.ScreenPadding),
-                        message = "Finding recipes..."
+                        message = stringResource(R.string.recipes_finding_recipes_51cf34)
                     )
                 }
 
@@ -197,18 +199,18 @@ fun RecipesScreen(
 
                 state.results.isEmpty() && state.hasLoaded -> {
                     KitchenQuestEmptyState(
-                        title = "No recipes found",
-                        message = "Try another search or remove a filter.",
+                        title = stringResource(R.string.recipes_no_recipes_found_c0aa6e),
+                        message = stringResource(R.string.recipes_try_another_search_or_remove_a_filter_9e9c48),
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                     )
                 }
 
                 !state.hasLoaded -> {
                     KitchenQuestEmptyState(
-                        title = "Find something to cook",
-                        message = "Search for a recipe, choose a category, or browse recipes based on your kitchen.",
+                        title = stringResource(R.string.recipes_find_something_to_cook_5ed09c),
+                        message = stringResource(R.string.recipes_search_for_a_recipe_choose_a_category_or_browse_recipes_b_28a2fe),
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding),
-                        actionText = "Browse recipes",
+                        actionText = stringResource(R.string.recipes_browse_recipes_c60b98),
                         onAction = onSearch
                     )
                 }
@@ -273,14 +275,14 @@ private fun RecipeResultRow(
                 Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)) {
                     recipe.readyInMinutes?.let {
                         Text(
-                            text = "$it min",
+                            text = stringResource(R.string.recipes_minutes_format, it),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     recipe.servings?.let {
                         Text(
-                            text = "$it servings",
+                            text = stringResource(R.string.recipes_servings_format, it),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -295,4 +297,23 @@ private fun RecipeResultRow(
             )
         }
     }
+}
+
+/** Translate display labels only; recipe filters and categories stay in their API format. */
+@Composable
+private fun recipeFilterLabel(value: String): String = when (value) {
+    "All" -> stringResource(R.string.recipe_filter_all)
+    "Under 30 min" -> stringResource(R.string.recipe_filter_under30)
+    "Chicken" -> stringResource(R.string.recipe_filter_chicken)
+    "Vegetarian" -> stringResource(R.string.recipe_filter_vegetarian)
+    else -> value
+}
+
+@Composable
+private fun recipeCategoryLabel(value: String): String = when (value) {
+    "Breakfast" -> stringResource(R.string.recipe_category_breakfast)
+    "Lunch" -> stringResource(R.string.recipe_category_lunch)
+    "Dinner" -> stringResource(R.string.recipe_category_dinner)
+    "Healthy" -> stringResource(R.string.recipe_category_healthy)
+    else -> value
 }

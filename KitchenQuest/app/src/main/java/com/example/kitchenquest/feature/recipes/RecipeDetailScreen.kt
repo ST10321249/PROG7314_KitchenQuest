@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.recipes
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.recipes.RecipeIngredientDto
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
@@ -55,7 +57,7 @@ fun RecipeDetailScreen(
     when {
         state.isLoading && state.recipe == null -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                KitchenQuestLoadingState(message = "Loading recipe...")
+                KitchenQuestLoadingState(message = stringResource(R.string.recipedetail_loading_recipe_1d53c5))
             }
         }
 
@@ -96,7 +98,7 @@ fun RecipeDetailScreen(
                                 color = MaterialTheme.colorScheme.surface
                             ) {
                                 IconButton(onClick = onBack) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.recipedetail_back_0557fa))
                                 }
                             }
 
@@ -109,7 +111,7 @@ fun RecipeDetailScreen(
                                 IconButton(onClick = onToggleFavourite) {
                                     Icon(
                                         imageVector = if (state.isFavourite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                        contentDescription = if (state.isFavourite) "Remove from saved" else "Save recipe",
+                                        contentDescription = if (state.isFavourite) stringResource(R.string.recipedetail_remove_from_saved_f5b42c) else stringResource(R.string.recipedetail_save_recipe_ca579a),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -144,10 +146,10 @@ fun RecipeDetailScreen(
                         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
                         Row(horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.MediumSpacing)) {
                             recipe.readyInMinutes?.let {
-                                Text("⏱ $it min", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.detail_minutes, it), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             recipe.servings?.let {
-                                Text("🍽 $it servings", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.detail_servings, it), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
 
@@ -158,7 +160,7 @@ fun RecipeDetailScreen(
                                 color = KitchenGreenLight
                             ) {
                                 Text(
-                                    text = "You have $heldCount of ${recipe.ingredients.size} ingredients",
+                                    text = stringResource(R.string.detail_owned_format, heldCount, recipe.ingredients.size),
                                     modifier = Modifier.padding(
                                         horizontal = KitchenQuestDimens.MediumSpacing,
                                         vertical = KitchenQuestDimens.SmallSpacing
@@ -182,9 +184,9 @@ fun RecipeDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Servings", style = MaterialTheme.typography.titleSmall)
+                                    Text(stringResource(R.string.recipedetail_servings_4349e0), style = MaterialTheme.typography.titleSmall)
                                     Text(
-                                        "Quantities update automatically",
+                                        stringResource(R.string.recipedetail_quantities_update_automatically_d087c6),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -196,11 +198,11 @@ fun RecipeDetailScreen(
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         IconButton(onClick = onDecreaseServings) {
-                                            Icon(Icons.Filled.Remove, contentDescription = "Fewer servings")
+                                            Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.recipedetail_fewer_servings_20d364))
                                         }
                                         Text("${state.servings}", style = MaterialTheme.typography.titleSmall)
                                         IconButton(onClick = onIncreaseServings) {
-                                            Icon(Icons.Filled.Add, contentDescription = "More servings")
+                                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.recipedetail_more_servings_5d4fc5))
                                         }
                                     }
                                 }
@@ -213,10 +215,10 @@ fun RecipeDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Ingredients", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.recipedetail_ingredients_210c9e), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                             if (missingCount > 0) {
                                 Text(
-                                    "Add missing to list",
+                                    stringResource(R.string.recipedetail_add_missing_to_list_f56f15),
                                     modifier = Modifier.padding(KitchenQuestDimens.SmallSpacing),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
@@ -242,7 +244,7 @@ fun RecipeDetailScreen(
                                 color = KitchenOrangeLight
                             ) {
                                 Text(
-                                    text = "Add $missingCount missing ingredient${if (missingCount == 1) "" else "s"} to shopping list",
+                                    text = if (missingCount == 1) stringResource(R.string.detail_missing_one) else stringResource(R.string.detail_missing_many, missingCount),
                                     modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary
@@ -253,7 +255,7 @@ fun RecipeDetailScreen(
                 }
 
                 KitchenQuestPrimaryButton(
-                    text = "Start cooking",
+                    text = stringResource(R.string.recipedetail_start_cooking_ee58ff),
                     onClick = onStartCooking,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -291,7 +293,7 @@ private fun IngredientLine(
                 if (held) {
                     Icon(
                         Icons.Filled.Check,
-                        contentDescription = "In My Kitchen",
+                        contentDescription = stringResource(R.string.recipedetail_in_my_kitchen_a4d4ae),
                         tint = Color.White,
                         modifier = Modifier.padding(4.dp)
                     )

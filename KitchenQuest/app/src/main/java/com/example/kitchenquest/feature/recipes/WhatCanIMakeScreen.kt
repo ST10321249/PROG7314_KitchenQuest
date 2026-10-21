@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.recipes
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.recipes.RecipeRecommendationDto
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
@@ -60,13 +62,13 @@ fun WhatCanIMakeScreen(
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         KitchenQuestTopBar(
-            title = "What Can I Make?",
+            title = stringResource(R.string.whatcanimake_what_can_i_make_726bfa),
             onBack = onBack,
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding),
             actions = {
                 KitchenQuestIconButton(
                     icon = Icons.Filled.Favorite,
-                    contentDescription = "Saved recipes",
+                    contentDescription = stringResource(R.string.whatcanimake_saved_recipes_10b031),
                     onClick = onSavedRecipes
                 )
             }
@@ -109,7 +111,7 @@ fun WhatCanIMakeScreen(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(KitchenQuestDimens.ScreenPadding),
-                        message = "Matching recipes to your kitchen..."
+                        message = stringResource(R.string.whatcanimake_matching_recipes_to_your_kitchen_aed261)
                     )
                 }
 
@@ -123,18 +125,18 @@ fun WhatCanIMakeScreen(
 
                 state.selectedIngredients.isEmpty() -> {
                     KitchenQuestEmptyState(
-                        title = "Choose at least one ingredient",
-                        message = "Tap an ingredient above to include it in recipe matching.",
+                        title = stringResource(R.string.whatcanimake_choose_at_least_one_ingredient_3b808f),
+                        message = stringResource(R.string.whatcanimake_tap_an_ingredient_above_to_include_it_in_recipe_matching_51dd98),
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                     )
                 }
 
                 state.recommendations.isEmpty() -> {
                     KitchenQuestEmptyState(
-                        title = "No matches yet",
-                        message = "Add more ingredients to My Kitchen or try a different combination.",
+                        title = stringResource(R.string.whatcanimake_no_matches_yet_d6e5dc),
+                        message = stringResource(R.string.whatcanimake_add_more_ingredients_to_my_kitchen_or_try_a_different_com_80328b),
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding),
-                        actionText = "Add ingredient",
+                        actionText = stringResource(R.string.whatcanimake_add_ingredient_590a4f),
                         onAction = onAddIngredient
                     )
                 }
@@ -154,13 +156,13 @@ fun WhatCanIMakeScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "${state.recommendations.size} matches",
+                                    text = stringResource(R.string.what_matches_format, state.recommendations.size),
                                     modifier = Modifier.weight(1f),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Best match⌄",
+                                    text = stringResource(R.string.whatcanimake_best_match_c09359),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -235,7 +237,7 @@ private fun AddIngredientChip(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "+ Add ingredient",
+            text = stringResource(R.string.whatcanimake_add_ingredient_39d698),
             style = MaterialTheme.typography.labelMedium,
             color = orange
         )
@@ -283,7 +285,7 @@ private fun RecommendationCard(
                     )
                     Spacer(Modifier.height(KitchenQuestDimens.TinySpacing))
                     Text(
-                        text = "$percent% ingredient match",
+                        text = stringResource(R.string.what_ingredient_match, percent),
                         style = MaterialTheme.typography.labelSmall,
                         color = ratioColor
                     )
@@ -312,14 +314,14 @@ private fun RecommendationCard(
                 Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Missing: ${recommendation.missingIngredients.joinToString(", ")}",
+                        text = stringResource(R.string.what_missing_ingredients, recommendation.missingIngredients.joinToString(", ")),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2
                     )
                     Text(
-                        text = "Add to list",
+                        text = stringResource(R.string.whatcanimake_add_to_list_4db44a),
                         modifier = Modifier
                             .clickable(onClick = onAddMissing)
                             .padding(KitchenQuestDimens.SmallSpacing),

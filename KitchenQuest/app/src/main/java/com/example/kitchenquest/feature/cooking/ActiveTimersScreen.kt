@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.cooking
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.components.KitchenQuestCard
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
@@ -60,7 +62,7 @@ fun ActiveTimersScreen(
             .padding(KitchenQuestDimens.ScreenPadding)
     ) {
         KitchenQuestTopBar(
-            title = "Timers",
+            title = stringResource(R.string.activetimers_timers_92dd35),
             onBack = onBackToCooking,
             actions = {
                 TextButton(
@@ -68,7 +70,7 @@ fun ActiveTimersScreen(
                     enabled = state.timers.isNotEmpty()
                 ) {
                     Text(
-                        text = "Stop all",
+                        text = stringResource(R.string.activetimers_stop_all_e34836),
                         color = if (state.timers.isNotEmpty()) {
                             MaterialTheme.colorScheme.error
                         } else {
@@ -83,14 +85,14 @@ fun ActiveTimersScreen(
 
         if (featured == null) {
             KitchenQuestEmptyState(
-                title = "No active timers",
-                message = "Start a timer from a recipe step or from the Kitchen Timer."
+                title = stringResource(R.string.activetimers_no_active_timers_8b604d),
+                message = stringResource(R.string.activetimers_start_a_timer_from_a_recipe_step_or_from_the_kitchen_time_9ba341)
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
             KitchenQuestPrimaryButton(
-                text = if (state.recipe != null) "Back to cooking" else "Back",
+                text = if (state.recipe != null) stringResource(R.string.activetimers_back_to_cooking_69bc08) else stringResource(R.string.activetimers_back_0557a4),
                 onClick = onBackToCooking,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -105,7 +107,7 @@ fun ActiveTimersScreen(
             Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 
             Text(
-                text = "All timers",
+                text = stringResource(R.string.activetimers_all_timers_ffb81f),
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -128,7 +130,7 @@ fun ActiveTimersScreen(
             Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
             KitchenQuestPrimaryButton(
-                text = if (state.recipe != null) "Back to cooking" else "Back",
+                text = if (state.recipe != null) stringResource(R.string.activetimers_back_to_cooking_69bc08) else stringResource(R.string.activetimers_back_0557a4),
                 onClick = onBackToCooking,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -138,9 +140,9 @@ fun ActiveTimersScreen(
     if (confirmStopAll) {
         AlertDialog(
             onDismissRequest = { confirmStopAll = false },
-            title = { Text("Stop all timers?") },
+            title = { Text(stringResource(R.string.activetimers_stop_all_timers_53c494)) },
             text = {
-                Text("All active and completed timers will be removed from this list.")
+                Text(stringResource(R.string.activetimers_all_active_and_completed_timers_will_be_removed_from_this_8e4a9d))
             },
             confirmButton = {
                 TextButton(
@@ -150,14 +152,14 @@ fun ActiveTimersScreen(
                     }
                 ) {
                     Text(
-                        text = "Stop all",
+                        text = stringResource(R.string.activetimers_stop_all_e34836),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmStopAll = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.activetimers_cancel_ea4788))
                 }
             }
         )
@@ -222,7 +224,7 @@ private fun FeaturedTimer(
             )
         ) {
             KitchenQuestSecondaryButton(
-                text = "+1 min",
+                text = stringResource(R.string.timer_plus_minute),
                 onClick = onAddMinute,
                 enabled = !timer.isFinished,
                 modifier = Modifier.weight(1f)
@@ -230,9 +232,9 @@ private fun FeaturedTimer(
 
             KitchenQuestSecondaryButton(
                 text = when {
-                    timer.isFinished -> "Finished"
-                    timer.isRunning -> "Pause"
-                    else -> "Resume"
+                    timer.isFinished -> stringResource(R.string.activetimers_finished_0b8e85)
+                    timer.isRunning -> stringResource(R.string.activetimers_pause_556eaa)
+                    else -> stringResource(R.string.activetimers_resume_8433f2)
                 },
                 onClick = onTogglePause,
                 enabled = !timer.isFinished,
@@ -253,7 +255,7 @@ private fun FeaturedTimer(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.activetimers_cancel_ea4788))
             }
         }
     }
@@ -283,9 +285,9 @@ private fun TimerCard(
 
                 Text(
                     text = when {
-                        timer.isFinished -> "Finished"
-                        timer.sourceType == TimerSource.RECIPE -> "From recipe"
-                        else -> "Standalone"
+                        timer.isFinished -> stringResource(R.string.activetimers_finished_0b8e85)
+                        timer.sourceType == TimerSource.RECIPE -> stringResource(R.string.activetimers_from_recipe_0502b1)
+                        else -> stringResource(R.string.activetimers_standalone_7efc0d)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (timer.isFinished) {

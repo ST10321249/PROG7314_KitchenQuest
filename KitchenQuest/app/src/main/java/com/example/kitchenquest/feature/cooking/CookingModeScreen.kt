@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.cooking
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestCard
@@ -68,7 +70,7 @@ fun CookingModeScreen(
         when {
             state.isLoading && state.recipe == null -> {
                 KitchenQuestLoadingState(
-                    message = "Loading cooking mode...",
+                    message = stringResource(R.string.cookingmode_loading_cooking_mode_7ca796),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(KitchenQuestDimens.ScreenPadding)
@@ -82,7 +84,7 @@ fun CookingModeScreen(
                         .padding(KitchenQuestDimens.ScreenPadding)
                 ) {
                     Text(
-                        text = "Cooking mode couldn't be opened",
+                        text = stringResource(R.string.cookingmode_cooking_mode_couldn_t_be_opened_5db184),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -98,7 +100,7 @@ fun CookingModeScreen(
                     Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
                     KitchenQuestSecondaryButton(
-                        text = "Go back",
+                        text = stringResource(R.string.cookingmode_go_back_22b653),
                         onClick = onExit,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -133,7 +135,7 @@ fun CookingModeScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "Exit cooking mode"
+                                    contentDescription = stringResource(R.string.cookingmode_exit_cooking_mode_767fd4)
                                 )
                             }
                         }
@@ -158,7 +160,7 @@ fun CookingModeScreen(
                     Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
                     Text(
-                        text = "STEP ${state.currentStepIndex + 1} OF ${recipe.steps.size}",
+                        text = stringResource(R.string.cooking_step_of, state.currentStepIndex + 1, recipe.steps.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -185,12 +187,12 @@ fun CookingModeScreen(
                             modifier = Modifier.padding(KitchenQuestDimens.CardPadding)
                         ) {
                             Text(
-                                text = "Timer for this step",
+                                text = stringResource(R.string.cookingmode_timer_for_this_step_536fe7),
                                 style = MaterialTheme.typography.titleSmall
                             )
 
                             Text(
-                                text = "Choose a duration, then keep cooking while it runs.",
+                                text = stringResource(R.string.cookingmode_choose_a_duration_then_keep_cooking_while_it_runs_b72b7f),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -204,7 +206,7 @@ fun CookingModeScreen(
                             ) {
                                 StepTimerPresets.forEach { minutes ->
                                     KitchenQuestChoiceChip(
-                                        text = "$minutes min",
+                                        text = stringResource(R.string.cooking_minutes, minutes),
                                         selected = selectedTimerMinutes == minutes,
                                         onClick = { selectedTimerMinutes = minutes }
                                     )
@@ -243,7 +245,7 @@ fun CookingModeScreen(
                         )
                     ) {
                         KitchenQuestSecondaryButton(
-                            text = "‹ Previous",
+                            text = stringResource(R.string.cookingmode_previous_995e9d),
                             onClick = onPreviousStep,
                             enabled = state.currentStepIndex > 0,
                             modifier = Modifier.weight(1f)
@@ -251,9 +253,9 @@ fun CookingModeScreen(
 
                         KitchenQuestPrimaryButton(
                             text = if (isLastStep) {
-                                "Finish"
+                                stringResource(R.string.cookingmode_finish_6767d5)
                             } else {
-                                "Next step ›"
+                                stringResource(R.string.cookingmode_next_step_68397f)
                             },
                             onClick = {
                                 if (isLastStep) {
@@ -280,7 +282,7 @@ fun CookingModeScreen(
 
             else -> {
                 Text(
-                    text = "This recipe doesn't have step-by-step instructions.",
+                    text = stringResource(R.string.cookingmode_this_recipe_doesn_t_have_step_by_step_instructions_b2dae0),
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(KitchenQuestDimens.ScreenPadding),
@@ -294,10 +296,10 @@ fun CookingModeScreen(
     if (showExitConfirmation) {
         AlertDialog(
             onDismissRequest = { showExitConfirmation = false },
-            title = { Text("Exit cooking mode?") },
+            title = { Text(stringResource(R.string.cookingmode_exit_cooking_mode_893356)) },
             text = {
                 Text(
-                    "Your current step and timers will stay available so you can continue later."
+                    stringResource(R.string.cookingmode_your_current_step_and_timers_will_stay_available_so_you_c_d09bb6)
                 )
             },
             confirmButton = {
@@ -307,12 +309,12 @@ fun CookingModeScreen(
                         onExit()
                     }
                 ) {
-                    Text("Exit")
+                    Text(stringResource(R.string.cookingmode_exit_fef46e))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitConfirmation = false }) {
-                    Text("Keep cooking")
+                    Text(stringResource(R.string.cookingmode_keep_cooking_ee11d2))
                 }
             }
         )
@@ -366,14 +368,14 @@ private fun ActiveTimerStrip(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ACTIVE TIMERS · $totalCount",
+                text = stringResource(R.string.cooking_active_timers, totalCount),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             TextButton(onClick = onViewAll) {
-                Text("View all")
+                Text(stringResource(R.string.cookingmode_view_all_0b4db2))
             }
         }
 

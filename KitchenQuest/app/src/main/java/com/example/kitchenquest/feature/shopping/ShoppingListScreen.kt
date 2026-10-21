@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.shopping
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
@@ -60,14 +62,14 @@ fun ShoppingListScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         KitchenQuestTopBar(
-            title = "Shopping list",
+            title = stringResource(R.string.shoppinglist_shopping_list_bc22f5),
             onBack = onBack,
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding),
             actions = {
                 if (state.items.isNotEmpty()) {
                     TextButton(onClick = { confirmClear = true }) {
                         Text(
-                            text = "Clear",
+                            text = stringResource(R.string.shoppinglist_clear_dc30bc),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -105,7 +107,7 @@ fun ShoppingListScreen(
                         Box {
                             if (newItemText.isBlank()) {
                                 Text(
-                                    text = "+ Add an item...",
+                                    text = stringResource(R.string.shoppinglist_add_an_item_0062be),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                 )
@@ -126,7 +128,7 @@ fun ShoppingListScreen(
                     enabled = newItemText.isNotBlank()
                 ) {
                     Text(
-                        text = "Add",
+                        text = stringResource(R.string.shoppinglist_add_ec211f),
                         style = MaterialTheme.typography.labelMedium,
                         color = if (newItemText.isNotBlank()) {
                             MaterialTheme.colorScheme.primary
@@ -166,8 +168,8 @@ fun ShoppingListScreen(
 
         if (state.items.isEmpty() && !state.isLoading) {
             KitchenQuestEmptyState(
-                title = "Your shopping list is empty",
-                message = "Add items manually or send missing recipe ingredients here.",
+                title = stringResource(R.string.shoppinglist_your_shopping_list_is_empty_e7c499),
+                message = stringResource(R.string.shoppinglist_add_items_manually_or_send_missing_recipe_ingredients_her_7deef4),
                 modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
             )
         } else {
@@ -204,8 +206,8 @@ fun ShoppingListScreen(
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("Clear shopping list?") },
-            text = { Text("This will remove every item currently on your shopping list.") },
+            title = { Text(stringResource(R.string.shoppinglist_clear_shopping_list_7d609f)) },
+            text = { Text(stringResource(R.string.shoppinglist_this_will_remove_every_item_currently_on_your_shopping_li_135e2d)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -213,12 +215,12 @@ fun ShoppingListScreen(
                         onClear()
                     }
                 ) {
-                    Text("Clear")
+                    Text(stringResource(R.string.shoppinglist_clear_dc30bc))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmClear = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.shoppinglist_cancel_ea4788))
                 }
             }
         )
@@ -262,7 +264,7 @@ private fun ShoppingRow(
             IconButton(onClick = onRemove) {
                 Icon(
                     imageVector = Icons.Outlined.DeleteOutline,
-                    contentDescription = "Remove item",
+                    contentDescription = stringResource(R.string.shoppinglist_remove_item_3a5ff2),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -282,13 +284,13 @@ private fun ShoppingRow(
                     horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
                 ) {
                     Text(
-                        text = "Purchased",
+                        text = stringResource(R.string.shoppinglist_purchased_ce4ee0),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.labelMedium,
                         color = KitchenGreen
                     )
                     KitchenQuestPrimaryButton(
-                        text = "Add to My Kitchen",
+                        text = stringResource(R.string.shoppinglist_add_to_my_kitchen_02558f),
                         onClick = onMoveToPantry
                     )
                 }

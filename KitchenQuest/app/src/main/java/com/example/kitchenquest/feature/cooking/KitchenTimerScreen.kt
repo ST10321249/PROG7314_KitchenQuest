@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.cooking
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
@@ -57,7 +59,7 @@ fun KitchenTimerScreen(
             .padding(KitchenQuestDimens.ScreenPadding)
     ) {
         KitchenQuestTopBar(
-            title = "Kitchen timer",
+            title = stringResource(R.string.kitchentimer_kitchen_timer_829429),
             onBack = onBack
         )
 
@@ -92,7 +94,7 @@ fun KitchenTimerScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Edit timer duration",
+                        contentDescription = stringResource(R.string.kitchentimer_edit_timer_duration_3c558b),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -102,7 +104,7 @@ fun KitchenTimerScreen(
         Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 
         Text(
-            text = "QUICK PRESETS",
+            text = stringResource(R.string.kitchentimer_quick_presets_4fe651),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -120,7 +122,7 @@ fun KitchenTimerScreen(
         ) {
             TimerPresets.forEach { minutes ->
                 KitchenQuestChoiceChip(
-                    text = "$minutes min",
+                    text = stringResource(R.string.ktimer_minutes, minutes),
                     selected = selectedMinutes == minutes,
                     onClick = { selectedMinutes = minutes }
                 )
@@ -130,7 +132,7 @@ fun KitchenTimerScreen(
         Spacer(modifier = Modifier.height(KitchenQuestDimens.LargeSpacing))
 
         KitchenQuestPrimaryButton(
-            text = "Start timer",
+            text = stringResource(R.string.kitchentimer_start_timer_54a06d),
             onClick = {
                 onStartTimer(
                     selectedMinutes,
@@ -169,7 +171,7 @@ private fun EditTimerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Set timer")
+            Text(stringResource(R.string.kitchentimer_set_timer_84719a))
         },
         text = {
             Column {
@@ -178,7 +180,7 @@ private fun EditTimerDialog(
                     onValueChange = { input ->
                         text = input.filter(Char::isDigit).take(3)
                     },
-                    label = { Text("Minutes") },
+                    label = { Text(stringResource(R.string.kitchentimer_minutes_f670ea)) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number
                     ),
@@ -190,7 +192,7 @@ private fun EditTimerDialog(
                 Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
 
                 Text(
-                    text = "Choose between 1 and 180 minutes.",
+                    text = stringResource(R.string.kitchentimer_choose_between_1_and_180_minutes_3e42b0),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -201,12 +203,12 @@ private fun EditTimerDialog(
                 onClick = { onConfirm(value ?: currentMinutes) },
                 enabled = valid
             ) {
-                Text("Set")
+                Text(stringResource(R.string.kitchentimer_set_5d5b78))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.kitchentimer_cancel_ea4788))
             }
         }
     )

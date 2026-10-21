@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.cooking
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -34,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.components.KitchenQuestCard
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
@@ -81,17 +83,18 @@ fun RecipeCompleteScreen(
         Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
         Text(
-            text = "Meal complete!",
+            text = stringResource(R.string.recipecomplete_meal_complete_faf4b3),
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
 
+        val minutesSuffix = stringResource(R.string.recipecomplete_minutes_suffix)
         val subtitle = buildString {
             append(recipeTitle)
             readyInMinutes?.takeIf { it > 0 }?.let {
                 append(" · ")
                 append(it)
-                append(" minutes")
+                append(minutesSuffix)
             }
         }
 
@@ -105,12 +108,12 @@ fun RecipeCompleteScreen(
 
         KitchenQuestCard {
             Text(
-                text = "How was it?",
+                text = stringResource(R.string.recipecomplete_how_was_it_c16b95),
                 style = MaterialTheme.typography.titleSmall
             )
 
             Text(
-                text = "Optional",
+                text = stringResource(R.string.recipecomplete_optional_ebb061),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -134,7 +137,7 @@ fun RecipeCompleteScreen(
                             } else {
                                 Icons.Filled.StarBorder
                             },
-                            contentDescription = "$star star rating",
+                            contentDescription = stringResource(R.string.rate_star_description, star),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(30.dp)
                         )
@@ -145,7 +148,7 @@ fun RecipeCompleteScreen(
             Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
             Text(
-                text = "HOW DIFFICULT WAS IT?",
+                text = stringResource(R.string.recipecomplete_how_difficult_was_it_c6b409),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -159,7 +162,7 @@ fun RecipeCompleteScreen(
             ) {
                 listOf("Easy", "Medium", "Hard").forEach { level ->
                     KitchenQuestChoiceChip(
-                        text = level,
+                        text = localizedDifficulty(level),
                         selected = difficulty == level,
                         onClick = {
                             difficulty = if (difficulty == level) {
@@ -175,7 +178,7 @@ fun RecipeCompleteScreen(
             Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
             Text(
-                text = "PRIVATE NOTE FOR NEXT TIME",
+                text = stringResource(R.string.recipecomplete_private_note_for_next_time_cc3156),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -190,7 +193,7 @@ fun RecipeCompleteScreen(
                 maxLines = 6,
                 placeholder = {
                     Text(
-                        "What would you change next time?"
+                        stringResource(R.string.recipecomplete_what_would_you_change_next_time_47ab60)
                     )
                 },
                 shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
@@ -206,7 +209,7 @@ fun RecipeCompleteScreen(
         Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 
         Text(
-            text = "Rating, difficulty and notes are all optional.",
+            text = stringResource(R.string.recipecomplete_rating_difficulty_and_notes_are_all_optional_5373d4),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Normal
@@ -215,7 +218,7 @@ fun RecipeCompleteScreen(
         Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
         KitchenQuestPrimaryButton(
-            text = "Save & finish",
+            text = stringResource(R.string.recipecomplete_save_finish_5273d8),
             onClick = {
                 onSave(
                     rating.takeIf { it > 0 },
@@ -228,4 +231,12 @@ fun RecipeCompleteScreen(
 
         Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
     }
+}
+
+@Composable
+private fun localizedDifficulty(value: String): String = when (value) {
+    "Easy" -> stringResource(R.string.difficulty_easy)
+    "Medium" -> stringResource(R.string.difficulty_medium)
+    "Hard" -> stringResource(R.string.difficulty_hard)
+    else -> value
 }
