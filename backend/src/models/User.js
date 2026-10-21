@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     email: { type: String, default: '' },
     dietaryPreferences: { type: [String], default: [] },
     avoidedIngredients: { type: [String], default: [] },
+    // Optional for existing accounts; their language is not changed during migration.
+    language: { type: String, enum: ['en', 'af'] },
   },
   { timestamps: true }
 );

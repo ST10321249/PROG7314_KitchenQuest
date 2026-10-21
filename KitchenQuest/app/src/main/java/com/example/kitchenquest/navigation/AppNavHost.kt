@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -100,6 +101,10 @@ fun AppNavHost() {
 
     val context =
         LocalContext.current
+
+    // Capture localized messages in composition for the asynchronous navigation callbacks.
+    val syncFailedMessage = stringResource(R.string.nav_sync_failed)
+    val saveFailedMessage = stringResource(R.string.nav_save_failed)
 
     val activity =
         context as? Activity
@@ -355,7 +360,7 @@ fun AppNavHost() {
                         .makeText(
                             context,
                             failure.message
-                                ?: context.getString(R.string.nav_sync_failed),
+                                ?: syncFailedMessage,
                             Toast.LENGTH_LONG
                         )
                         .show()
@@ -473,7 +478,7 @@ fun AppNavHost() {
                         currentUser != null &&
                         showExistingPreferencesMessage
                     ) {
-                        context.getString(R.string.onboard_existing_saved)
+                        stringResource(R.string.onboard_existing_saved)
                     } else {
                         null
                     }
@@ -551,7 +556,7 @@ fun AppNavHost() {
                                                 .makeText(
                                                     context,
                                                     failure.message
-                                                        ?: context.getString(R.string.nav_save_failed),
+                                                        ?: saveFailedMessage,
                                                     Toast.LENGTH_LONG
                                                 )
                                                 .show()
@@ -1179,7 +1184,7 @@ fun AppNavHost() {
                 AppDestinations.RecipeComplete
             ) {
                 val cookingState by cookingViewModel.uiState.collectAsState()
-                val recipeTitle = cookingState.recipe?.title ?: context.getString(R.string.nav_recipe_fallback)
+                val recipeTitle = cookingState.recipe?.title ?: stringResource(R.string.nav_recipe_fallback)
                 val readyInMinutes = cookingState.recipe?.readyInMinutes
 
                 RecipeCompleteScreen(

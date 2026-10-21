@@ -6,8 +6,8 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// The app is English-only for now (see README - Afrikaans is planned, not built), so this
-// is pinned to English rather than the device locale, to match the rest of the UI.
+// This utility preserves its stable English output for existing reports/tests.
+// CookingHistoryScreen renders localized month headings for the selected app language.
 private val MONTH_LABEL_FORMATTER: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
 

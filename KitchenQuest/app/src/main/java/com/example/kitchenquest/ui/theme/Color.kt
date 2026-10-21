@@ -27,8 +27,7 @@ val KitchenAmberLight = Color(0xFFFFF2DA)
 val KitchenRed = Color(0xFFBA1A1A)
 val KitchenRedLight = Color(0xFFFFE9E7)
 
-// Dark palette retained for future use. Part 2 currently follows the supplied
-// light Figma designs by default.
+// The dark palette supports callers that explicitly select dark mode.
 val KitchenDarkBackground = Color(0xFF19120E)
 val KitchenDarkSurface = Color(0xFF241B16)
 val KitchenDarkSurfaceMuted = Color(0xFF30251F)

@@ -42,7 +42,6 @@
     <string name="settings_saved">Changes saved</string>
     <string name="settings_saving">Saving...</string>
     <string name="settings_save">Save changes</string>
-    <!-- Commit 5: authentication, onboarding, home and pantry screens -->
     <string name="auth_or">or</string>
     <string name="auth_google_unavailable">Google sign-in is unavailable.</string>
     <string name="auth_google_cancelled">Google sign-in was cancelled.</string>
@@ -192,7 +191,6 @@
     <string name="auth_server_network">Network error. Check your connection and try again.</string>
     <string name="auth_server_failed">Authentication failed. Please try again.</string>
     <string name="auth_server_reset_failed">Unable to send the reset email. Please try again.</string>
-    <!-- Commit 6: remaining screens -->
     <string name="activetimers_all_active_and_completed_timers_will_be_removed_from_this_8e4a9d">All active and completed timers will be removed from this list.</string>
     <string name="activetimers_all_timers_ffb81f">All timers</string>
     <string name="activetimers_cancel_ea4788">Cancel</string>
@@ -226,7 +224,7 @@
     <string name="cookingmode_this_recipe_doesn_t_have_step_by_step_instructions_b2dae0">This recipe doesn\'t have step-by-step instructions.</string>
     <string name="cookingmode_timer_for_this_step_536fe7">Timer for this step</string>
     <string name="cookingmode_view_all_0b4db2">View all</string>
-    <string name="cookingmode_your_current_step_and_timers_will_stay_available_so_you_c_d09bb6">Your current step and timers will stay available so you can continue later.</string>
+    <string name="cookingmode_your_current_step_and_timers_will_stay_available_so_you_c_d09bb6">Keep KitchenQuest open while following your cooking steps and timers.</string>
     <string name="kitchentimer_cancel_ea4788">Cancel</string>
     <string name="kitchentimer_choose_between_1_and_180_minutes_3e42b0">Choose between 1 and 180 minutes.</string>
     <string name="kitchentimer_edit_timer_duration_3c558b">Edit timer duration</string>
@@ -376,9 +374,8 @@
     <string name="nav_sync_failed">Unable to sync your profile. Please try again.</string>
     <string name="nav_save_failed">Unable to save your preferences. Please try again.</string>
     <string name="nav_recipe_fallback">Recipe</string>
-    <!-- Commit 7: offline dynamic content translation -->
-    <string name="translation_title">Offline recipe translation</string>
-    <string name="translation_description">Download the English and Afrikaans language models to translate recipe content on your device. Your original data stays unchanged.</string>
+    <string name="translation_title">On-device translation</string>
+    <string name="translation_description">Download English and Afrikaans models for on-device text translation. Your original text remains unchanged.</string>
     <string name="translation_checking">Checking language models…</string>
     <string name="translation_ready">English and Afrikaans models are installed.</string>
     <string name="translation_not_downloaded">Download the language models to enable offline translation.</string>
@@ -388,5 +385,5 @@
     <string name="translation_test">Translate with Google</string>
     <string name="translation_test_result">Afrikaans translation preview</string>
     <string name="translation_google_attribution">Powered by Google Translate</string>
-    <string name="translation_wifi_note">Model downloads require Wi-Fi (about 30 MB per model). Recipe integration follows in a later commit.</string>
+    <string name="translation_wifi_note">Language models download over Wi-Fi (about 30 MB per model).</string>
 </resources>

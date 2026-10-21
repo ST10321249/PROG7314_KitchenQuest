@@ -42,7 +42,6 @@
     <string name="settings_saved">Veranderinge gestoor</string>
     <string name="settings_saving">Stoor...</string>
     <string name="settings_save">Stoor veranderinge</string>
-    <!-- Commit 5: authentication, onboarding, home and pantry screens -->
     <string name="auth_or">of</string>
     <string name="auth_google_unavailable">Google-aanmelding is nie beskikbaar nie.</string>
     <string name="auth_google_cancelled">Google-aanmelding is gekanselleer.</string>
@@ -192,7 +191,6 @@
     <string name="auth_server_network">Netwerkfout. Kontroleer jou verbinding en probeer weer.</string>
     <string name="auth_server_failed">Aanmelding het misluk. Probeer asseblief weer.</string>
     <string name="auth_server_reset_failed">Kan nie die terugstel-e-pos stuur nie. Probeer asseblief weer.</string>
-    <!-- Commit 6: remaining screens -->
     <string name="activetimers_all_active_and_completed_timers_will_be_removed_from_this_8e4a9d">Alle aktiewe en voltooide tydhouers sal uit hierdie lys verwyder word.</string>
     <string name="activetimers_all_timers_ffb81f">Alle tydhouers</string>
     <string name="activetimers_cancel_ea4788">Kanselleer</string>
@@ -226,7 +224,7 @@
     <string name="cookingmode_this_recipe_doesn_t_have_step_by_step_instructions_b2dae0">Hierdie resep het nie stap-vir-stap-instruksies nie.</string>
     <string name="cookingmode_timer_for_this_step_536fe7">Tydhouer vir hierdie stap</string>
     <string name="cookingmode_view_all_0b4db2">Bekyk alles</string>
-    <string name="cookingmode_your_current_step_and_timers_will_stay_available_so_you_c_d09bb6">Jou huidige stap en tydhouers bly beskikbaar sodat jy later kan voortgaan.</string>
+    <string name="cookingmode_your_current_step_and_timers_will_stay_available_so_you_c_d09bb6">Hou KitchenQuest oop terwyl jy jou kookstappe en tydhouers volg.</string>
     <string name="kitchentimer_cancel_ea4788">Kanselleer</string>
     <string name="kitchentimer_choose_between_1_and_180_minutes_3e42b0">Kies tussen 1 en 180 minute.</string>
     <string name="kitchentimer_edit_timer_duration_3c558b">Wysig tydhouertyd</string>
@@ -376,9 +374,8 @@
     <string name="nav_sync_failed">Kon nie jou profiel sinkroniseer nie. Probeer weer.</string>
     <string name="nav_save_failed">Kon nie jou voorkeure stoor nie. Probeer weer.</string>
     <string name="nav_recipe_fallback">Resep</string>
-    <!-- Commit 7: offline dynamic content translation -->
-    <string name="translation_title">Vanlyn resepvertaling</string>
-    <string name="translation_description">Laai die Engelse en Afrikaanse taalmodelle af om resepinhoud op jou toestel te vertaal. Jou oorspronklike data bly onveranderd.</string>
+    <string name="translation_title">Vertaling op die toestel</string>
+    <string name="translation_description">Laai Engelse en Afrikaanse modelle af om teks op die toestel te vertaal. Jou oorspronklike teks bly onveranderd.</string>
     <string name="translation_checking">Kontroleer taalmodelle…</string>
     <string name="translation_ready">Engelse en Afrikaanse modelle is geïnstalleer.</string>
     <string name="translation_not_downloaded">Laai die taalmodelle af om vanlyn vertaling moontlik te maak.</string>
@@ -388,5 +385,5 @@
     <string name="translation_test">Vertaal met Google</string>
     <string name="translation_test_result">Afrikaanse vertaalvoorskou</string>
     <string name="translation_google_attribution">Powered by Google Translate</string>
-    <string name="translation_wifi_note">Modelle vereis Wi-Fi (ongeveer 30 MB per model). Resepintegrasie volg in ’n latere commit.</string>
+    <string name="translation_wifi_note">Taalmodelle word oor Wi-Fi afgelaai (ongeveer 30 MB per model).</string>
 </resources>

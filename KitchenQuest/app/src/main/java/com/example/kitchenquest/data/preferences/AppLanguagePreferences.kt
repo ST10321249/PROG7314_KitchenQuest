@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import java.util.Locale
 
-/** Device-local app language; server/profile preference synchronization comes later. */
+/** Device-local UI language with an account-scoped pending server update. */
 class AppLanguagePreferences(context: Context) {
     private val preferences = context.getSharedPreferences(
         PREFS_NAME,
@@ -22,6 +22,24 @@ class AppLanguagePreferences(context: Context) {
         if (next == getLanguage()) return false
         return preferences.edit().putString(KEY_LANGUAGE, next).commit()
     }
+
+    /** Store a pending profile update before Activity recreation or a connection loss. */
+    fun queueProfileUpdate(userId: String, language: String) {
+        if (userId.isBlank() || !AppLanguage.isSupported(language)) return
+        preferences.edit().putString(pendingKey(userId), AppLanguage.normalized(language)).apply()
+    }
+
+    fun pendingProfileUpdate(userId: String): String? =
+        if (userId.isBlank()) null else preferences.getString(pendingKey(userId), null)
+
+    /** Only clear the exact value that the server accepted. */
+    fun acknowledgeProfileUpdate(userId: String, language: String) {
+        if (pendingProfileUpdate(userId) == language) {
+            preferences.edit().remove(pendingKey(userId)).apply()
+        }
+    }
+
+    private fun pendingKey(userId: String) = "pending_language_$userId"
 
     companion object {
         private const val PREFS_NAME = "kitchenquest_app_language"

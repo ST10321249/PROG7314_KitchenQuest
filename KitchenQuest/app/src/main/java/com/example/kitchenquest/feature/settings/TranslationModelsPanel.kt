@@ -24,7 +24,7 @@ import com.example.kitchenquest.data.translation.KitchenQuestTranslation
 import com.example.kitchenquest.data.translation.TranslationLanguages
 import kotlinx.coroutines.launch
 
-/** Download the English/Afrikaans models once for offline recipe translation later. */
+/** Manage and demonstrate on-device English/Afrikaans translation models. */
 @Composable
 fun TranslationModelsPanel(modifier: Modifier = Modifier) {
     val service = remember { KitchenQuestTranslation.service }

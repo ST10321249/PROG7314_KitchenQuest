@@ -42,6 +42,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +56,9 @@ import androidx.compose.ui.res.stringResource
 import com.example.kitchenquest.R
 import com.example.kitchenquest.data.preferences.AppLanguage
 import com.example.kitchenquest.data.preferences.AppLanguagePreferences
+import com.example.kitchenquest.data.preferences.LanguageProfileApi
+import com.example.kitchenquest.data.preferences.LanguageUpdateRequest
+import com.example.kitchenquest.data.network.ApiClient
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
@@ -92,27 +96,56 @@ fun SettingsScreen(
     onSave: () -> Unit,
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
-    onBiometricsEnabled: () -> Unit = {},
     userId: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBiometricsEnabled: () -> Unit = {}
 ) {
     var showSignOutConfirmation by rememberSaveable {
         mutableStateOf(false)
     }
     // The preference belongs to this signed-in user on this device only.
     val context = LocalContext.current
+    // Resolve Compose-localized UI strings during composition, not inside event callbacks.
+    val biometricDisabledMessage = stringResource(R.string.settings_biometric_disabled_feedback)
+    val biometricEnrollMessage = stringResource(R.string.settings_biometric_enroll_feedback)
+    val biometricUnavailableMessage = stringResource(R.string.settings_biometric_unavailable_feedback)
+    val biometricSuccessMessage = stringResource(R.string.settings_biometric_success_feedback)
     val biometricSettings = remember(context) { BiometricSettings(context) }
-    val languagePreferences = remember(context) { AppLanguagePreferences(context) }
+    val languagePreferences = remember(context) { AppLanguagePreferences(context.applicationContext) }
+    val languageProfileApi = remember { ApiClient.create(LanguageProfileApi::class.java) }
     var selectedLanguage by remember(context) {
         mutableStateOf(languagePreferences.getLanguage())
     }
     val changeLanguage: (String) -> Unit = { code ->
         // Saving first ensures attachBaseContext loads the correct resources.
         if (languagePreferences.setLanguage(code)) {
+            languagePreferences.queueProfileUpdate(userId, code)
             selectedLanguage = languagePreferences.getLanguage()
             (context as? Activity)?.recreate()
         }
     }
+    // The local language takes effect immediately. Sync independently so a failed
+    // network request never resets the UI language or blocks Settings.
+    LaunchedEffect(userId, state.hasLoaded, state.profileLanguage) {
+        if (!state.hasLoaded || userId.isBlank()) return@LaunchedEffect
+        val pending = languagePreferences.pendingProfileUpdate(userId)
+        val serverLanguage = state.profileLanguage
+        val upload = pending ?: if (serverLanguage == null) languagePreferences.getLanguage() else null
+        if (upload != null) {
+            runCatching {
+                languageProfileApi.updateLanguage(LanguageUpdateRequest(upload))
+            }.onSuccess { profile ->
+                if (profile.language == upload) {
+                    languagePreferences.acknowledgeProfileUpdate(userId, upload)
+                }
+            }
+        } else if (AppLanguage.isSupported(serverLanguage) &&
+            languagePreferences.setLanguage(serverLanguage!!)
+        ) {
+            (context as? Activity)?.recreate()
+        }
+    }
+
     var biometricAvailability by remember(userId) {
         mutableStateOf(BiometricSupport.check(context))
     }
@@ -135,14 +168,14 @@ fun SettingsScreen(
         if (!enabled) {
             biometricSettings.setEnabled(userId, false)
             biometricEnabled = false
-            biometricFeedback = context.getString(R.string.settings_biometric_disabled_feedback)
+            biometricFeedback = biometricDisabledMessage
         } else if (userId.isBlank() || biometricAvailability != BiometricAvailability.READY) {
-            biometricFeedback = context.getString(R.string.settings_biometric_enroll_feedback)
+            biometricFeedback = biometricEnrollMessage
             biometricFeedbackIsError = true
         } else {
             val activity = context as? FragmentActivity
             if (activity == null) {
-                biometricFeedback = context.getString(R.string.settings_biometric_unavailable_feedback)
+                biometricFeedback = biometricUnavailableMessage
                 biometricFeedbackIsError = true
             } else {
                 BiometricSetup(activity).confirmEnable { verified, message ->
@@ -150,7 +183,7 @@ fun SettingsScreen(
                         biometricSettings.setEnabled(userId, true)
                         biometricEnabled = true
                         onBiometricsEnabled()
-                        biometricFeedback = context.getString(R.string.settings_biometric_success_feedback)
+                        biometricFeedback = biometricSuccessMessage
                     } else {
                         biometricFeedback = message
                         biometricFeedbackIsError = true
@@ -374,7 +407,6 @@ private fun SettingsContent(
 
     SectionHeader(stringResource(R.string.settings_preferences))
 
-    // Interface language remains a local preference; server preference sync is R8.
     SettingsGroup {
         SettingsRow(
             icon = Icons.Outlined.Language,

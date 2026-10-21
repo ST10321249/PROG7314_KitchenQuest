@@ -7,7 +7,8 @@ data class UserProfileDto(
     val displayName: String = "",
     val email: String = "",
     val dietaryPreferences: List<String> = emptyList(),
-    val avoidedIngredients: List<String> = emptyList()
+    val avoidedIngredients: List<String> = emptyList(),
+    val language: String? = null
 )
 
 // Null fields are left out of the JSON so the API only sees what was set.
