@@ -1,37 +1,72 @@
 package com.example.kitchenquest.data.user
 
 import com.example.kitchenquest.data.auth.AuthUser
+import com.example.kitchenquest.data.network.ApiErrorType
+import com.example.kitchenquest.data.network.ApiException
 import com.example.kitchenquest.feature.onboarding.OnboardingSelection
 
-// Makes sure the signed-in user has a server profile that matches the
-// choices saved on this device. The server only applies preferences when
-// it creates a profile, so an existing profile that differs is updated.
+// Reports whether the server profile had to be created. This lets the app
+// distinguish a genuinely new KitchenQuest user from a returning user whose
+// local app data was cleared or restored on another installation.
+data class UserSyncResult(
+    val profile: UserProfileDto,
+    val created: Boolean
+)
+
+// Existing server profiles are authoritative. Local onboarding choices are
+// only used when the authenticated Firebase user does not yet have a backend
+// profile. This prevents stale or freshly-reset local data from overwriting a
+// returning user's saved preferences.
 suspend fun UserRepository.syncSignedInUser(
     user: AuthUser,
     local: OnboardingSelection?
-): Result<UserProfileDto> {
-    val synced = syncUser(
+): Result<UserSyncResult> {
+    val existingProfile = getProfile()
+
+    existingProfile.getOrNull()?.let { profile ->
+        return Result.success(
+            UserSyncResult(
+                profile = profile,
+                created = false
+            )
+        )
+    }
+
+    val lookupFailure = existingProfile.exceptionOrNull()
+
+    if (
+        lookupFailure !is ApiException ||
+        lookupFailure.type != ApiErrorType.NOT_FOUND
+    ) {
+        return Result.failure(
+            lookupFailure
+                ?: IllegalStateException(
+                    "Unable to determine whether the user profile exists."
+                )
+        )
+    }
+
+    return syncUser(
         displayName = user.displayName?.takeIf { it.isNotBlank() },
         dietaryPreferences = local?.dietaryPreferences?.toList(),
         avoidedIngredients = local?.avoidedIngredients?.toList()
-    )
-
-    val profile = synced.getOrElse { return synced }
-
-    if (local == null) {
-        return synced
+    ).map { profile ->
+        UserSyncResult(
+            profile = profile,
+            created = true
+        )
     }
+}
 
-    val matches =
-        profile.dietaryPreferences.toSet() == local.dietaryPreferences &&
-                profile.avoidedIngredients.toSet() == local.avoidedIngredients
+fun UserProfileDto.toOnboardingSelection(): OnboardingSelection {
+    val dietary = dietaryPreferences
+        .toSet()
+        .ifEmpty {
+            setOf("No restrictions")
+        }
 
-    if (matches) {
-        return synced
-    }
-
-    return updateProfile(
-        dietaryPreferences = local.dietaryPreferences.toList(),
-        avoidedIngredients = local.avoidedIngredients.toList()
+    return OnboardingSelection(
+        dietaryPreferences = dietary,
+        avoidedIngredients = avoidedIngredients.toSet()
     )
 }

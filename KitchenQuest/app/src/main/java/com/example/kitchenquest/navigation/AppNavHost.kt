@@ -1,36 +1,86 @@
 package com.example.kitchenquest.navigation
 
+import com.example.kitchenquest.R
 import android.app.Activity
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import android.widget.Toast
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.kitchenquest.data.auth.GoogleSignInClient
+import com.example.kitchenquest.data.auth.BiometricSettings
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.syncSignedInUser
+import com.example.kitchenquest.data.user.toOnboardingSelection
 import com.example.kitchenquest.feature.auth.AuthViewModel
+import com.example.kitchenquest.feature.auth.BiometricGateViewModel
+import com.example.kitchenquest.feature.auth.BiometricUnlockRules
+import com.example.kitchenquest.feature.auth.BiometricUnlockScreen
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
 import com.example.kitchenquest.feature.auth.SessionLoadingScreen
+import com.example.kitchenquest.feature.cooking.ActiveTimersScreen
+import com.example.kitchenquest.feature.cooking.CookScreen
+import com.example.kitchenquest.feature.cooking.CookingHistoryScreen
+import com.example.kitchenquest.feature.cooking.CookingHistoryViewModel
+import com.example.kitchenquest.feature.cooking.CookingModeScreen
+import com.example.kitchenquest.feature.cooking.CookingViewModel
+import com.example.kitchenquest.feature.cooking.KitchenTimerScreen
+import com.example.kitchenquest.feature.cooking.RecipeCompleteScreen
+import com.example.kitchenquest.feature.home.HomeScreen
+import com.example.kitchenquest.feature.home.HomeViewModel
+import com.example.kitchenquest.feature.notifications.NotificationsScreen
+import com.example.kitchenquest.feature.notifications.NotificationsViewModel
 import com.example.kitchenquest.feature.onboarding.OnboardingScreen
 import com.example.kitchenquest.feature.onboarding.OnboardingSelection
+import com.example.kitchenquest.feature.pantry.IngredientDetailScreen
+import com.example.kitchenquest.feature.pantry.IngredientEditorScreen
+import com.example.kitchenquest.feature.pantry.MyKitchenScreen
+import com.example.kitchenquest.feature.pantry.PantryViewModel
+import com.example.kitchenquest.feature.profile.ProfileScreen
+import com.example.kitchenquest.feature.profile.ProfileViewModel
+import com.example.kitchenquest.feature.recipes.RecipeDetailScreen
+import com.example.kitchenquest.feature.recipes.RecipeDetailViewModel
+import com.example.kitchenquest.feature.recipes.RecipesScreen
+import com.example.kitchenquest.feature.recipes.RecipesViewModel
+import com.example.kitchenquest.feature.recipes.SavedRecipesScreen
+import com.example.kitchenquest.feature.recipes.SavedRecipesViewModel
+import com.example.kitchenquest.feature.recipes.WhatCanIMakeScreen
+import com.example.kitchenquest.feature.recipes.WhatCanIMakeViewModel
 import com.example.kitchenquest.feature.settings.SettingsScreen
 import com.example.kitchenquest.feature.settings.SettingsViewModel
+import com.example.kitchenquest.feature.shopping.ShoppingListScreen
+import com.example.kitchenquest.feature.shopping.ShoppingViewModel
 import com.example.kitchenquest.ui.components.AppScaffold
-import com.example.kitchenquest.ui.screens.PlaceholderScreen
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun AppNavHost() {
@@ -41,6 +91,9 @@ fun AppNavHost() {
     val authViewModel: AuthViewModel =
         viewModel()
 
+    val cookingViewModel: CookingViewModel =
+        viewModel()
+
     val authState by
     authViewModel
         .uiState
@@ -49,8 +102,65 @@ fun AppNavHost() {
     val context =
         LocalContext.current
 
+    // Capture localized messages in composition for the asynchronous navigation callbacks.
+    val syncFailedMessage = stringResource(R.string.nav_sync_failed)
+    val saveFailedMessage = stringResource(R.string.nav_save_failed)
+
     val activity =
         context as? Activity
+
+    val biometricSettings = remember(context) {
+        BiometricSettings(context.applicationContext)
+    }
+
+    val signedInUid = authState.user?.uid
+
+    // Activity-scoped ViewModel persists a verified unlock through a language
+    // change. No unlocked state survives a cold start or process death.
+    val biometricGate: BiometricGateViewModel = viewModel()
+    val unlockedUid = biometricGate.unlockedUid
+    val signedOutSinceLaunch = biometricGate.signedOutSinceLaunch
+    val passwordFallbackRequested = biometricGate.passwordFallbackRequested
+
+    LaunchedEffect(authState.isAuthChecked, signedInUid) {
+        // Firebase can momentarily report no user while restoring a saved session.
+        // A restored session must NOT be mistaken for a new interactive login.
+        if (authState.isAuthChecked) biometricGate.sessionResolved(signedInUid)
+    }
+
+    // A configuration change (including locale switch) is NOT leaving the app.
+    // True backgrounding clears verification and locks when returning.
+    val observedUid by rememberUpdatedState(signedInUid)
+    DisposableEffect(activity) {
+        val owner = activity as? FragmentActivity
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP &&
+                owner?.isChangingConfigurations != true
+            ) {
+                val uid = observedUid
+                if (uid != null && biometricSettings.isEnabled(uid)) biometricGate.lock()
+            }
+        }
+        owner?.lifecycle?.addObserver(observer)
+        onDispose { owner?.lifecycle?.removeObserver(observer) }
+    }
+
+    val requiresBiometricUnlock = BiometricUnlockRules.shouldLock(
+        signedInUid = signedInUid,
+        biometricEnabled = signedInUid != null && biometricSettings.isEnabled(signedInUid),
+        unlockedUid = unlockedUid,
+        justSignedIn = signedOutSinceLaunch
+    )
+
+    // The system launch splash finishes first. On a cold start we briefly show
+    // KitchenQuest branding before opening the biometric prompt. The splash is
+    // NOT replayed for language changes or when returning from background.
+    LaunchedEffect(authState.isAuthChecked, signedInUid, requiresBiometricUnlock) {
+        if (authState.isAuthChecked && requiresBiometricUnlock && !biometricGate.startupSplashShown) {
+            delay(550)
+            biometricGate.finishStartupSplash()
+        }
+    }
 
     val coroutineScope =
         rememberCoroutineScope()
@@ -72,143 +182,199 @@ fun AppNavHost() {
             DefaultUserRepository()
         }
 
-    val preferencesVersion by
-    onboardingPreferences
-        .userPreferencesVersion
-        .collectAsState()
+    val launchGoogleSignIn: () -> Unit = {
+        if (activity == null) {
+            authViewModel.googleSignInFailed(
+                "Google sign-in is unavailable."
+            )
+        } else {
+            authViewModel.startGoogleSignIn()
 
-    // Keeps the server profile in step with the signed-in user and with the
-    // choices saved on this device (onboarding or Settings).
+            coroutineScope.launch {
+                try {
+                    val idToken = googleSignInClient
+                        .getGoogleIdToken(activity)
+
+                    authViewModel.signInWithGoogle(idToken)
+                } catch (error: GetCredentialCancellationException) {
+                    authViewModel.googleSignInFailed(
+                        "Google sign-in was cancelled."
+                    )
+                } catch (error: Exception) {
+                    authViewModel.googleSignInFailed(
+                        "Google sign-in failed. Please try again."
+                    )
+                }
+            }
+        }
+    }
+
+    var showExistingPreferencesMessage by
+        remember {
+            mutableStateOf(false)
+        }
+
+    // Authentication and profile synchronisation are handled together so the
+    // server can decide whether this is a new or returning KitchenQuest user
+    // before navigation continues. Existing server preferences always win.
     LaunchedEffect(
+        authState.isAuthChecked,
         authState.user?.uid,
-        preferencesVersion
+        requiresBiometricUnlock,
+        passwordFallbackRequested
     ) {
 
-        val user =
+        // Do not sync the profile or navigate to protected screens before
+        // biometric verification has completed on a restored session.
+        if (!authState.isAuthChecked || requiresBiometricUnlock) {
+            return@LaunchedEffect
+        }
+
+        // Wait until the NavHost has restored its back stack. On an Activity
+        // recreation (e.g. a locale change), the current route is Settings,
+        // Recipe Details, etc., NOT the initial splash destination.
+        val currentRoute = navController.currentBackStackEntryFlow.first().destination.route
+
+        // A restored authenticated destination is already authorized. Do not
+        // rerun initial profile sync + navigate(Home) just because language changed.
+        // This preserves Settings, current scrolling and navigation history.
+        val alreadyInsideApp = SessionNavigationRules.isAlreadyInsideApp(currentRoute)
+        if (authState.user != null && alreadyInsideApp) return@LaunchedEffect
+
+        val currentUser =
             authState.user
-                ?: return@LaunchedEffect
+
+        if (currentUser == null) {
+            showExistingPreferencesMessage = false
+
+            if (currentRoute == AppDestinations.Splash ||
+                currentRoute == null || passwordFallbackRequested) {
+                val destination =
+                    if (
+                        passwordFallbackRequested || onboardingPreferences
+                            .hasAuthenticatedBefore()
+                    ) {
+                        AppDestinations.Login
+                    } else {
+                        AppDestinations.Onboarding
+                    }
+
+                navController.navigate(destination) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+                biometricGate.passwordFallbackRequested = false
+            }
+
+            return@LaunchedEffect
+        }
+
+        val firstAuthenticationOnInstall =
+            !onboardingPreferences
+                .hasAuthenticatedBefore()
 
         val localChoices =
             onboardingPreferences
-                .getUserPreferences(
-                    user.uid
-                )
+                .getUserPreferences(currentUser.uid)
                 ?: onboardingPreferences
                     .getPendingSelection()
 
         userRepository
             .syncSignedInUser(
-                user,
-                localChoices
+                user = currentUser,
+                local = localChoices
             )
-    }
+            .fold(
+                onSuccess = { syncResult ->
+                    val serverSelection =
+                        syncResult.profile
+                            .toOnboardingSelection()
 
-    LaunchedEffect(
-        authState.isAuthChecked,
-        authState.user
-    ) {
-
-        if (
-            !authState.isAuthChecked
-        ) {
-            return@LaunchedEffect
-        }
-
-        val currentRoute =
-            navController
-                .currentDestination
-                ?.route
-
-        val currentUser =
-            authState.user
-
-        if (
-            currentUser != null
-        ) {
-
-            val existingPreferences =
-                onboardingPreferences
-                    .getUserPreferences(
-                        currentUser.uid
-                    )
-
-            val pendingSelection =
-                onboardingPreferences
-                    .getPendingSelection()
-
-            val firstAuthenticationOnInstall =
-                !onboardingPreferences
-                    .hasAuthenticatedBefore()
-
-            when {
-
-                existingPreferences != null &&
-                        firstAuthenticationOnInstall -> {
-
-                    if (
-                        currentRoute !=
-                        AppDestinations.Onboarding
-                    ) {
-
-                        navController.navigate(
-                            AppDestinations.Onboarding
-                        ) {
-
-                            popUpTo(0) {
-                                inclusive = true
-                            }
-
-                            launchSingleTop = true
-                        }
-                    }
-                }
-
-                existingPreferences != null -> {
-
-                    onboardingPreferences
-                        .markAuthenticatedBefore()
-
-                    onboardingPreferences
-                        .clearPendingSelection()
-
-                    if (
-                        currentRoute !=
-                        AppDestinations.Home
-                    ) {
-
-                        navController.navigate(
-                            AppDestinations.Home
-                        ) {
-
-                            popUpTo(0) {
-                                inclusive = true
-                            }
-
-                            launchSingleTop = true
-                        }
-                    }
-                }
-
-                pendingSelection != null -> {
-
+                    // The server is the source of truth for an existing user.
+                    // For a new user, the server profile was created from the
+                    // onboarding choices supplied above.
                     onboardingPreferences
                         .saveUserPreferences(
-                            uid =
-                                currentUser.uid,
-                            selection =
-                                pendingSelection
+                            uid = currentUser.uid,
+                            selection = serverSelection
                         )
 
-                    onboardingPreferences
-                        .markAuthenticatedBefore()
+                    showExistingPreferencesMessage =
+                        !syncResult.created &&
+                                firstAuthenticationOnInstall
 
-                    onboardingPreferences
-                        .clearPendingSelection()
+                    when {
+                        // A returning account on a fresh installation should
+                        // review the preferences recovered from the server.
+                        !syncResult.created &&
+                                firstAuthenticationOnInstall -> {
+                            navController.navigate(
+                                AppDestinations.Onboarding
+                            ) {
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
 
-                    navController.navigate(
-                        AppDestinations.Home
-                    ) {
+                                launchSingleTop = true
+                            }
+                        }
 
+                        // A genuinely new account that did not pass through
+                        // onboarding first still needs to choose preferences.
+                        syncResult.created &&
+                                localChoices == null -> {
+                            navController.navigate(
+                                AppDestinations.Onboarding
+                            ) {
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+
+                                launchSingleTop = true
+                            }
+                        }
+
+                        else -> {
+                            onboardingPreferences
+                                .markAuthenticatedBefore()
+
+                            onboardingPreferences
+                                .clearPendingSelection()
+
+                            navController.navigate(
+                                AppDestinations.Home
+                            ) {
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                },
+                onFailure = { failure ->
+                    showExistingPreferencesMessage = false
+
+                    Toast
+                        .makeText(
+                            context,
+                            failure.message
+                                ?: syncFailedMessage,
+                            Toast.LENGTH_LONG
+                        )
+                        .show()
+
+                    // Keep the app usable if the profile request temporarily
+                    // fails. No local value is pushed to the server here.
+                    val fallbackDestination =
+                        if (localChoices != null) {
+                            AppDestinations.Home
+                        } else {
+                            AppDestinations.Onboarding
+                        }
+
+                    navController.navigate(fallbackDestination) {
                         popUpTo(0) {
                             inclusive = true
                         }
@@ -216,60 +382,40 @@ fun AppNavHost() {
                         launchSingleTop = true
                     }
                 }
+            )
+    }
 
-                else -> {
-
-                    if (
-                        currentRoute !=
-                        AppDestinations.Onboarding
-                    ) {
-
-                        navController.navigate(
-                            AppDestinations.Onboarding
-                        ) {
-
-                            popUpTo(0) {
-                                inclusive = true
-                            }
-
-                            launchSingleTop = true
-                        }
-                    }
+    if (requiresBiometricUnlock && signedInUid != null) {
+        // Never compose protected destinations while the user is locked.
+        // A cold-start splash leads into the system biometric prompt.
+        if (!biometricGate.startupSplashShown) {
+            SessionLoadingScreen()
+            return
+        }
+        // Only the lock screen is composed until the returning user verifies.
+        BiometricUnlockScreen(
+            userId = signedInUid,
+            onUnlocked = {
+                if (authViewModel.uiState.value.user?.uid == signedInUid &&
+                    (activity as? FragmentActivity)?.lifecycle?.currentState
+                        ?.isAtLeast(Lifecycle.State.STARTED) == true
+                ) {
+                    biometricGate.verified(signedInUid)
+                }
+            },
+            onUseNormalLogin = {
+                // A password fallback must invalidate the existing Firebase
+                // session, not simply dismiss the lock screen.
+                biometricGate.lock()
+                biometricGate.passwordFallbackRequested = true
+                authViewModel.signOut()
+                coroutineScope.launch {
+                    try { googleSignInClient.clearCredentialState(context) }
+                    catch (_: Exception) { /* Account picker can still be used. */ }
                 }
             }
-        }
-
-        else if (
-            currentRoute ==
-            AppDestinations.Splash
-        ) {
-
-            val destination =
-                if (
-                    onboardingPreferences
-                        .hasAuthenticatedBefore()
-                ) {
-
-                    AppDestinations.Login
-
-                } else {
-
-                    AppDestinations.Onboarding
-                }
-
-            navController.navigate(
-                destination
-            ) {
-
-                popUpTo(
-                    AppDestinations.Splash
-                ) {
-                    inclusive = true
-                }
-
-                launchSingleTop = true
-            }
-        }
+        )
+        return
     }
 
     AppScaffold(
@@ -330,13 +476,10 @@ fun AppNavHost() {
                 val existingMessage =
                     if (
                         currentUser != null &&
-                        existingUserPreferences != null
+                        showExistingPreferencesMessage
                     ) {
-
-                        "We found dietary preferences already saved for this account. Review them below and continue to keep or update them."
-
+                        stringResource(R.string.onboard_existing_saved)
                     } else {
-
                         null
                     }
 
@@ -368,30 +511,57 @@ fun AppNavHost() {
                         }
 
                         else {
+                            coroutineScope.launch {
+                                userRepository
+                                    .updateProfile(
+                                        dietaryPreferences =
+                                            selection
+                                                .dietaryPreferences
+                                                .toList(),
+                                        avoidedIngredients =
+                                            selection
+                                                .avoidedIngredients
+                                                .toList()
+                                    )
+                                    .fold(
+                                        onSuccess = { profile ->
+                                            onboardingPreferences
+                                                .saveUserPreferences(
+                                                    uid = currentUser.uid,
+                                                    selection =
+                                                        profile
+                                                            .toOnboardingSelection()
+                                                )
 
-                            onboardingPreferences
-                                .saveUserPreferences(
-                                    uid =
-                                        currentUser.uid,
-                                    selection =
-                                        selection
-                                )
+                                            onboardingPreferences
+                                                .markAuthenticatedBefore()
 
-                            onboardingPreferences
-                                .markAuthenticatedBefore()
+                                            onboardingPreferences
+                                                .clearPendingSelection()
 
-                            onboardingPreferences
-                                .clearPendingSelection()
+                                            showExistingPreferencesMessage = false
 
-                            navController.navigate(
-                                AppDestinations.Home
-                            ) {
+                                            navController.navigate(
+                                                AppDestinations.Home
+                                            ) {
+                                                popUpTo(0) {
+                                                    inclusive = true
+                                                }
 
-                                popUpTo(0) {
-                                    inclusive = true
-                                }
-
-                                launchSingleTop = true
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        onFailure = { failure ->
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    failure.message
+                                                        ?: saveFailedMessage,
+                                                    Toast.LENGTH_LONG
+                                                )
+                                                .show()
+                                        }
+                                    )
                             }
                         }
                     },
@@ -437,6 +607,8 @@ fun AppNavHost() {
                             onboardingPreferences
                                 .clearPendingSelection()
 
+                            showExistingPreferencesMessage = false
+
                             navController.navigate(
                                 AppDestinations.Home
                             ) {
@@ -470,60 +642,7 @@ fun AppNavHost() {
                         )
                     },
 
-                    onGoogleSignIn = {
-
-                        if (
-                            activity == null
-                        ) {
-
-                            authViewModel
-                                .googleSignInFailed(
-                                    "Google sign-in is unavailable."
-                                )
-                        }
-
-                        else {
-
-                            authViewModel
-                                .startGoogleSignIn()
-
-                            coroutineScope.launch {
-
-                                try {
-
-                                    val idToken =
-                                        googleSignInClient
-                                            .getGoogleIdToken(
-                                                activity
-                                            )
-
-                                    authViewModel
-                                        .signInWithGoogle(
-                                            idToken
-                                        )
-
-                                } catch (
-                                    error:
-                                    GetCredentialCancellationException
-                                ) {
-
-                                    authViewModel
-                                        .googleSignInFailed(
-                                            "Google sign-in was cancelled."
-                                        )
-
-                                } catch (
-                                    error: Exception
-                                ) {
-
-                                    authViewModel
-                                        .googleSignInFailed(
-                                            "Google sign-in failed. Please try again."
-                                        )
-                                }
-                            }
-                        }
-                    },
+                    onGoogleSignIn = launchGoogleSignIn,
 
                     onForgotPassword = {
 
@@ -616,6 +735,8 @@ fun AppNavHost() {
                         )
                     },
 
+                    onGoogleSignIn = launchGoogleSignIn,
+
                     onBackToLogin = {
 
                         authViewModel
@@ -706,165 +827,398 @@ fun AppNavHost() {
             composable(
                 AppDestinations.Home
             ) {
+                val homeViewModel: HomeViewModel = viewModel()
+                val homeState by homeViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title = "Home"
+                LaunchedEffect(Unit) { homeViewModel.load() }
+
+                HomeScreen(
+                    state = homeState,
+                    onNotifications = {
+                        navController.navigate(AppDestinations.Notifications)
+                    },
+                    onKitchenTimer = {
+                        navController.navigate(AppDestinations.KitchenTimer)
+                    },
+                    onWhatCanIMake = {
+                        navController.navigate(AppDestinations.WhatCanIMake)
+                    },
+                    onShoppingList = {
+                        navController.navigate(AppDestinations.ShoppingList)
+                    },
+                    onSearchRecipes = {
+                        navController.navigate(AppDestinations.Recipes)
+                    },
+                    onMyKitchen = {
+                        navController.navigate(AppDestinations.MyKitchen)
+                    },
+                    onRecipeClick = { recipe ->
+                        navController.navigate(
+                            AppDestinations.recipeDetailsRoute(recipe.recipeSourceId)
+                        )
+                    },
+                    onRetry = homeViewModel::refresh
+                )
+            }
+
+            composable(
+                AppDestinations.Notifications
+            ) {
+                val notificationsViewModel: NotificationsViewModel = viewModel()
+                val notificationsState by notificationsViewModel.uiState.collectAsState()
+
+                LaunchedEffect(Unit) { notificationsViewModel.load() }
+
+                NotificationsScreen(
+                    state = notificationsState,
+                    onBack = { navController.popBackStack() },
+                    onOpenKitchen = {
+                        navController.navigate(AppDestinations.MyKitchen)
+                    },
+                    onOpenShoppingList = {
+                        navController.navigate(AppDestinations.ShoppingList)
+                    },
+                    onRetry = notificationsViewModel::load
                 )
             }
 
             composable(
                 AppDestinations.Recipes
             ) {
+                val recipesViewModel: RecipesViewModel = viewModel()
+                val recipesState by recipesViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title = "Recipes"
+                LaunchedEffect(Unit) { recipesViewModel.search() }
+
+                RecipesScreen(
+                    state = recipesState,
+                    onQueryChange = recipesViewModel::onQueryChange,
+                    onSearch = recipesViewModel::search,
+                    onFilterSelected = recipesViewModel::onFilterSelected,
+                    onCategorySelected = recipesViewModel::searchCategory,
+                    onWhatCanIMake = { navController.navigate(AppDestinations.WhatCanIMake) },
+                    onSavedRecipes = { navController.navigate(AppDestinations.SavedRecipes) },
+                    onRecipeClick = { recipe ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recipe.recipeSourceId))
+                    }
+                )
+            }
+            composable(AppDestinations.MyKitchen) {
+                val pantryViewModel: PantryViewModel = viewModel()
+                val pantryState by pantryViewModel.uiState.collectAsState()
+
+                LaunchedEffect(Unit) { pantryViewModel.loadPantry() }
+
+                MyKitchenScreen(
+                    state = pantryState,
+                    onAddIngredient = { navController.navigate(AppDestinations.ingredientEditorRoute()) },
+                    onShoppingList = { navController.navigate(AppDestinations.ShoppingList) },
+                    onIngredientClick = { navController.navigate(AppDestinations.ingredientDetailsRoute(it.id)) },
+                    onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) },
+                    onRetry = pantryViewModel::loadPantry
                 )
             }
 
             composable(
-                AppDestinations.MyKitchen
-            ) {
+                route = AppDestinations.IngredientDetails,
+                arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val pantryViewModel: PantryViewModel = viewModel()
+                val pantryState by pantryViewModel.uiState.collectAsState()
+                val itemId = backStackEntry.arguments?.getString("itemId")
 
-                PlaceholderScreen(
-                    title = "My Kitchen"
-                )
+                LaunchedEffect(Unit) {
+                    if (!pantryState.hasLoaded) {
+                        pantryViewModel.loadPantry()
+                    }
+                }
+
+                val item = itemId?.let { id ->
+                    pantryState.items.firstOrNull { it.id == id }
+                }
+
+                if (item == null && !pantryState.hasLoaded) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                } else if (item != null) {
+                    IngredientDetailScreen(
+                        item = item,
+                        onBack = { navController.popBackStack() },
+                        onEdit = { navController.navigate(AppDestinations.ingredientEditorRoute(item.id)) },
+                        onMarkFinished = {
+                            pantryViewModel.markFinished(item.id)
+                            navController.popBackStack()
+                        },
+                        onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) }
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                }
+            }
+
+            composable(
+                route = AppDestinations.IngredientEditor,
+                arguments = listOf(navArgument("itemId") { type = NavType.StringType; nullable = true; defaultValue = null })
+            ) { backStackEntry ->
+                val pantryViewModel: PantryViewModel = viewModel()
+                val pantryState by pantryViewModel.uiState.collectAsState()
+
+                LaunchedEffect(Unit) { pantryViewModel.loadPantry() }
+
+                val itemId = backStackEntry.arguments?.getString("itemId")
+                val existing = itemId?.let { pantryViewModel.findItem(it) }
+                val stillLoadingExistingItem = itemId != null && existing == null && !pantryState.hasLoaded
+
+                if (stillLoadingExistingItem) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                } else {
+                    IngredientEditorScreen(
+                        initialName = existing?.ingredientName ?: "",
+                        initialQuantity = existing?.quantity?.toString() ?: "",
+                        initialUnit = existing?.unit ?: "",
+                        initialCategory = existing?.category ?: "",
+                        initialExpiryDate = existing?.expiryDate,
+                        isEditing = existing != null,
+                        knownIngredients = pantryState.items,
+                        onBack = { navController.popBackStack() },
+                        onSave = { name, quantity, unit, category, expiryDate ->
+                            if (existing != null) {
+                                pantryViewModel.updateItem(existing.id, name, quantity, unit, category, expiryDate)
+                            } else {
+                                pantryViewModel.addItem(name, quantity, unit, category, expiryDate)
+                            }
+                            navController.popBackStack()
+                        },
+                        onDelete = existing?.let {
+                            {
+                                pantryViewModel.markFinished(it.id)
+                                navController.popBackStack()
+                            }
+                        }
+                    )
+                }
             }
 
             composable(
                 AppDestinations.Cook
             ) {
+                val cookHubState by cookingViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title = "Cook"
+                CookScreen(
+                    recipeTitle = cookHubState.recipe?.title,
+                    activeTimerCount = cookHubState.timers.size,
+                    onContinueCooking = {
+                        navController.navigate(AppDestinations.CookingMode)
+                    },
+                    onKitchenTimer = {
+                        navController.navigate(AppDestinations.KitchenTimer)
+                    },
+                    onActiveTimers = {
+                        navController.navigate(AppDestinations.ActiveTimers)
+                    },
+                    onCookingHistory = {
+                        navController.navigate(AppDestinations.CookingHistory)
+                    }
                 )
             }
 
             composable(
                 AppDestinations.Profile
             ) {
+                val profileViewModel: ProfileViewModel = viewModel()
+                val profileState by profileViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title = "Profile",
-                    actionText =
-                        "Settings",
-                    onAction = {
+                LaunchedEffect(Unit) { profileViewModel.load() }
 
-                        navController.navigate(
-                            AppDestinations.Settings
-                        )
-                    }
+                ProfileScreen(
+                    state = profileState,
+                    onSettings = {
+                        navController.navigate(AppDestinations.Settings)
+                    },
+                    onSavedRecipes = {
+                        navController.navigate(AppDestinations.SavedRecipes)
+                    },
+                    onCookingHistory = {
+                        navController.navigate(AppDestinations.CookingHistory)
+                    },
+                    onRetry = profileViewModel::refresh
                 )
             }
 
             composable(
                 AppDestinations.WhatCanIMake
             ) {
+                val whatCanIMakeViewModel: WhatCanIMakeViewModel = viewModel()
+                val whatCanIMakeState by whatCanIMakeViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "What Can I Make?"
+                LaunchedEffect(Unit) { whatCanIMakeViewModel.load() }
+
+                WhatCanIMakeScreen(
+                    state = whatCanIMakeState,
+                    onBack = { navController.popBackStack() },
+                    onSavedRecipes = { navController.navigate(AppDestinations.SavedRecipes) },
+                    onToggleIngredient = whatCanIMakeViewModel::toggleIngredient,
+                    onAddIngredient = {
+                        navController.navigate(AppDestinations.ingredientEditorRoute())
+                    },
+                    onAddMissingToList = whatCanIMakeViewModel::addMissingToShoppingList,
+                    onRecipeClick = { recommendation ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(recommendation.recipeSourceId))
+                    },
+                    onRetry = whatCanIMakeViewModel::load
                 )
             }
 
             composable(
-                AppDestinations.RecipeDetails
-            ) {
+                route = AppDestinations.RecipeDetails,
+                arguments = listOf(navArgument("recipeId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
+                val detailViewModel: RecipeDetailViewModel = viewModel()
+                val detailState by detailViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Recipe Details"
+                LaunchedEffect(recipeId) { detailViewModel.load(recipeId) }
+
+                RecipeDetailScreen(
+                    state = detailState,
+                    onBack = { navController.popBackStack() },
+                    onIncreaseServings = detailViewModel::increaseServings,
+                    onDecreaseServings = detailViewModel::decreaseServings,
+                    onAddMissingToList = detailViewModel::addMissingIngredientsToList,
+                    onToggleFavourite = detailViewModel::toggleFavourite,
+                    onStartCooking = {
+                        cookingViewModel.loadRecipe(recipeId)
+                        navController.navigate(AppDestinations.CookingMode)
+                    },
+                    onRetry = { detailViewModel.load(recipeId) }
                 )
             }
 
             composable(
                 AppDestinations.SavedRecipes
             ) {
+                val savedRecipesViewModel: SavedRecipesViewModel = viewModel()
+                val savedRecipesState by savedRecipesViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Saved Recipes"
+                LaunchedEffect(Unit) { savedRecipesViewModel.load() }
+
+                SavedRecipesScreen(
+                    state = savedRecipesState,
+                    onBack = { navController.popBackStack() },
+                    onBrowseRecipes = { navController.navigate(AppDestinations.Recipes) },
+                    onRecipeClick = { favourite ->
+                        navController.navigate(AppDestinations.recipeDetailsRoute(favourite.recipeSourceId))
+                    },
+                    onRemove = { favourite -> savedRecipesViewModel.removeFavourite(favourite.recipeSourceId) },
+                    onRetry = savedRecipesViewModel::load
                 )
             }
 
-            composable(
-                AppDestinations
-                    .IngredientDetails
-            ) {
 
-                PlaceholderScreen(
-                    title =
-                        "Ingredient Details"
-                )
-            }
+            composable(AppDestinations.ShoppingList) {
+                val shoppingViewModel: ShoppingViewModel = viewModel()
+                val shoppingState by shoppingViewModel.uiState.collectAsState()
 
-            composable(
-                AppDestinations
-                    .IngredientEditor
-            ) {
+                LaunchedEffect(Unit) { shoppingViewModel.loadList() }
 
-                PlaceholderScreen(
-                    title =
-                        "Ingredient Editor"
-                )
-            }
-
-            composable(
-                AppDestinations.ShoppingList
-            ) {
-
-                PlaceholderScreen(
-                    title =
-                        "Shopping List"
+                ShoppingListScreen(
+                    state = shoppingState,
+                    onBack = { navController.popBackStack() },
+                    onAdd = shoppingViewModel::addItem,
+                    onTogglePurchased = shoppingViewModel::togglePurchased,
+                    onMoveToPantry = shoppingViewModel::moveToPantry,
+                    onRemove = shoppingViewModel::removeItem,
+                    onClear = shoppingViewModel::clearList
                 )
             }
 
             composable(
                 AppDestinations.CookingMode
             ) {
+                val cookingState by cookingViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Cooking Mode"
+                CookingModeScreen(
+                    state = cookingState,
+                    onExit = { navController.popBackStack() },
+                    onNextStep = cookingViewModel::nextStep,
+                    onPreviousStep = cookingViewModel::previousStep,
+                    onStartStepTimer = cookingViewModel::startTimerForCurrentStep,
+                    onViewAllTimers = { navController.navigate(AppDestinations.ActiveTimers) },
+                    onFinish = { navController.navigate(AppDestinations.RecipeComplete) }
                 )
             }
 
             composable(
                 AppDestinations.ActiveTimers
             ) {
+                val cookingState by cookingViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Active Timers"
+                ActiveTimersScreen(
+                    state = cookingState,
+                    onAddMinute = cookingViewModel::addMinuteToTimer,
+                    onTogglePause = cookingViewModel::togglePauseTimer,
+                    onCancel = cookingViewModel::cancelTimer,
+                    onStopAll = cookingViewModel::stopAllTimers,
+                    onBackToCooking = { navController.popBackStack() }
                 )
             }
 
             composable(
                 AppDestinations.KitchenTimer
             ) {
-
-                PlaceholderScreen(
-                    title =
-                        "Kitchen Timer"
+                KitchenTimerScreen(
+                    onBack = { navController.popBackStack() },
+                    onStartTimer = { minutes, label ->
+                        cookingViewModel.startStandaloneTimer(minutes, label)
+                        navController.navigate(AppDestinations.ActiveTimers)
+                    }
                 )
             }
 
             composable(
                 AppDestinations.RecipeComplete
             ) {
+                val cookingState by cookingViewModel.uiState.collectAsState()
+                val recipeTitle = cookingState.recipe?.title ?: stringResource(R.string.nav_recipe_fallback)
+                val readyInMinutes = cookingState.recipe?.readyInMinutes
 
-                PlaceholderScreen(
-                    title =
-                        "Recipe Complete"
+                RecipeCompleteScreen(
+                    recipeTitle = recipeTitle,
+                    readyInMinutes = readyInMinutes,
+                    onSave = { rating, difficulty, note ->
+                        cookingViewModel.completeCooking(rating, difficulty, note) {
+                            navController.navigate(AppDestinations.Home) {
+                                popUpTo(AppDestinations.Home) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 )
             }
 
             composable(
                 AppDestinations.CookingHistory
             ) {
+                val cookingHistoryViewModel: CookingHistoryViewModel = viewModel()
+                val cookingHistoryState by cookingHistoryViewModel.uiState.collectAsState()
 
-                PlaceholderScreen(
-                    title =
-                        "Cooking History"
+                LaunchedEffect(Unit) { cookingHistoryViewModel.load() }
+
+                CookingHistoryScreen(
+                    state = cookingHistoryState,
+                    onBack = { navController.popBackStack() },
+                    onFilterSelected = cookingHistoryViewModel::selectFilter,
+                    onRecipeClick = { entry ->
+                        navController.navigate(
+                            AppDestinations.recipeDetailsRoute(entry.recipeSourceId)
+                        )
+                    },
+                    onRetry = cookingHistoryViewModel::load
                 )
             }
 
@@ -919,6 +1273,7 @@ fun AppNavHost() {
                 SettingsScreen(
                     state =
                         settingsState,
+                    userId = authState.user?.uid.orEmpty(),
 
                     onBack = {
                         navController
@@ -940,8 +1295,15 @@ fun AppNavHost() {
                     onRetry =
                         settingsViewModel::loadProfile,
 
+                    onBiometricsEnabled = {
+                        // Enabling the preference already requested a system
+                        // biometric check. Prompt again on the next app entry.
+                        authState.user?.uid?.let(biometricGate::verified)
+                    },
+
                     onSignOut = {
 
+                        biometricGate.lock()
                         authViewModel
                             .signOut()
 
@@ -969,10 +1331,7 @@ fun AppNavHost() {
                                 error: Exception
                             ) {
 
-                                /*
-                                 * Firebase has already
-                                 * signed out successfully.
-                                 */
+
                             }
                         }
                     }

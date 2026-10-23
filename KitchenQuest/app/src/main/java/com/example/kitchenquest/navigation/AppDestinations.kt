@@ -16,14 +16,28 @@ object AppDestinations {
     const val Cook = "cook"
     const val Profile = "profile"
 
+    // General application destinations
+    const val Notifications = "notifications"
+
     // Recipe features
     const val WhatCanIMake = "what_can_i_make"
-    const val RecipeDetails = "recipe_details"
+    const val RecipeDetails = "recipe_details/{recipeId}"
+    fun recipeDetailsRoute(recipeId: String) = "recipe_details/$recipeId"
     const val SavedRecipes = "saved_recipes"
 
     // Pantry and shopping features
-    const val IngredientDetails = "ingredient_details"
-    const val IngredientEditor = "ingredient_editor"
+    const val IngredientDetails = "ingredient_details/{itemId}"
+    const val IngredientEditor = "ingredient_editor?itemId={itemId}"
+
+    fun ingredientDetailsRoute(itemId: String) = "ingredient_details/$itemId"
+
+    fun ingredientEditorRoute(itemId: String? = null) =
+        if (itemId != null) {
+            "ingredient_editor?itemId=$itemId"
+        } else {
+            "ingredient_editor"
+        }
+
     const val ShoppingList = "shopping_list"
 
     // Cooking features

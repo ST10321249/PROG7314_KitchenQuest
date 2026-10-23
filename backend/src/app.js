@@ -4,6 +4,12 @@ const healthRoutes = require('./routes/healthRoutes');
 const userRoutes = require('./routes/userRoutes');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
+const pantryRoutes = require('./routes/pantryRoutes');
+const shoppingRoutes = require('./routes/shoppingRoutes');
+const recipeRoutes = require('./routes/recipeRoutes');
+const favouriteRoutes = require('./routes/favouriteRoutes');
+const historyRoutes = require('./routes/historyRoutes');
+const recipeNoteRoutes = require('./routes/recipeNoteRoutes');
 
 const app = express();
 
@@ -12,6 +18,13 @@ app.use(express.json());
 
 app.use('/health', healthRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/pantry', pantryRoutes);
+app.use('/api/shopping-list', shoppingRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/favourites', favouriteRoutes);
+app.use('/api/history', historyRoutes);
+app.use('/api/recipe-notes', recipeNoteRoutes);
+
 
 app.use(notFoundHandler);
 app.use(errorHandler);

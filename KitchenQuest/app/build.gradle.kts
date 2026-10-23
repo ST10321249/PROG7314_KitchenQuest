@@ -16,7 +16,7 @@ val localProperties = Properties().apply {
 
 // Defaults to the hosted API. To use an API running on your own PC instead, set
 // api.baseUrl in local.properties (for example http://localhost:5000).
-val apiBaseUrl: String = (localProperties.getProperty("api.baseUrl") ?: "https://prog7314-kitchenquest.onrender.com/")
+val apiBaseUrl: String = (localProperties.getProperty("api.baseUrl") ?: "https://prog7314-kitchenquest-g7bd.onrender.com/")
     .let { if (it.endsWith("/")) it else "$it/" }
 
 android {
@@ -82,6 +82,12 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.play.services)
+
+    // On-device text translation between English and Afrikaans (models downloaded on demand).
+    implementation("com.google.mlkit:translate:17.0.3")
+
+    // Biometric unlock (fingerprint or supported face recognition)
+    implementation("androidx.biometric:biometric:1.1.0")
 
     // Credential Manager
     implementation("androidx.credentials:credentials:1.6.0")

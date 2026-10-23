@@ -25,81 +25,117 @@ class ApiException(
 
 fun Throwable.toApiException(): ApiException {
     return when (this) {
-        is ApiException -> this
 
-        is SocketTimeoutException -> ApiException(
-            ApiErrorType.TIMEOUT,
-            "The server took too long to respond. Please try again.",
+        is ApiException ->
             this
-        )
 
-        is IOException -> ApiException(
-            ApiErrorType.NO_CONNECTION,
-            "Can't reach the server. Check your connection and try again.",
-            this
-        )
-
-        is HttpException -> when (code()) {
-            400 -> ApiException(
-                ApiErrorType.INVALID_REQUEST,
-                serverMessage() ?: "Some of the information entered isn't valid.",
+        is SocketTimeoutException ->
+            ApiException(
+                ApiErrorType.TIMEOUT,
+                "The server took too long to respond. Please try again.",
                 this
             )
 
-            401 -> ApiException(
-                ApiErrorType.UNAUTHORIZED,
-                "Your session has expired. Please sign in again.",
+        is IOException ->
+            ApiException(
+                ApiErrorType.NO_CONNECTION,
+                "Can't reach the server. Check your connection and try again.",
                 this
             )
 
-            404 -> ApiException(
-                ApiErrorType.NOT_FOUND,
-                "Your profile couldn't be found.",
-                this
-            )
+        is HttpException ->
+            when (code()) {
 
-            in 500..599 -> ApiException(
-                ApiErrorType.SERVER,
-                "Something went wrong on our side. Please try again later.",
-                this
-            )
+                400 ->
+                    ApiException(
+                        ApiErrorType.INVALID_REQUEST,
+                        serverMessage()
+                            ?: "Some of the information entered isn't valid.",
+                        this
+                    )
 
-            else -> ApiException(
+                401 ->
+                    ApiException(
+                        ApiErrorType.UNAUTHORIZED,
+                        "Your session has expired. Please sign in again.",
+                        this
+                    )
+
+                404 ->
+                    ApiException(
+                        ApiErrorType.NOT_FOUND,
+                        serverMessage()
+                            ?: "The requested information couldn't be found.",
+                        this
+                    )
+
+                in 500..599 ->
+                    ApiException(
+                        ApiErrorType.SERVER,
+                        "Something went wrong on our side. Please try again later.",
+                        this
+                    )
+
+                else ->
+                    ApiException(
+                        ApiErrorType.UNKNOWN,
+                        serverMessage()
+                            ?: "Something went wrong. Please try again.",
+                        this
+                    )
+            }
+
+        else ->
+            ApiException(
                 ApiErrorType.UNKNOWN,
                 "Something went wrong. Please try again.",
                 this
             )
-        }
-
-        else -> ApiException(
-            ApiErrorType.UNKNOWN,
-            "Something went wrong. Please try again.",
-            this
-        )
     }
 }
 
 private fun HttpException.serverMessage(): String? {
     return try {
-        val body = response()?.errorBody()?.string() ?: return null
+
+        val body =
+            response()
+                ?.errorBody()
+                ?.string()
+                ?: return null
 
         ApiClient.json
             .parseToJsonElement(body)
             .jsonObject["error"]
             ?.jsonPrimitive
             ?.content
+
     } catch (error: Exception) {
         null
     }
 }
 
 // Runs an API call and turns any failure into an ApiException.
-suspend fun <T> apiCall(block: suspend () -> T): Result<T> {
+suspend fun <T> apiCall(
+    block: suspend () -> T
+): Result<T> {
     return try {
-        Result.success(block())
-    } catch (error: CancellationException) {
+
+        Result.success(
+            block()
+        )
+
+    } catch (
+        error: CancellationException
+    ) {
+
         throw error
-    } catch (error: Exception) {
-        Result.failure(error.toApiException())
+
+    } catch (
+        error: Exception
+    ) {
+
+        Result.failure(
+            error.toApiException()
+        )
     }
 }

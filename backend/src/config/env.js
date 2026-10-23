@@ -5,6 +5,7 @@ const env = {
   port: process.env.PORT || 5000,
   mongodbUri: process.env.MONGODB_URI,
   firebaseServiceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+  spoonacularApiKey: process.env.SPOONACULAR_API_KEY,
 };
 
 module.exports = env;

@@ -1,5 +1,10 @@
 package com.example.kitchenquest.feature.settings
 
+import android.app.Activity
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
+import androidx.biometric.BiometricManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,51 +24,66 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
+import com.example.kitchenquest.data.preferences.AppLanguage
+import com.example.kitchenquest.data.preferences.AppLanguagePreferences
+import com.example.kitchenquest.data.preferences.LanguageProfileApi
+import com.example.kitchenquest.data.preferences.LanguageUpdateRequest
+import com.example.kitchenquest.data.network.ApiClient
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
+import com.example.kitchenquest.data.auth.BiometricAvailability
+import com.example.kitchenquest.data.auth.BiometricSettings
+import com.example.kitchenquest.data.auth.BiometricSupport
 import com.example.kitchenquest.feature.onboarding.PreferenceOptions
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
+import com.example.kitchenquest.ui.components.KitchenQuestErrorState
+import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
-import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTextField
+import com.example.kitchenquest.ui.components.KitchenQuestTopBar
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
-import com.example.kitchenquest.ui.theme.KitchenQuestTheme
 
 private enum class SettingsDialog {
     Name,
     Dietary,
-    Avoided
+    Avoided,
+    Language
 }
 
 @Composable
@@ -76,33 +96,151 @@ fun SettingsScreen(
     onSave: () -> Unit,
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
-    modifier: Modifier = Modifier
+    userId: String,
+    modifier: Modifier = Modifier,
+    onBiometricsEnabled: () -> Unit = {}
 ) {
+    var showSignOutConfirmation by rememberSaveable {
+        mutableStateOf(false)
+    }
+    // The preference belongs to this signed-in user on this device only.
+    val context = LocalContext.current
+    // Resolve Compose-localized UI strings during composition, not inside event callbacks.
+    val biometricDisabledMessage = stringResource(R.string.settings_biometric_disabled_feedback)
+    val biometricEnrollMessage = stringResource(R.string.settings_biometric_enroll_feedback)
+    val biometricUnavailableMessage = stringResource(R.string.settings_biometric_unavailable_feedback)
+    val biometricSuccessMessage = stringResource(R.string.settings_biometric_success_feedback)
+    val biometricSettings = remember(context) { BiometricSettings(context) }
+    val languagePreferences = remember(context) { AppLanguagePreferences(context.applicationContext) }
+    val languageProfileApi = remember { ApiClient.create(LanguageProfileApi::class.java) }
+    var selectedLanguage by remember(context) {
+        mutableStateOf(languagePreferences.getLanguage())
+    }
+    val changeLanguage: (String) -> Unit = { code ->
+        // Saving first ensures attachBaseContext loads the correct resources.
+        if (languagePreferences.setLanguage(code)) {
+            languagePreferences.queueProfileUpdate(userId, code)
+            selectedLanguage = languagePreferences.getLanguage()
+            (context as? Activity)?.recreate()
+        }
+    }
+    // The local language takes effect immediately. Sync independently so a failed
+    // network request never resets the UI language or blocks Settings.
+    LaunchedEffect(userId, state.hasLoaded, state.profileLanguage) {
+        if (!state.hasLoaded || userId.isBlank()) return@LaunchedEffect
+        val pending = languagePreferences.pendingProfileUpdate(userId)
+        val serverLanguage = state.profileLanguage
+        val upload = pending ?: if (serverLanguage == null) languagePreferences.getLanguage() else null
+        if (upload != null) {
+            runCatching {
+                languageProfileApi.updateLanguage(LanguageUpdateRequest(upload))
+            }.onSuccess { profile ->
+                if (profile.language == upload) {
+                    languagePreferences.acknowledgeProfileUpdate(userId, upload)
+                }
+            }
+        } else if (AppLanguage.isSupported(serverLanguage) &&
+            languagePreferences.setLanguage(serverLanguage!!)
+        ) {
+            (context as? Activity)?.recreate()
+        }
+    }
+
+    var biometricAvailability by remember(userId) {
+        mutableStateOf(BiometricSupport.check(context))
+    }
+    var biometricEnabled by remember(userId) {
+        mutableStateOf(biometricSettings.isEnabled(userId))
+    }
+    var biometricFeedback by rememberSaveable(userId) { mutableStateOf<String?>(null) }
+    var biometricFeedbackIsError by rememberSaveable(userId) { mutableStateOf(false) }
+
+    val refreshBiometricStatus = {
+        biometricAvailability = BiometricSupport.check(context)
+        if (biometricAvailability != BiometricAvailability.READY) {
+            biometricEnabled = false
+            biometricSettings.setEnabled(userId, false)
+        }
+    }
+    val changeBiometricEnabled: (Boolean) -> Unit = { enabled ->
+        biometricFeedback = null
+        biometricFeedbackIsError = false
+        if (!enabled) {
+            biometricSettings.setEnabled(userId, false)
+            biometricEnabled = false
+            biometricFeedback = biometricDisabledMessage
+        } else if (userId.isBlank() || biometricAvailability != BiometricAvailability.READY) {
+            biometricFeedback = biometricEnrollMessage
+            biometricFeedbackIsError = true
+        } else {
+            val activity = context as? FragmentActivity
+            if (activity == null) {
+                biometricFeedback = biometricUnavailableMessage
+                biometricFeedbackIsError = true
+            } else {
+                BiometricSetup(activity).confirmEnable { verified, message ->
+                    if (verified) {
+                        biometricSettings.setEnabled(userId, true)
+                        biometricEnabled = true
+                        onBiometricsEnabled()
+                        biometricFeedback = biometricSuccessMessage
+                    } else {
+                        biometricFeedback = message
+                        biometricFeedbackIsError = true
+                    }
+                }
+            }
+        }
+    }
+    val openDeviceBiometricSettings = {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                putExtra(
+                    Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                    BiometricManager.Authenticators.BIOMETRIC_WEAK
+                )
+            }
+        } else {
+            Intent(Settings.ACTION_SECURITY_SETTINGS)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (_: android.content.ActivityNotFoundException) {
+            context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(KitchenQuestDimens.ScreenPadding)
     ) {
-
-        SettingsTopBar(onBack = onBack)
+        KitchenQuestTopBar(
+            title = stringResource(R.string.settings_title),
+            onBack = onBack
+        )
 
         when {
-            // Also covers the first frame, before loading has started.
-            !state.hasLoaded && (state.isLoading || state.errorMessage == null) -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+            !state.hasLoaded && state.isLoading -> {
+                KitchenQuestLoadingState(
+                    message = stringResource(R.string.settings_loading),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            !state.hasLoaded && state.errorMessage != null -> {
+                KitchenQuestErrorState(
+                    message = state.errorMessage,
+                    onRetry = onRetry,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             !state.hasLoaded -> {
-                LoadFailed(
-                    message = state.errorMessage,
-                    onRetry = onRetry
+                KitchenQuestLoadingState(
+                    message = stringResource(R.string.settings_loading),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -112,57 +250,47 @@ fun SettingsScreen(
                     onDisplayNameChange = onDisplayNameChange,
                     onDietaryPreferencesChange = onDietaryPreferencesChange,
                     onAvoidedIngredientsChange = onAvoidedIngredientsChange,
-                    onSave = onSave
+                    onSave = onSave,
+                    onSignOut = { showSignOutConfirmation = true },
+                    languageCode = selectedLanguage,
+                    onLanguageChange = changeLanguage,
+                    biometricEnabled = biometricEnabled,
+                    biometricAvailability = biometricAvailability,
+                    biometricFeedback = biometricFeedback,
+                    biometricFeedbackIsError = biometricFeedbackIsError,
+                    onBiometricChange = changeBiometricEnabled,
+                    onCheckBiometrics = refreshBiometricStatus,
+                    onOpenDeviceBiometrics = openDeviceBiometricSettings
                 )
             }
         }
-
-        SignOutButton(
-            onClick = onSignOut,
-            modifier = Modifier.padding(
-                horizontal = KitchenQuestDimens.MediumSpacing,
-                vertical = KitchenQuestDimens.SectionSpacing
-            )
-        )
     }
-}
 
-@Composable
-private fun SettingsTopBar(
-    onBack: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = KitchenQuestDimens.MediumSpacing,
-                vertical = KitchenQuestDimens.SmallSpacing
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Surface(
-            onClick = onBack,
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+    if (showSignOutConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirmation = false },
+            title = { Text(stringResource(R.string.settings_sign_out_question)) },
+            text = {
+                Text(stringResource(R.string.settings_sign_out_explanation))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSignOutConfirmation = false
+                        onSignOut()
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_sign_out),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutConfirmation = false }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
             }
-        }
-
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .padding(start = KitchenQuestDimens.MediumSpacing)
-                .semantics { heading() }
         )
     }
 }
@@ -174,73 +302,230 @@ private fun SettingsContent(
     onDisplayNameChange: (String) -> Unit,
     onDietaryPreferencesChange: (Set<String>) -> Unit,
     onAvoidedIngredientsChange: (Set<String>) -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onSignOut: () -> Unit,
+    languageCode: String,
+    onLanguageChange: (String) -> Unit,
+    biometricEnabled: Boolean,
+    biometricAvailability: BiometricAvailability,
+    biometricFeedback: String?,
+    biometricFeedbackIsError: Boolean,
+    onBiometricChange: (Boolean) -> Unit,
+    onCheckBiometrics: () -> Unit,
+    onOpenDeviceBiometrics: () -> Unit
 ) {
     var openDialog by rememberSaveable {
         mutableStateOf<SettingsDialog?>(null)
     }
 
-    Column(
-        modifier = Modifier.padding(
-            horizontal = KitchenQuestDimens.MediumSpacing
+    SectionHeader(stringResource(R.string.settings_account))
+
+    SettingsGroup {
+        SettingsRow(
+            icon = Icons.Outlined.Person,
+            title = state.displayName.ifBlank { stringResource(R.string.settings_add_name) },
+            subtitle = state.email.ifBlank { stringResource(R.string.settings_no_email) },
+            onClick = { openDialog = SettingsDialog.Name }
         )
-    ) {
+    }
 
-        SectionHeader("ACCOUNT")
+    SectionHeader(stringResource(R.string.settings_security))
 
-        SettingsCard {
-            SettingsRow(
-                icon = Icons.Outlined.Person,
-                title = state.displayName.ifBlank { "Add your name" },
-                subtitle = state.email.ifBlank { "No email on this account" },
-                onClick = { openDialog = SettingsDialog.Name }
-            )
-        }
+    SettingsGroup {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 80.dp)
+                .padding(KitchenQuestDimens.MediumSpacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(KitchenQuestDimens.SmallCorner),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Fingerprint,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-        SectionHeader("PREFERENCES")
-
-        SettingsCard {
-            SettingsRow(
-                icon = Icons.Outlined.Restaurant,
-                title = "Dietary preferences",
-                subtitle = PreferenceOptions.summary(
-                    state.dietaryPreferences,
-                    PreferenceOptions.NO_RESTRICTIONS
-                ),
-                onClick = { openDialog = SettingsDialog.Dietary }
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(
-                    horizontal = KitchenQuestDimens.MediumSpacing
-                ),
-                color = MaterialTheme.colorScheme.outline
-            )
-
-            SettingsRow(
-                icon = Icons.Outlined.Block,
-                title = "Avoided ingredients",
-                subtitle = PreferenceOptions.summary(
-                    state.avoidedIngredients,
-                    "None"
-                ),
-                onClick = { openDialog = SettingsDialog.Avoided }
-            )
-        }
-
-        Feedback(state)
-
-        if (state.hasUnsavedChanges || state.isSaving) {
-            KitchenQuestPrimaryButton(
-                text = if (state.isSaving) "Saving..." else "Save changes",
-                onClick = onSave,
-                enabled = !state.isSaving,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = KitchenQuestDimens.MediumSpacing)
+                    .weight(1f)
+                    .padding(horizontal = KitchenQuestDimens.FieldSpacing)
+            ) {
+                Text(stringResource(R.string.settings_biometric_title), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = when (biometricAvailability) {
+                        BiometricAvailability.READY ->
+                            if (biometricEnabled) stringResource(R.string.settings_biometric_enabled) else stringResource(R.string.settings_biometric_verify)
+                        BiometricAvailability.NOT_ENROLLED -> stringResource(R.string.settings_biometric_enroll)
+                        BiometricAvailability.NO_HARDWARE -> stringResource(R.string.settings_biometric_missing)
+                        BiometricAvailability.TEMPORARILY_UNAVAILABLE -> stringResource(R.string.settings_biometric_unavailable)
+                        BiometricAvailability.SECURITY_UPDATE_REQUIRED -> stringResource(R.string.settings_biometric_security_update)
+                        BiometricAvailability.UNSUPPORTED -> stringResource(R.string.settings_biometric_unsupported)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Switch(
+                checked = biometricEnabled,
+                enabled = biometricEnabled || biometricAvailability == BiometricAvailability.READY,
+                onCheckedChange = onBiometricChange
+            )
+        }
+
+        if (biometricAvailability != BiometricAvailability.READY) {
+            Row(
+                modifier = Modifier.padding(
+                    start = KitchenQuestDimens.MediumSpacing,
+                    end = KitchenQuestDimens.MediumSpacing,
+                    bottom = KitchenQuestDimens.SmallSpacing
+                ),
+                horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+            ) {
+                if (biometricAvailability == BiometricAvailability.NOT_ENROLLED) {
+                    TextButton(onClick = onOpenDeviceBiometrics) { Text(stringResource(R.string.settings_biometric_phone_setup)) }
+                }
+                TextButton(onClick = onCheckBiometrics) { Text(stringResource(R.string.settings_biometric_check_again)) }
+            }
+        }
+    }
+
+    if (biometricFeedback != null) {
+        FeedbackMessage(
+            text = biometricFeedback,
+            isError = biometricFeedbackIsError
+        )
+    }
+
+    SectionHeader(stringResource(R.string.settings_preferences))
+
+    SettingsGroup {
+        SettingsRow(
+            icon = Icons.Outlined.Language,
+            title = stringResource(R.string.settings_language),
+            subtitle = if (languageCode == AppLanguage.AFRIKAANS) {
+                stringResource(R.string.settings_language_afrikaans)
+            } else {
+                stringResource(R.string.settings_language_english)
+            },
+            onClick = { openDialog = SettingsDialog.Language }
+        )
+    }
+
+    Text(
+        text = stringResource(R.string.settings_language_device_notice),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = KitchenQuestDimens.SmallSpacing)
+    )
+
+    TranslationModelsPanel(
+        modifier = Modifier.padding(top = KitchenQuestDimens.MediumSpacing)
+    )
+
+    SettingsGroup {
+        SettingsRow(
+            icon = Icons.Outlined.Restaurant,
+            title = stringResource(R.string.settings_dietary),
+            subtitle = PreferenceOptions.summary(
+                state.dietaryPreferences,
+                PreferenceOptions.NO_RESTRICTIONS
+            ),
+            onClick = { openDialog = SettingsDialog.Dietary }
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(
+                horizontal = KitchenQuestDimens.MediumSpacing
+            ),
+            color = MaterialTheme.colorScheme.outline
+        )
+
+        SettingsRow(
+            icon = Icons.Outlined.Block,
+            title = stringResource(R.string.settings_avoided),
+            subtitle = PreferenceOptions.summary(
+                state.avoidedIngredients,
+                stringResource(R.string.settings_no_avoided)
+            ),
+            onClick = { openDialog = SettingsDialog.Avoided }
+        )
+    }
+
+    Text(
+        text = stringResource(R.string.settings_preferences_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(
+            top = KitchenQuestDimens.SmallSpacing
+        )
+    )
+
+    when {
+        state.errorMessage != null -> {
+            FeedbackMessage(
+                text = state.errorMessage,
+                isError = true
+            )
+        }
+
+        state.saveSucceeded -> {
+            FeedbackMessage(
+                text = stringResource(R.string.settings_saved),
+                isError = false
             )
         }
     }
+
+    if (state.hasUnsavedChanges || state.isSaving) {
+        Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
+
+        KitchenQuestPrimaryButton(
+            text = if (state.isSaving) stringResource(R.string.settings_saving) else stringResource(R.string.settings_save),
+            onClick = onSave,
+            enabled = !state.isSaving,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    Spacer(modifier = Modifier.height(KitchenQuestDimens.LargeSpacing))
+
+    SectionHeader(stringResource(R.string.settings_account_action))
+
+    OutlinedButton(
+        onClick = onSignOut,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(KitchenQuestDimens.ButtonHeight),
+        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+        border = BorderStroke(
+            KitchenQuestDimens.CardBorderWidth,
+            MaterialTheme.colorScheme.error
+        ),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.error
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.WarningAmber,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+
+        Spacer(modifier = Modifier.size(KitchenQuestDimens.SmallSpacing))
+
+        Text(stringResource(R.string.settings_sign_out))
+    }
+
+    Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 
     when (openDialog) {
         SettingsDialog.Name -> NameDialog(
@@ -253,7 +538,7 @@ private fun SettingsContent(
         )
 
         SettingsDialog.Dietary -> ChoiceDialog(
-            title = "Dietary preferences",
+            title = stringResource(R.string.settings_dietary),
             options = PreferenceOptions.optionsWith(
                 PreferenceOptions.dietary,
                 state.dietaryPreferences
@@ -271,7 +556,7 @@ private fun SettingsContent(
         )
 
         SettingsDialog.Avoided -> ChoiceDialog(
-            title = "Avoided ingredients",
+            title = stringResource(R.string.settings_avoided),
             options = PreferenceOptions.optionsWith(
                 PreferenceOptions.avoidedIngredients,
                 state.avoidedIngredients
@@ -288,41 +573,63 @@ private fun SettingsContent(
             onDismiss = { openDialog = null }
         )
 
+        SettingsDialog.Language -> AlertDialog(
+            onDismissRequest = { openDialog = null },
+            title = { Text(stringResource(R.string.settings_language_dialog)) },
+            text = {
+                Column {
+                    TextButton(onClick = {
+                        openDialog = null
+                        onLanguageChange(AppLanguage.ENGLISH)
+                    }) {
+                        Text(stringResource(R.string.settings_language_english))
+                    }
+                    TextButton(onClick = {
+                        openDialog = null
+                        onLanguageChange(AppLanguage.AFRIKAANS)
+                    }) {
+                        Text(stringResource(R.string.settings_language_afrikaans))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { openDialog = null }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            }
+        )
+
         null -> Unit
     }
 }
 
 @Composable
-private fun SectionHeader(
-    text: String
-) {
+private fun SectionHeader(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        letterSpacing = 0.4.sp,
-        modifier = Modifier
-            .padding(
-                top = KitchenQuestDimens.SectionSpacing,
-                bottom = KitchenQuestDimens.SmallSpacing
-            )
-            .semantics { heading() }
+        modifier = Modifier.padding(
+            top = KitchenQuestDimens.SectionSpacing,
+            bottom = KitchenQuestDimens.SmallSpacing
+        )
     )
 }
 
 @Composable
-private fun SettingsCard(
+private fun SettingsGroup(
     content: @Composable () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(KitchenQuestDimens.LargeCorner),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth()
+        border = BorderStroke(
+            KitchenQuestDimens.CardBorderWidth,
+            MaterialTheme.colorScheme.outline
+        )
     ) {
-        Column {
-            content()
-        }
+        Column(content = { content() })
     }
 }
 
@@ -336,19 +643,18 @@ private fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(
-                horizontal = KitchenQuestDimens.MediumSpacing,
-                vertical = KitchenQuestDimens.FieldSpacing
-            ),
+            .heightIn(min = 72.dp)
+            .clickable(
+                role = Role.Button,
+                onClick = onClick
+            )
+            .padding(KitchenQuestDimens.MediumSpacing),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Surface(
-            shape = RoundedCornerShape(11.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(40.dp),
+            shape = RoundedCornerShape(KitchenQuestDimens.SmallCorner),
+            color = MaterialTheme.colorScheme.surfaceVariant
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
@@ -368,14 +674,13 @@ private fun SettingsRow(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -391,84 +696,24 @@ private fun SettingsRow(
 }
 
 @Composable
-private fun Feedback(
-    state: SettingsUiState
+private fun FeedbackMessage(
+    text: String,
+    isError: Boolean
 ) {
-    val message = state.errorMessage
-
-    when {
-        message != null -> Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier
-                .padding(top = KitchenQuestDimens.MediumSpacing)
-                .semantics { liveRegion = LiveRegionMode.Polite }
-        )
-
-        state.saveSucceeded -> Text(
-            text = "Changes saved",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier
-                .padding(top = KitchenQuestDimens.MediumSpacing)
-                .semantics { liveRegion = LiveRegionMode.Polite }
-        )
-    }
-}
-
-@Composable
-private fun LoadFailed(
-    message: String?,
-    onRetry: () -> Unit
-) {
-    Column(
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (isError) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.secondary
+        },
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(KitchenQuestDimens.ScreenPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(
-            KitchenQuestDimens.MediumSpacing
-        )
-    ) {
-        Text(
-            text = message ?: "Your settings couldn't be loaded.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.semantics {
+            .padding(top = KitchenQuestDimens.MediumSpacing)
+            .semantics {
                 liveRegion = LiveRegionMode.Polite
             }
-        )
-
-        KitchenQuestSecondaryButton(
-            text = "Try again",
-            onClick = onRetry,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun SignOutButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(KitchenQuestDimens.ButtonHeight),
-        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.error
-        )
-    ) {
-        Text(
-            text = "Sign out",
-            style = MaterialTheme.typography.labelLarge
-        )
-    }
+    )
 }
 
 @Composable
@@ -481,12 +726,12 @@ private fun NameDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Display name") },
+        title = { Text(stringResource(R.string.settings_display_name)) },
         text = {
             KitchenQuestTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = "Display name",
+                label = stringResource(R.string.settings_display_name),
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -495,12 +740,12 @@ private fun NameDialog(
                 onClick = { onConfirm(text.trim()) },
                 enabled = text.isNotBlank()
             ) {
-                Text("Done")
+                Text(stringResource(R.string.settings_done))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         }
     )
@@ -519,7 +764,11 @@ private fun ChoiceDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            FlowRow {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(
+                    KitchenQuestDimens.TinySpacing
+                )
+            ) {
                 options.forEach { option ->
                     KitchenQuestChoiceChip(
                         text = option,
@@ -531,98 +780,8 @@ private fun ChoiceDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Done")
+                Text(stringResource(R.string.settings_done))
             }
         }
     )
-}
-
-private val previewState = SettingsUiState(
-    hasLoaded = true,
-    displayName = "Akeev",
-    email = "akeev@example.com",
-    dietaryPreferences = setOf("Vegetarian", "Gluten-free"),
-    avoidedIngredients = setOf("Nuts", "Shellfish")
-)
-
-@Composable
-private fun PreviewScreen(state: SettingsUiState) {
-    KitchenQuestTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            SettingsScreen(
-                state = state,
-                onBack = {},
-                onDisplayNameChange = {},
-                onDietaryPreferencesChange = {},
-                onAvoidedIngredientsChange = {},
-                onSave = {},
-                onRetry = {},
-                onSignOut = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Loaded")
-@Composable
-private fun SettingsScreenLoadedPreview() {
-    PreviewScreen(previewState)
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Unsaved changes")
-@Composable
-private fun SettingsScreenUnsavedPreview() {
-    PreviewScreen(previewState.copy(hasUnsavedChanges = true))
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Save failed")
-@Composable
-private fun SettingsScreenSaveFailedPreview() {
-    PreviewScreen(
-        previewState.copy(
-            hasUnsavedChanges = true,
-            errorMessage = "Can't reach the server. Check your connection and try again."
-        )
-    )
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Saved")
-@Composable
-private fun SettingsScreenSavedPreview() {
-    PreviewScreen(previewState.copy(saveSucceeded = true))
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Loading")
-@Composable
-private fun SettingsScreenLoadingPreview() {
-    PreviewScreen(SettingsUiState(isLoading = true))
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Load failed")
-@Composable
-private fun SettingsScreenLoadFailedPreview() {
-    PreviewScreen(
-        SettingsUiState(
-            errorMessage = "Can't reach the server. Check your connection and try again."
-        )
-    )
-}
-
-@Preview(showBackground = true, heightDp = 800, name = "Dark")
-@Composable
-private fun SettingsScreenDarkPreview() {
-    KitchenQuestTheme(darkTheme = true) {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            SettingsScreen(
-                state = previewState,
-                onBack = {},
-                onDisplayNameChange = {},
-                onDietaryPreferencesChange = {},
-                onAvoidedIngredientsChange = {},
-                onSave = {},
-                onRetry = {},
-                onSignOut = {}
-            )
-        }
-    }
 }

@@ -1,13 +1,13 @@
 package com.example.kitchenquest.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightColorScheme = lightColorScheme(
-
     primary = KitchenOrange,
     onPrimary = KitchenSurface,
 
@@ -16,6 +16,9 @@ private val LightColorScheme = lightColorScheme(
 
     secondary = KitchenGreen,
     onSecondary = KitchenSurface,
+
+    secondaryContainer = KitchenGreenLight,
+    onSecondaryContainer = KitchenText,
 
     background = KitchenBackground,
     onBackground = KitchenText,
@@ -27,12 +30,13 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = KitchenTextSecondary,
 
     outline = KitchenBorder,
+    outlineVariant = KitchenBorder,
 
-    error = KitchenRed
+    error = KitchenRed,
+    errorContainer = KitchenRedLight
 )
 
 private val DarkColorScheme = darkColorScheme(
-
     primary = KitchenOrange,
     onPrimary = KitchenSurface,
 
@@ -53,12 +57,18 @@ private val DarkColorScheme = darkColorScheme(
     error = KitchenRed
 )
 
+private val KitchenQuestShapes = Shapes(
+    small = RoundedCornerShape(KitchenQuestDimens.SmallCorner),
+    medium = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+    large = RoundedCornerShape(KitchenQuestDimens.LargeCorner)
+)
+
 @Composable
 fun KitchenQuestTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-
+    // Use the KitchenQuest light palette by default; callers can request dark mode.
     val colorScheme =
         if (darkTheme) {
             DarkColorScheme
@@ -69,6 +79,7 @@ fun KitchenQuestTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = KitchenQuestTypography,
+        shapes = KitchenQuestShapes,
         content = content
     )
 }

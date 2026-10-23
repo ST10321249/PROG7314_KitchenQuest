@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.onboarding
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -10,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,279 +23,150 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.kitchenquest.ui.components.localizedChoiceLabel
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
+import com.example.kitchenquest.ui.theme.KitchenGreenLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OnboardingScreen(
-    initialSelection: OnboardingSelection =
-        OnboardingSelection(),
+    initialSelection: OnboardingSelection = OnboardingSelection(),
     existingPreferencesMessage: String? = null,
-    onContinue: (
-        OnboardingSelection
-    ) -> Unit,
+    onContinue: (OnboardingSelection) -> Unit,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var dietary by rememberSaveable {
+        mutableStateOf(initialSelection.dietaryPreferences.toList())
+    }
+    var avoided by rememberSaveable {
+        mutableStateOf(initialSelection.avoidedIngredients.toList())
+    }
 
-    val dietaryOptions =
-        PreferenceOptions.dietary
-
-    val avoidedIngredientOptions =
-        PreferenceOptions.avoidedIngredients
-
-    var selectedDietaryPreferences
-            by rememberSaveable {
-                mutableStateOf(
-                    initialSelection
-                        .dietaryPreferences
-                )
-            }
-
-    var selectedAvoidedIngredients
-            by rememberSaveable {
-                mutableStateOf(
-                    initialSelection
-                        .avoidedIngredients
-                )
-            }
+    val dietarySet = dietary.toSet()
+    val avoidedSet = avoided.toSet()
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(
-                KitchenQuestDimens
-                    .ScreenPadding
-            )
+            .padding(KitchenQuestDimens.ScreenPadding)
     ) {
-
         Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.SpaceBetween,
-            verticalAlignment =
-                Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-
-            Text(
-                text = "KitchenQuest",
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleMedium,
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .primary
-            )
-
-            TextButton(
-                onClick = onSkip
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.TinySpacing)
             ) {
-                Text(
-                    text = "Skip"
-                )
+                Surface(
+                    modifier = Modifier
+                        .height(KitchenQuestDimens.TinySpacing)
+                        .weight(1f),
+                    color = MaterialTheme.colorScheme.outline
+                ) {}
+                Surface(
+                    modifier = Modifier
+                        .height(KitchenQuestDimens.TinySpacing)
+                        .weight(1f),
+                    color = MaterialTheme.colorScheme.primary
+                ) {}
+            }
+
+            TextButton(onClick = onSkip) {
+                Text(stringResource(R.string.onboard_skip))
             }
         }
 
-        Spacer(
-            modifier = Modifier.height(
-                KitchenQuestDimens
-                    .SmallSpacing
-            )
-        )
+        Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
         Text(
-            text =
-                "Tell us how you eat",
-            style =
-                MaterialTheme
-                    .typography
-                    .headlineMedium
+            text = stringResource(R.string.onboard_title),
+            style = MaterialTheme.typography.headlineLarge
         )
 
-        Spacer(
-            modifier = Modifier.height(
-                KitchenQuestDimens
-                    .SmallSpacing
-            )
-        )
+        Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
         Text(
-            text =
-                "We'll filter recipe and recommendation results to match your preferences.",
-            style =
-                MaterialTheme
-                    .typography
-                    .bodyMedium,
-            color =
-                MaterialTheme
-                    .colorScheme
-                    .onSurfaceVariant
+            text = stringResource(R.string.onboard_help),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        if (
-            existingPreferencesMessage != null
-        ) {
-
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        KitchenQuestDimens
-                            .MediumSpacing
-                    )
-            )
-
+        existingPreferencesMessage?.let { message ->
+            Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
             Surface(
-                modifier =
-                    Modifier.fillMaxWidth(),
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .primaryContainer,
-                shape =
-                    RoundedCornerShape(
-                        KitchenQuestDimens
-                            .MediumCorner
-                    )
+                modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+                color = KitchenGreenLight
             ) {
-
                 Text(
-                    text =
-                        existingPreferencesMessage,
-                    modifier =
-                        Modifier.padding(
-                            KitchenQuestDimens
-                                .MediumSpacing
-                        ),
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodyMedium,
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onPrimaryContainer
+                    text = if (message == "We found dietary preferences already saved for this account. Review them below and continue to keep or update them.") stringResource(R.string.onboard_existing_saved) else message,
+                    modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing),
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
 
-        Spacer(
-            modifier = Modifier.height(
-                KitchenQuestDimens
-                    .SectionSpacing
-            )
-        )
+        Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
-        Text(
-            text =
-                "Dietary preference",
-            style =
-                MaterialTheme
-                    .typography
-                    .titleMedium
-        )
+        Text(stringResource(R.string.onboard_dietary), style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
-        Spacer(
-            modifier = Modifier.height(
-                KitchenQuestDimens
-                    .SmallSpacing
-            )
-        )
-
-        FlowRow {
-
-            dietaryOptions.forEach {
-                    option ->
-
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing),
+            verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+        ) {
+            PreferenceOptions.optionsWith(PreferenceOptions.dietary, dietarySet).forEach { option ->
                 KitchenQuestChoiceChip(
-                    text = option,
-                    selected =
-                        option in
-                                selectedDietaryPreferences,
+                    text = localizedChoiceLabel(option),
+                    selected = option in dietarySet,
                     onClick = {
-
-                        selectedDietaryPreferences =
-                            PreferenceOptions
-                                .toggleDietary(
-                                    selectedDietaryPreferences,
-                                    option
-                                )
+                        dietary = PreferenceOptions
+                            .toggleDietary(dietarySet, option)
+                            .toList()
                     }
                 )
             }
         }
 
-        Spacer(
-            modifier = Modifier.height(
-                KitchenQuestDimens
-                    .SectionSpacing
-            )
-        )
+        Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
-        Text(
-            text =
-                "Avoid these ingredients",
-            style =
-                MaterialTheme
-                    .typography
-                    .titleMedium
-        )
+        Text(stringResource(R.string.onboard_avoided), style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
-        Spacer(
-            modifier = Modifier.height(
-                KitchenQuestDimens
-                    .SmallSpacing
-            )
-        )
-
-        FlowRow {
-
-            avoidedIngredientOptions
-                .forEach {
-                        ingredient ->
-
-                    KitchenQuestChoiceChip(
-                        text =
-                            ingredient,
-                        selected =
-                            ingredient in
-                                    selectedAvoidedIngredients,
-                        onClick = {
-
-                            selectedAvoidedIngredients =
-                                PreferenceOptions
-                                    .toggleAvoided(
-                                        selectedAvoidedIngredients,
-                                        ingredient
-                                    )
-                        }
-                    )
-                }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing),
+            verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+        ) {
+            PreferenceOptions.optionsWith(PreferenceOptions.avoidedIngredients, avoidedSet).forEach { option ->
+                KitchenQuestChoiceChip(
+                    text = localizedChoiceLabel(option),
+                    selected = option in avoidedSet,
+                    onClick = {
+                        avoided = PreferenceOptions
+                            .toggleAvoided(avoidedSet, option)
+                            .toList()
+                    }
+                )
+            }
         }
 
-        Spacer(
-            modifier =
-                Modifier.weight(1f)
-        )
+        Spacer(Modifier.weight(1f))
 
         KitchenQuestPrimaryButton(
-            text = "Continue",
+            text = stringResource(R.string.onboard_continue),
             onClick = {
                 onContinue(
                     OnboardingSelection(
-                        dietaryPreferences =
-                            selectedDietaryPreferences,
-                        avoidedIngredients =
-                            selectedAvoidedIngredients
+                        dietaryPreferences = dietarySet,
+                        avoidedIngredients = avoidedSet
                     )
                 )
             },
-            modifier =
-                Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

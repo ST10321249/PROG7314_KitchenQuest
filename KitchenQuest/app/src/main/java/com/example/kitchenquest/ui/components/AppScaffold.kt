@@ -1,31 +1,27 @@
 package com.example.kitchenquest.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.kitchenquest.navigation.AppDestinations
 
 @Composable
 fun AppScaffold(
     navController: NavHostController,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val currentBackStackEntry = navController.currentBackStackEntryAsState().value
-    val currentRoute = currentBackStackEntry?.destination?.route
+    val currentBackStackEntry =
+        navController.currentBackStackEntryAsState().value
 
-    val mainRoutes = listOf(
-        AppDestinations.Home,
-        AppDestinations.Recipes,
-        AppDestinations.MyKitchen,
-        AppDestinations.Cook,
-        AppDestinations.Profile
-    )
+    val currentRoute =
+        currentBackStackEntry?.destination?.route
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            if (currentRoute in mainRoutes) {
+            if (shouldShowBottomNavigation(currentRoute)) {
                 BottomNavigationBar(
                     navController = navController
                 )
