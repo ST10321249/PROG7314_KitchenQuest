@@ -3,6 +3,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
     id("com.google.gms.google-services")
     kotlin("plugin.serialization") version "2.4.20"
 }
@@ -18,6 +20,10 @@ val localProperties = Properties().apply {
 // api.baseUrl in local.properties (for example http://localhost:5000).
 val apiBaseUrl: String = (localProperties.getProperty("api.baseUrl") ?: "https://prog7314-kitchenquest-g7bd.onrender.com/")
     .let { if (it.endsWith("/")) it else "$it/" }
+
+room {
+    schemaDirectory("$projectDir/schemas")
+}
 
 android {
     namespace = "com.example.kitchenquest"
@@ -48,6 +54,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
     buildFeatures {
         buildConfig = true
         compose = true
@@ -69,6 +80,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -103,6 +116,12 @@ dependencies {
 
     // Ktor
     implementation("io.ktor:ktor-client-android:3.5.2")
+
+    // Local database and background sync
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.work.runtime.ktx)
 
     // Networking (REST API)
     implementation(libs.retrofit)
