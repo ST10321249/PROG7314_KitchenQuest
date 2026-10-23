@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { clientIdField } = require('./commonSchemas');
 
 const startOfToday = () => {
   const now = new Date();
@@ -19,6 +20,7 @@ const expiryDateField = z
   .optional();
 
 const createPantryItemSchema = z.object({
+  clientId: clientIdField.optional(),
   ingredientName: z.string().trim().min(1, 'Ingredient name is required'),
   quantity: z.number().positive('Quantity must be greater than zero'),
   unit: z.string().trim().min(1, 'Unit is required'),

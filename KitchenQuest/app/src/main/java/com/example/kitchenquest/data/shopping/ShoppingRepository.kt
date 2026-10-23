@@ -23,7 +23,13 @@ class DefaultShoppingRepository(
         quantity: Double?,
         unit: String?
     ): Result<ShoppingItemDto> = apiCall {
-        shoppingApi.addShoppingItem(CreateShoppingItemRequest(name, quantity, unit))
+        shoppingApi.addShoppingItem(
+            CreateShoppingItemRequest(
+                ingredientName = name,
+                quantity = quantity,
+                unit = unit
+            )
+        )
     }
 
     override suspend fun setPurchased(id: String, purchased: Boolean): Result<ShoppingItemDto> = apiCall {
