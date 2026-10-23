@@ -1,7 +1,9 @@
 package com.example.kitchenquest.data.shopping
 
 import com.example.kitchenquest.data.pantry.CreatePantryItemRequest
+import com.example.kitchenquest.data.sync.SyncState
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 data class ShoppingItemDto(
@@ -11,7 +13,10 @@ data class ShoppingItemDto(
     val quantity: Double? = null,
     val unit: String = "",
     val isPurchased: Boolean = false,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    // Kept on the phone only, so screens can show whether a change has reached the server.
+    @Transient
+    val syncState: SyncState = SyncState.SYNCED
 )
 
 @Serializable

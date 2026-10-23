@@ -1,5 +1,6 @@
 package com.example.kitchenquest.data.shopping
 
+import com.example.kitchenquest.data.pantry.PantryItemDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -20,6 +21,9 @@ interface ShoppingApi {
         @Path("id") id: String,
         @Body request: UpdateShoppingItemRequest
     ): ShoppingItemDto
+
+    @POST("api/shopping-list/transfer")
+    suspend fun transferToPantry(@Body request: TransferToPantryRequest): PantryItemDto
 
     @DELETE("api/shopping-list/{id}")
     suspend fun deleteShoppingItem(@Path("id") id: String)

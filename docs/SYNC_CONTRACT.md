@@ -78,10 +78,11 @@ the app being closed. A change has:
 
 ### Order
 
-- Changes for the same item are sent in the order they were made.
-- Changes for different items do not wait for each other.
-- A transfer waits for the create of the shopping item it refers to, if that create has not been sent yet.
-- Only one change is sent at a time, oldest first.
+- Changes are sent one at a time, oldest first, so a change always arrives after the changes it depends on
+  (an edit after its create, a transfer after the create of the shopping item).
+- Changes to different items do not depend on each other. They are only held back while an older change is
+  waiting to be retried, which is nearly always because the network is down for everything. A change that has
+  used up all its attempts becomes `FAILED` and no longer holds anything back.
 
 ### Combining changes
 
@@ -92,6 +93,9 @@ order:
 - Several edits to one item are merged into one, and the latest value of each field wins.
 - Deleting an item whose create never left the phone cancels both, and nothing is sent.
 - Deleting an item removes any waiting edits to it.
+- Editing a change that had `FAILED` is treated as the user fixing it, so it starts again as `PENDING` with
+  its attempts reset. Deleting an item whose create had failed simply removes it, because the server never
+  had it.
 - A change that is already `IN_FLIGHT` is never altered. Later changes are queued behind it.
 
 ### Result of sending a change
@@ -147,6 +151,10 @@ not a single database transaction, but it can never produce a duplicate or lose 
 
 On the phone the same change is made in one Room transaction (add the pantry row, remove the shopping row,
 queue one transfer), so the user sees it happen immediately.
+
+The queued request refers to the shopping item by its server `id` when it has one, and by its `clientId`
+otherwise. If the shopping item itself never left the phone, there is nothing on the server to remove, so
+no transfer is queued and the pantry item is simply created.
 
 ## 8. Refreshing from the server
 

@@ -1,12 +1,11 @@
 package com.example.kitchenquest.feature.home
 
+import com.example.kitchenquest.data.AppRepositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenquest.data.pantry.DefaultPantryRepository
 import com.example.kitchenquest.data.pantry.PantryRepository
 import com.example.kitchenquest.data.recipes.DefaultRecipeRepository
 import com.example.kitchenquest.data.recipes.RecipeRepository
-import com.example.kitchenquest.data.shopping.DefaultShoppingRepository
 import com.example.kitchenquest.data.shopping.ShoppingRepository
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.UserRepository
@@ -19,8 +18,8 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val userRepository: UserRepository = DefaultUserRepository(),
-    private val pantryRepository: PantryRepository = DefaultPantryRepository(),
-    private val shoppingRepository: ShoppingRepository = DefaultShoppingRepository(),
+    private val pantryRepository: PantryRepository = AppRepositories.pantry,
+    private val shoppingRepository: ShoppingRepository = AppRepositories.shopping,
     private val recipeRepository: RecipeRepository = DefaultRecipeRepository()
 ) : ViewModel() {
 

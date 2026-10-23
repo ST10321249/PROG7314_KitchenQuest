@@ -64,6 +64,8 @@ data class PendingOperationEntity(
     val operationType: SyncOperationType,
     // The local key of the item this change is about.
     val entityId: String,
+    // The server id of that item, once known. Needed to delete or edit it through the API.
+    val serverId: String? = null,
     // The fields to send, as JSON.
     val payload: String,
     val status: SyncOperationStatus = SyncOperationStatus.PENDING,

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "113931849226b1aa2bf6ae15806c9089",
+    "identityHash": "a50bbfbef2e66fa715ad7f7d9d6a76f0",
     "entities": [
       {
         "tableName": "pantry_items",
@@ -164,7 +164,7 @@
       },
       {
         "tableName": "pending_operations",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sequence` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `operationId` TEXT NOT NULL, `userId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `operationType` TEXT NOT NULL, `entityId` TEXT NOT NULL, `payload` TEXT NOT NULL, `status` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `lastError` TEXT, `createdAt` INTEGER NOT NULL, `nextAttemptAt` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sequence` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `operationId` TEXT NOT NULL, `userId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `operationType` TEXT NOT NULL, `entityId` TEXT NOT NULL, `serverId` TEXT, `payload` TEXT NOT NULL, `status` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `lastError` TEXT, `createdAt` INTEGER NOT NULL, `nextAttemptAt` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "sequence",
@@ -201,6 +201,11 @@
             "columnName": "entityId",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "payload",
@@ -270,7 +275,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '113931849226b1aa2bf6ae15806c9089')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a50bbfbef2e66fa715ad7f7d9d6a76f0')"
     ]
   }
 }

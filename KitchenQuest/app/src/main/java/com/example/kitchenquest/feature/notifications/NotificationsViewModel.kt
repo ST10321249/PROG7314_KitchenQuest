@@ -1,10 +1,9 @@
 package com.example.kitchenquest.feature.notifications
 
+import com.example.kitchenquest.data.AppRepositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenquest.data.pantry.DefaultPantryRepository
 import com.example.kitchenquest.data.pantry.PantryRepository
-import com.example.kitchenquest.data.shopping.DefaultShoppingRepository
 import com.example.kitchenquest.data.shopping.ShoppingRepository
 import com.example.kitchenquest.feature.pantry.daysUntilExpiry
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,8 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class NotificationsViewModel(
-    private val pantryRepository: PantryRepository = DefaultPantryRepository(),
-    private val shoppingRepository: ShoppingRepository = DefaultShoppingRepository()
+    private val pantryRepository: PantryRepository = AppRepositories.pantry,
+    private val shoppingRepository: ShoppingRepository = AppRepositories.shopping
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationsUiState())

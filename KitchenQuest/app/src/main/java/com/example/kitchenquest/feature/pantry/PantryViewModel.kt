@@ -1,8 +1,8 @@
 package com.example.kitchenquest.feature.pantry
 
+import com.example.kitchenquest.data.AppRepositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenquest.data.pantry.DefaultPantryRepository
 import com.example.kitchenquest.data.pantry.PantryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +13,7 @@ import com.example.kitchenquest.data.pantry.PantryItemDto
 
 class PantryViewModel(
     private val pantryRepository: PantryRepository =
-        DefaultPantryRepository()
+        AppRepositories.pantry
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PantryUiState())

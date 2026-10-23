@@ -1,10 +1,9 @@
 package com.example.kitchenquest.feature.shopping
 
+import com.example.kitchenquest.data.AppRepositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenquest.data.pantry.DefaultPantryRepository
 import com.example.kitchenquest.data.pantry.PantryRepository
-import com.example.kitchenquest.data.shopping.DefaultShoppingRepository
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
 import com.example.kitchenquest.data.shopping.ShoppingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,8 +20,8 @@ data class ShoppingUiState(
 )
 
 class ShoppingViewModel(
-    private val shoppingRepository: ShoppingRepository = DefaultShoppingRepository(),
-    private val pantryRepository: PantryRepository = DefaultPantryRepository()
+    private val shoppingRepository: ShoppingRepository = AppRepositories.shopping,
+    private val pantryRepository: PantryRepository = AppRepositories.pantry
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShoppingUiState())
