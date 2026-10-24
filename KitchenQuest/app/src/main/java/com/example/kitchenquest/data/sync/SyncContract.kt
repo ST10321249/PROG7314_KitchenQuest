@@ -51,4 +51,12 @@ object SyncPolicy {
     const val MAX_ATTEMPTS = 8
 
     const val INITIAL_BACKOFF_SECONDS = 30L
+
+    private const val MAX_BACKOFF_SECONDS = 3_600L
+
+    // 30 seconds, then 1 minute, 2 minutes and so on, up to an hour.
+    fun backoffSeconds(failedAttempts: Int): Long {
+        val doublings = (failedAttempts - 1).coerceIn(0, 10)
+        return (INITIAL_BACKOFF_SECONDS shl doublings).coerceAtMost(MAX_BACKOFF_SECONDS)
+    }
 }

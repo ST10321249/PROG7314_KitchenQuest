@@ -112,6 +112,15 @@ interface PendingOperationDao {
     @Query("SELECT COUNT(*) FROM pending_operations WHERE userId = :userId AND status = :status")
     suspend fun count(userId: String, status: SyncOperationStatus): Int
 
+    // Once an item has a server id, changes already queued behind its create can use it.
+    @Query("UPDATE pending_operations SET serverId = :serverId WHERE userId = :userId AND entityType = :entityType AND entityId = :entityId AND serverId IS NULL AND status != 'SUCCEEDED'")
+    suspend fun fillServerId(
+        userId: String,
+        entityType: SyncEntity,
+        entityId: String,
+        serverId: String
+    )
+
     // After the app was closed mid-send, a change left in flight is sent again.
     @Query("UPDATE pending_operations SET status = 'PENDING' WHERE status = 'IN_FLIGHT'")
     suspend fun resetInFlight()

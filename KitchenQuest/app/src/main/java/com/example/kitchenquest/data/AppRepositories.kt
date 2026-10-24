@@ -10,6 +10,7 @@ import com.example.kitchenquest.data.shopping.OfflineShoppingRepository
 import com.example.kitchenquest.data.shopping.ShoppingApi
 import com.example.kitchenquest.data.shopping.ShoppingRepository
 import com.example.kitchenquest.data.sync.NoOpSyncScheduler
+import com.example.kitchenquest.data.sync.SyncProcessor
 import com.example.kitchenquest.data.sync.SyncScheduler
 import com.google.firebase.auth.FirebaseAuth
 
@@ -22,9 +23,17 @@ object AppRepositories {
     @Volatile
     var syncScheduler: SyncScheduler = NoOpSyncScheduler
 
-    private val currentUserId: () -> String? = {
-        FirebaseAuth.getInstance().currentUser?.uid
+    private val signedInUserId: () -> String? = {
+        try {
+            FirebaseAuth.getInstance().currentUser?.uid
+        } catch (error: IllegalStateException) {
+            // Firebase has not been set up, so nobody can be signed in.
+            null
+        }
     }
+
+    // The Firebase uid of whoever is signed in, or null.
+    fun currentUserId(): String? = signedInUserId()
 
     // Called once when the app starts.
     fun init(context: Context) {
@@ -35,7 +44,7 @@ object AppRepositories {
         OfflinePantryRepository(
             database = database(),
             pantryApi = ApiClient.create(PantryApi::class.java),
-            currentUserId = currentUserId,
+            currentUserId = signedInUserId,
             scheduler = syncScheduler
         )
     }
@@ -44,10 +53,17 @@ object AppRepositories {
         OfflineShoppingRepository(
             database = database(),
             shoppingApi = ApiClient.create(ShoppingApi::class.java),
-            currentUserId = currentUserId,
+            currentUserId = signedInUserId,
             scheduler = syncScheduler
         )
     }
+
+    // Sends the changes waiting in the queue. Used by the background sync.
+    fun syncProcessor(): SyncProcessor = SyncProcessor(
+        database = database(),
+        pantryApi = ApiClient.create(PantryApi::class.java),
+        shoppingApi = ApiClient.create(ShoppingApi::class.java)
+    )
 
     private fun database(): KitchenQuestDatabase {
         val context = checkNotNull(appContext) {

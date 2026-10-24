@@ -102,15 +102,28 @@ order:
 
 | Result | What happens |
 | --- | --- |
-| Success | The change is `SUCCEEDED` and removed. The local row gets the server `id` and `updatedAt`. |
-| Network error, timeout, `5xx` | Back to `PENDING` with a longer wait before the next attempt. |
-| `401` | Back to `PENDING`. Nothing is lost. |
-| `400` | `FAILED` with the server message. The local row is marked as failed so it can be shown to the user. |
+| Success | The change is removed. The local row gets the server `id` and `updatedAt`, and any changes queued behind the create are given the server `id`. |
+| Timeout, `5xx`, or any other unexpected failure | Back to `PENDING`, counted as an attempt, with a longer wait before the next one. |
+| No connection | Back to `PENDING`. Not counted, because the change is not at fault. |
+| `401` | Back to `PENDING`. Not counted. Nothing is lost. |
+| `400` | `FAILED` with the server message, and the local row is marked `FAILED` so it can be shown to the user. |
 | `404` on a delete | Success. The item is already gone. |
 | `404` on an edit | The item was deleted elsewhere. The edit is dropped and the local row is removed. |
-| Still failing after `SyncPolicy.MAX_ATTEMPTS` attempts | `FAILED` |
+| `404` on a create or transfer | Treated as a failure that can be retried. It almost always means the server has not been updated yet. |
+| Still failing after `SyncPolicy.MAX_ATTEMPTS` (8) attempts | `FAILED`, and it stops holding up newer changes. |
 
-Retries start at `SyncPolicy.INITIAL_BACKOFF_SECONDS` and grow each time.
+Retries start at `SyncPolicy.INITIAL_BACKOFF_SECONDS` (30 seconds) and double each time, up to an hour.
+
+### When changes are sent
+
+- A background job (`SyncWorker`, run by WorkManager) sends the queue. It only runs while the phone is
+  connected, and WorkManager runs it again later, with a growing wait, if something could not be sent.
+- A sync is requested every time the user changes something, every time a list is opened while changes are
+  waiting, and when the app starts.
+- Only one sync runs at a time. A request made while one is running starts another straight after it.
+- Only the signed-in account's changes are sent. Another account's changes wait until that account signs in.
+- If the app is closed while a change is being sent, it is sent again next time. This is safe because
+  creates are recognised by their `clientId` and deleting something that is gone counts as success.
 
 ## 6. Conflicts
 
