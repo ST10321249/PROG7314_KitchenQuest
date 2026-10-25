@@ -1,6 +1,6 @@
 const { z } = require('zod');
 const { clientIdField, objectIdField } = require('./commonSchemas');
-const { createPantryItemSchema } = require('./pantrySchemas');
+const { createPantryItemBaseSchema } = require('./pantrySchemas');
 
 const createShoppingItemSchema = z.object({
   clientId: clientIdField.optional(),
@@ -26,7 +26,7 @@ const transferToPantrySchema = z
   .object({
     shoppingItemId: objectIdField.optional(),
     shoppingClientId: clientIdField.optional(),
-    pantryItem: createPantryItemSchema.extend({ clientId: clientIdField }),
+    pantryItem: createPantryItemBaseSchema.extend({ clientId: clientIdField }),
   })
   .refine((data) => data.shoppingItemId || data.shoppingClientId, {
     message: 'Provide shoppingItemId or shoppingClientId',
