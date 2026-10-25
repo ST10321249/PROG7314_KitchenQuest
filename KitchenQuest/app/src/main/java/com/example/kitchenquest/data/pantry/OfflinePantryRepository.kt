@@ -20,7 +20,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 // The pantry as the screens see it. It reads from the phone, saves changes on the phone
 // straight away and queues them for the server, so it keeps working without a connection.
-// See docs/SYNC_CONTRACT.md for the rules it follows.
+// See the sync contract for the rules it follows.
 class OfflinePantryRepository(
     private val database: KitchenQuestDatabase,
     private val pantryApi: PantryApi,
@@ -166,7 +166,7 @@ class OfflinePantryRepository(
     }
 
     // Brings the phone up to date with the server without touching anything that still
-    // has changes waiting to be sent (docs/SYNC_CONTRACT.md, section 8).
+    // has changes waiting to be sent (sync contract, section 8).
     private suspend fun reconcile(userId: String, remote: List<PantryItemDto>) {
         database.withTransaction {
             val busy = database.pendingOperationDao()

@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
 // Adds changes to the list of work still to be sent to the server and keeps that list
-// as small and as safe as possible, following docs/SYNC_CONTRACT.md (section 5).
+// as small and as safe as possible, following the sync contract (section 5).
 //
 // Callers should run enqueue inside the same Room transaction that changes the item,
 // so a change to the data and its queue entry are saved together or not at all.

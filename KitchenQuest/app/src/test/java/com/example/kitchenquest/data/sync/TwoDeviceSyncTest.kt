@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 // Two phones signed in to the same account, sharing one server. These check that the
-// conflict rules in docs/SYNC_CONTRACT.md (section 6) hold when both are used at once.
+// conflict rules in the sync contract (section 6) hold when both are used at once.
 @RunWith(RobolectricTestRunner::class)
 class TwoDeviceSyncTest {
 

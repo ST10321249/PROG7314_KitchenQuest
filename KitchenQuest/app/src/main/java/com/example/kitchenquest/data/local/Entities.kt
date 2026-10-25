@@ -8,7 +8,7 @@ import com.example.kitchenquest.data.sync.SyncOperationStatus
 import com.example.kitchenquest.data.sync.SyncOperationType
 import com.example.kitchenquest.data.sync.SyncState
 
-// "id" is the local key described in docs/SYNC_CONTRACT.md: the clientId, or the
+// "id" is the local key described in the sync contract: the clientId, or the
 // server id for items that were created before client ids existed. Rows are always
 // looked up together with the userId so one account never sees data from another.
 @Entity(

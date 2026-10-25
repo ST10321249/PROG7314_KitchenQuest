@@ -23,7 +23,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 // The shopping list as the screens see it. It reads from the phone, saves changes on the
 // phone straight away and queues them for the server, so it keeps working without a
-// connection. See docs/SYNC_CONTRACT.md for the rules it follows.
+// connection. See the sync contract for the rules it follows.
 class OfflineShoppingRepository(
     private val database: KitchenQuestDatabase,
     private val shoppingApi: ShoppingApi,
@@ -143,7 +143,7 @@ class OfflineShoppingRepository(
 
     // Moves a bought item into the pantry as one step. On the phone the pantry item is
     // added and the shopping item removed in a single transaction. One request is queued
-    // for the server, which can safely be sent again (docs/SYNC_CONTRACT.md, section 7).
+    // for the server, which can safely be sent again (sync contract, section 7).
     override suspend fun transferToPantry(
         id: String,
         ingredientName: String,
@@ -219,7 +219,7 @@ class OfflineShoppingRepository(
     }
 
     // Brings the phone up to date with the server without touching anything that still
-    // has changes waiting to be sent (docs/SYNC_CONTRACT.md, section 8).
+    // has changes waiting to be sent (sync contract, section 8).
     private suspend fun reconcile(userId: String, remote: List<ShoppingItemDto>) {
         database.withTransaction {
             val busy = database.pendingOperationDao()

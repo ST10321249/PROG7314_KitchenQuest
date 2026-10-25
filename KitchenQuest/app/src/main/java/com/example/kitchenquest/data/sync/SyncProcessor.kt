@@ -20,7 +20,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
 // Sends the changes waiting in the queue to the server, oldest first, and records what
-// happened. The rules it follows are in docs/SYNC_CONTRACT.md (section 5).
+// happened. The rules it follows are in the sync contract (section 5).
 class SyncProcessor(
     private val database: KitchenQuestDatabase,
     private val pantryApi: PantryApi,
