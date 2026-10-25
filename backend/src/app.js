@@ -12,6 +12,7 @@ const historyRoutes = require('./routes/historyRoutes');
 const recipeNoteRoutes = require('./routes/recipeNoteRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const fileRoutes = require('./routes/fileRoutes');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/history', historyRoutes);
 app.use('/api/recipe-notes', recipeNoteRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/files', fileRoutes);
 
 
 app.use(notFoundHandler);
