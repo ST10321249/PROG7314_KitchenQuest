@@ -74,3 +74,20 @@ data class PendingOperationEntity(
     val createdAt: Long,
     val nextAttemptAt: Long = 0
 )
+
+// A translation that was already worked out, so it can be shown again without the
+// translation models and without a connection. Only the translated text is kept here.
+// The original text always stays where it came from, and translations are for display only.
+@Entity(
+    tableName = "translation_cache",
+    primaryKeys = ["sourceLanguage", "targetLanguage", "textHash"],
+    indices = [Index("createdAt")]
+)
+data class TranslationCacheEntity(
+    val sourceLanguage: String,
+    val targetLanguage: String,
+    // A fingerprint of the original text, so long recipe instructions are not used as a key.
+    val textHash: String,
+    val translatedText: String,
+    val createdAt: Long
+)

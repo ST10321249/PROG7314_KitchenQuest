@@ -186,4 +186,6 @@ When the phone is online and a user's queue is empty (or after it has been sent)
   the same `clientId` approach later.
 - There is no "changed since" request and no delete markers. Lists are small, so the app loads the whole
   list. Delete markers can be added if lists ever grow large.
-- Photos and push notifications are described in the data layer handoff.
+- Translations are cached on the phone (`TranslationCache`) but are not part of syncing. They are display
+  copies and never leave the phone.
+- Photos and push notifications are described in `DATA_LAYER_HANDOFF.md`.

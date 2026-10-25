@@ -125,3 +125,23 @@ interface PendingOperationDao {
     @Query("UPDATE pending_operations SET status = 'PENDING' WHERE status = 'IN_FLIGHT'")
     suspend fun resetInFlight()
 }
+
+@Dao
+interface TranslationCacheDao {
+
+    @Query("SELECT translatedText FROM translation_cache WHERE sourceLanguage = :source AND targetLanguage = :target AND textHash = :textHash")
+    suspend fun get(source: String, target: String, textHash: String): String?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun put(entry: TranslationCacheEntity)
+
+    @Query("SELECT COUNT(*) FROM translation_cache")
+    suspend fun count(): Int
+
+    // Removes the oldest translations so the cache cannot grow without limit.
+    @Query("DELETE FROM translation_cache WHERE rowid IN (SELECT rowid FROM translation_cache ORDER BY createdAt LIMIT :howMany)")
+    suspend fun deleteOldest(howMany: Int)
+
+    @Query("DELETE FROM translation_cache")
+    suspend fun clear()
+}
