@@ -31,6 +31,7 @@ import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.ui.components.localizedChoiceLabel
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
+import com.example.kitchenquest.ui.components.SyncStateNote
 import com.example.kitchenquest.ui.theme.KitchenGreen
 import com.example.kitchenquest.ui.theme.KitchenOrangeLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
@@ -130,6 +131,7 @@ fun IngredientDetailScreen(
             }
 
             Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
+            SyncStateNote(item.syncState, Modifier.padding(top = KitchenQuestDimens.MediumSpacing))
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),

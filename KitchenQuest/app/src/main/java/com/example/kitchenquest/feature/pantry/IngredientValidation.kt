@@ -9,11 +9,11 @@ data class IngredientFormErrors(
 ) {
     val hasErrors get() = name != null || quantity != null || expiryDate != null
 }
-
 fun validateIngredientForm(
     name: String,
     quantityText: String,
-    expiryDate: String?
+    expiryDate: String?,
+    originalExpiryDate: String? = null
 ): IngredientFormErrors {
     val nameError = if (name.isBlank()) "Ingredient name is required" else null
 

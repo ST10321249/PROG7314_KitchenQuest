@@ -386,4 +386,8 @@
     <string name="translation_test_result">Afrikaans translation preview</string>
     <string name="translation_google_attribution">Powered by Google Translate</string>
     <string name="translation_wifi_note">Language models download over Wi-Fi (about 30 MB per model).</string>
+    <!-- Pantry sync messages -->
+    <string name="sync_note_pending">Saved on this phone. It will be sent when you are back online.</string>
+    <string name="sync_note_failed">This change could not be sent. Edit the item and save to try again.</string>
+
 </resources>

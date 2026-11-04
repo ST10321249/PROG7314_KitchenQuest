@@ -34,6 +34,7 @@ import androidx.navigation.navArgument
 import com.example.kitchenquest.data.auth.GoogleSignInClient
 import com.example.kitchenquest.data.auth.BiometricSettings
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
+import com.example.kitchenquest.data.sync.SyncState
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.syncSignedInUser
 import com.example.kitchenquest.data.user.toOnboardingSelection
@@ -985,6 +986,7 @@ fun AppNavHost() {
                         initialExpiryDate = existing?.expiryDate,
                         isEditing = existing != null,
                         knownIngredients = pantryState.items,
+                        syncState = existing?.syncState ?: SyncState.SYNCED,
                         onBack = { navController.popBackStack() },
                         onSave = { name, quantity, unit, category, expiryDate ->
                             if (existing != null) {

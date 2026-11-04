@@ -43,13 +43,16 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import com.example.kitchenquest.data.pantry.PantryItemDto
+import com.example.kitchenquest.data.sync.SyncState
 import com.example.kitchenquest.ui.components.localizedChoiceLabel
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTextField
 import com.example.kitchenquest.ui.components.KitchenQuestTopBar
+import com.example.kitchenquest.ui.components.SyncStateNote
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -62,6 +65,7 @@ fun IngredientEditorScreen(
     isEditing: Boolean = false,
     isSaving: Boolean = false,
     knownIngredients: List<PantryItemDto> = emptyList(),
+    syncState: SyncState = SyncState.SYNCED,
     onBack: () -> Unit,
     onSave: (name: String, quantity: Double, unit: String, category: String, expiryDate: String?) -> Unit,
     onDelete: (() -> Unit)? = null
@@ -96,6 +100,11 @@ fun IngredientEditorScreen(
         KitchenQuestTopBar(
             title = if (isEditing) stringResource(R.string.detail_edit) else stringResource(R.string.kitchen_add),
             onBack = onBack
+        )
+
+        SyncStateNote(
+            syncState,
+            Modifier.padding(top = KitchenQuestDimens.SmallSpacing)
         )
 
         Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
@@ -320,7 +329,12 @@ fun IngredientEditorScreen(
                 enabled = !isSaving,
                 onClick = {
                     val trimmedExpiry = expiryDate.trim().ifBlank { null }
-                    val validation = validateIngredientForm(name, quantity, trimmedExpiry)
+                    val validation = validateIngredientForm(
+                        name,
+                        quantity,
+                        trimmedExpiry,
+                        initialExpiryDate
+                    )
                     errors = validation
 
                     if (!validation.hasErrors) {

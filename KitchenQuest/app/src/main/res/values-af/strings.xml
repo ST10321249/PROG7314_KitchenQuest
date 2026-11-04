@@ -386,4 +386,7 @@
     <string name="translation_test_result">Afrikaanse vertaalvoorskou</string>
     <string name="translation_google_attribution">Powered by Google Translate</string>
     <string name="translation_wifi_note">Taalmodelle word oor Wi-Fi afgelaai (ongeveer 30 MB per model).</string>
+    <!-- Pantry sync messages -->
+    <string name="sync_note_pending">Op hierdie foon gestoor. Dit sal gestuur word wanneer jy weer aanlyn is.</string>
+    <string name="sync_note_failed">Hierdie verandering kon nie gestuur word nie. Wysig die item en stoor om weer te probeer.</string>
 </resources>
