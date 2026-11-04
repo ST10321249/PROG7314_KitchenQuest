@@ -1,5 +1,14 @@
 package com.example.kitchenquest.feature.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import com.example.kitchenquest.notifications.ExpiryAlertScheduler
+import com.example.kitchenquest.notifications.ExpiryAlertSettings
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
@@ -210,6 +219,46 @@ fun SettingsScreen(
         }
     }
 
+    // Expiry alerts are local and per account, like the biometric choice above.
+    val expiryAlertSettings = remember(context) { ExpiryAlertSettings(context) }
+    var expiryAlertsEnabled by remember(userId) {
+        mutableStateOf(expiryAlertSettings.isEnabled(userId))
+    }
+    var expiryAlertsDenied by remember(userId) { mutableStateOf(false) }
+
+    val turnExpiryAlertsOn = {
+        expiryAlertSettings.setEnabled(userId, true)
+        expiryAlertsEnabled = true
+        expiryAlertsDenied = false
+        ExpiryAlertScheduler.schedule(context)
+    }
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) turnExpiryAlertsOn() else expiryAlertsDenied = true
+    }
+    val changeExpiryAlerts: (Boolean) -> Unit = { enabled ->
+        expiryAlertsDenied = false
+        when {
+            !enabled -> {
+                expiryAlertSettings.setEnabled(userId, false)
+                expiryAlertsEnabled = false
+                ExpiryAlertScheduler.cancel(context)
+            }
+            userId.isBlank() -> Unit
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) != PackageManager.PERMISSION_GRANTED ->
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            else -> turnExpiryAlertsOn()
+        }
+    }
+    val expiryAlertsBlocked = expiryAlertsDenied ||
+            (expiryAlertsEnabled && !NotificationManagerCompat.from(context).areNotificationsEnabled())
+
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -246,6 +295,9 @@ fun SettingsScreen(
 
             else -> {
                 SettingsContent(
+                    expiryAlertsEnabled = expiryAlertsEnabled,
+                    expiryAlertsBlocked = expiryAlertsBlocked,
+                    onExpiryAlertsChange = changeExpiryAlerts,
                     state = state,
                     onDisplayNameChange = onDisplayNameChange,
                     onDietaryPreferencesChange = onDietaryPreferencesChange,
@@ -312,7 +364,11 @@ private fun SettingsContent(
     biometricFeedbackIsError: Boolean,
     onBiometricChange: (Boolean) -> Unit,
     onCheckBiometrics: () -> Unit,
-    onOpenDeviceBiometrics: () -> Unit
+    onOpenDeviceBiometrics: () -> Unit,
+    expiryAlertsEnabled: Boolean,
+    expiryAlertsBlocked: Boolean,
+    onExpiryAlertsChange: (Boolean) -> Unit
+
 ) {
     var openDialog by rememberSaveable {
         mutableStateOf<SettingsDialog?>(null)
@@ -403,6 +459,57 @@ private fun SettingsContent(
             text = biometricFeedback,
             isError = biometricFeedbackIsError
         )
+    }
+
+    SectionHeader(stringResource(R.string.settings_notifications))
+
+    SettingsGroup {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 80.dp)
+                .padding(KitchenQuestDimens.MediumSpacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(KitchenQuestDimens.SmallCorner),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.NotificationsActive,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = KitchenQuestDimens.FieldSpacing)
+            ) {
+                Text(
+                    stringResource(R.string.settings_expiry_alerts_title),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = when {
+                        expiryAlertsBlocked -> stringResource(R.string.settings_expiry_alerts_blocked)
+                        expiryAlertsEnabled -> stringResource(R.string.settings_expiry_alerts_on)
+                        else -> stringResource(R.string.settings_expiry_alerts_off)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Switch(
+                checked = expiryAlertsEnabled,
+                onCheckedChange = onExpiryAlertsChange
+            )
+        }
     }
 
     SectionHeader(stringResource(R.string.settings_preferences))

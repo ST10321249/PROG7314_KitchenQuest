@@ -390,4 +390,14 @@
     <string name="sync_note_pending">Op hierdie foon gestoor. Dit sal gestuur word wanneer jy weer aanlyn is.</string>
     <string name="sync_note_failed">Hierdie verandering kon nie gestuur word nie. Wysig die item en stoor om weer te probeer.</string>
     <string name="shopping_loading">Laai tans jou inkopielys...</string>
+    <string name="settings_notifications">KENNISGEWINGS</string>
+    <string name="settings_expiry_alerts_title">Vervaldatum-waarskuwings</string>
+    <string name="settings_expiry_alerts_on">Daaglikse herinnering om 08:00 oor bestanddele wat binne 3 dae verval</string>
+    <string name="settings_expiry_alerts_off">Af</string>
+    <string name="settings_expiry_alerts_blocked">Kennisgewings is vir KitchenQuest geblokkeer. Laat dit toe in jou foon se instellings.</string>
+    <string name="expiry_alert_channel_name">Vervaldatum-waarskuwings</string>
+    <string name="expiry_alert_channel_description">Herinneringe oor bestanddele wat binnekort verval.</string>
+    <string name="expiry_alert_title">Bestanddele verval binnekort</string>
+    <string name="expiry_alert_text_one">%1$s verval binne %2$d dae.</string>
+    <string name="expiry_alert_text_many">%1$s en %2$d meer verval binne %3$d dae.</string>
 </resources>

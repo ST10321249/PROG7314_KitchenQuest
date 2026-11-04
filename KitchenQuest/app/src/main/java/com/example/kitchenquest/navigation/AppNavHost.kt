@@ -1,5 +1,6 @@
 package com.example.kitchenquest.navigation
 
+
 import com.example.kitchenquest.R
 import android.app.Activity
 import androidx.fragment.app.FragmentActivity
@@ -84,7 +85,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
 @Composable
-fun AppNavHost() {
+fun AppNavHost(
+    openMyKitchen: Boolean = false,
+    onOpenMyKitchenHandled: () -> Unit = {}
+) {
 
     val navController =
         rememberNavController()
@@ -156,11 +160,36 @@ fun AppNavHost() {
     // The system launch splash finishes first. On a cold start we briefly show
     // KitchenQuest branding before opening the biometric prompt. The splash is
     // NOT replayed for language changes or when returning from background.
+// Existing startup splash effect — KEEP THIS
     LaunchedEffect(authState.isAuthChecked, signedInUid, requiresBiometricUnlock) {
         if (authState.isAuthChecked && requiresBiometricUnlock && !biometricGate.startupSplashShown) {
             delay(550)
             biometricGate.finishStartupSplash()
         }
+    }
+
+    LaunchedEffect(
+        openMyKitchen,
+        authState.isAuthChecked,
+        signedInUid,
+        requiresBiometricUnlock
+    ) {
+        if (
+            !openMyKitchen ||
+            !authState.isAuthChecked ||
+            signedInUid == null ||
+            requiresBiometricUnlock
+        ) return@LaunchedEffect
+
+        navController.currentBackStackEntryFlow.first {
+            SessionNavigationRules.isAlreadyInsideApp(it.destination.route)
+        }
+
+        navController.navigate(AppDestinations.MyKitchen) {
+            launchSingleTop = true
+        }
+
+        onOpenMyKitchenHandled()
     }
 
     val coroutineScope =

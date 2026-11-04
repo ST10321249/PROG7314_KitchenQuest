@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.work.Configuration
 import com.example.kitchenquest.data.AppRepositories
 import com.example.kitchenquest.data.sync.WorkManagerSyncScheduler
+import com.example.kitchenquest.notifications.ExpiryAlertScheduler
+import com.example.kitchenquest.notifications.NotificationChannels
 
 class KitchenQuestApplication : Application(), Configuration.Provider {
 
@@ -21,5 +23,12 @@ class KitchenQuestApplication : Application(), Configuration.Provider {
 
         // Send anything left over from the last time the app was open.
         AppRepositories.syncScheduler.requestSync()
+
+        // Channels must exist before anything can be posted to them.
+        NotificationChannels.createAll(this)
+
+        // Keep the daily expiry check going for the signed-in account, if it has alerts on.
+        ExpiryAlertScheduler.scheduleIfEnabled(this, AppRepositories.currentUserId())
+
     }
 }

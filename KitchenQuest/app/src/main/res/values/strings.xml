@@ -389,5 +389,14 @@
      <string name="sync_note_pending">Saved on this phone. It will be sent when you are back online.</string>
     <string name="sync_note_failed">This change could not be sent. Edit the item and save to try again.</string>
     <string name="shopping_loading">Loading your shopping list...</string>
-
+    <string name="settings_notifications">NOTIFICATIONS</string>
+    <string name="settings_expiry_alerts_title">Expiry alerts</string>
+    <string name="settings_expiry_alerts_on">Daily reminder at 08:00 about ingredients expiring within 3 days</string>
+    <string name="settings_expiry_alerts_off">Off</string>
+    <string name="settings_expiry_alerts_blocked">Notifications are blocked for KitchenQuest. Allow them in your phones settings.</string>
+    <string name="expiry_alert_channel_name">Expiry alerts</string>
+    <string name="expiry_alert_channel_description">Reminders about ingredients that are about to expire.</string>
+    <string name="expiry_alert_title">Ingredients expiring soon</string>
+    <string name="expiry_alert_text_one">%1$s expires within %2$d days.</string>
+    <string name="expiry_alert_text_many">%1$s and %2$d more expire within %3$d days.</string>
 </resources>
