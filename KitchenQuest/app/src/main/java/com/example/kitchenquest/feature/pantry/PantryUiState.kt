@@ -6,9 +6,13 @@ import java.time.LocalDate
 data class PantryUiState(
     val isLoading: Boolean = false,
     val hasLoaded: Boolean = false,
+    val hasRefreshed: Boolean = false,
     val items: List<PantryItemDto> = emptyList(),
     val errorMessage: String? = null
 ) {
+    val showLoading: Boolean
+        get() = items.isEmpty() && !hasRefreshed && errorMessage == null
+
     val expiringSoon: List<PantryItemDto>
         get() = items.filter { daysUntilExpiry(it) != null && daysUntilExpiry(it)!! <= 3 }
             .sortedBy { daysUntilExpiry(it) }

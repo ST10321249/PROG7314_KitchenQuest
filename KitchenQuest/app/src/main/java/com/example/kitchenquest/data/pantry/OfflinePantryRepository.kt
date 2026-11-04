@@ -16,6 +16,9 @@ import com.example.kitchenquest.data.sync.SyncEntity
 import com.example.kitchenquest.data.sync.SyncOperationType
 import com.example.kitchenquest.data.sync.SyncScheduler
 import com.example.kitchenquest.data.sync.SyncState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 
 // The pantry as the screens see it. It reads from the phone, saves changes on the phone
@@ -33,6 +36,10 @@ class OfflinePantryRepository(
 
     private val dao get() = database.pantryDao()
 
+        override fun observePantryItems(): Flow<List<PantryItemDto>> {
+        val userId = currentUserId() ?: return emptyFlow()
+        return dao.observeAll(userId).map { rows -> rows.map { it.toDto() } }
+    }
     override suspend fun getPantryItems(): Result<List<PantryItemDto>> {
         val userId = currentUserId() ?: return signedOut()
 

@@ -65,7 +65,7 @@ fun MyKitchenScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
-            state.isLoading && !state.hasLoaded -> {
+            state.showLoading -> {
                 KitchenQuestLoadingState(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -74,7 +74,7 @@ fun MyKitchenScreen(
                 )
             }
 
-            state.errorMessage != null && !state.hasLoaded -> {
+            state.errorMessage != null && state.items.isEmpty() -> {
                 KitchenQuestErrorState(
                     message = state.errorMessage,
                     onRetry = onRetry,

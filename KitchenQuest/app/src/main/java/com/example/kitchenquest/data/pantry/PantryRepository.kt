@@ -2,8 +2,12 @@ package com.example.kitchenquest.data.pantry
 
 import com.example.kitchenquest.data.network.ApiClient
 import com.example.kitchenquest.data.network.apiCall
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 interface PantryRepository {
+
+    fun observePantryItems(): Flow<List<PantryItemDto>> = emptyFlow()
 
     suspend fun getPantryItems(): Result<List<PantryItemDto>>
 
