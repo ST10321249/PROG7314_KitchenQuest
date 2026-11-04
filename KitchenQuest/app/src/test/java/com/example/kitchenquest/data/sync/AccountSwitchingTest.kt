@@ -12,6 +12,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlinx.coroutines.flow.firstOrNull
+import org.junit.Assert.assertNull
 
 // The offline repository must never let one account see another's pantry, and must keep
 // the first account's items and waiting changes while someone else is signed in.
@@ -67,6 +69,7 @@ class AccountSwitchingTest {
         repository.addPantryItem("Milk", 1.0, "l", "Dairy", null)
         userId = null
 
-        assertEquals(emptyList<String>(), names())
+        // With nobody signed in the stream ends without ever delivering a list.
+        assertNull(repository.observePantryItems().firstOrNull())
     }
 }
