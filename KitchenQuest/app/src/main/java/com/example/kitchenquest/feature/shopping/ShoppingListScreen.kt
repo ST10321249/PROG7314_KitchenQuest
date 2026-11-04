@@ -41,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
+import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTopBar
 import com.example.kitchenquest.ui.theme.KitchenGreen
@@ -166,7 +167,12 @@ fun ShoppingListScreen(
 
         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
-        if (state.items.isEmpty() && !state.isLoading) {
+        if (state.items.isEmpty() && state.isLoading) {
+            KitchenQuestLoadingState(
+                modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding),
+                message = stringResource(R.string.shopping_loading)
+            )
+        } else if (state.items.isEmpty()) {
             KitchenQuestEmptyState(
                 title = stringResource(R.string.shoppinglist_your_shopping_list_is_empty_e7c499),
                 message = stringResource(R.string.shoppinglist_add_items_manually_or_send_missing_recipe_ingredients_her_7deef4),

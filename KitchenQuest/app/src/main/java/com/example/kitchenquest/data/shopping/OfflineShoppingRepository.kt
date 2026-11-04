@@ -19,6 +19,9 @@ import com.example.kitchenquest.data.sync.SyncEntity
 import com.example.kitchenquest.data.sync.SyncOperationType
 import com.example.kitchenquest.data.sync.SyncScheduler
 import com.example.kitchenquest.data.sync.SyncState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 
 // The shopping list as the screens see it. It reads from the phone, saves changes on the
@@ -35,6 +38,11 @@ class OfflineShoppingRepository(
 ) : ShoppingRepository {
 
     private val dao get() = database.shoppingDao()
+
+    override fun observeShoppingItems(): Flow<List<ShoppingItemDto>> {
+        val userId = currentUserId() ?: return emptyFlow()
+        return dao.observeAll(userId).map { rows -> rows.map { it.toDto() } }
+    }
 
     override suspend fun getShoppingItems(): Result<List<ShoppingItemDto>> {
         val userId = currentUserId() ?: return signedOut()

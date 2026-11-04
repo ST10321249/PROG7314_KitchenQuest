@@ -389,4 +389,5 @@
     <!-- Pantry sync messages -->
     <string name="sync_note_pending">Op hierdie foon gestoor. Dit sal gestuur word wanneer jy weer aanlyn is.</string>
     <string name="sync_note_failed">Hierdie verandering kon nie gestuur word nie. Wysig die item en stoor om weer te probeer.</string>
+    <string name="shopping_loading">Laai tans jou inkopielys...</string>
 </resources>
