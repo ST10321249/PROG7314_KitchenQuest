@@ -3,7 +3,6 @@ package com.example.kitchenquest.feature.shopping
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kitchenquest.data.AppRepositories
-import com.example.kitchenquest.data.pantry.PantryRepository
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
 import com.example.kitchenquest.data.shopping.ShoppingRepository
 import kotlinx.coroutines.Job
@@ -22,8 +21,7 @@ data class ShoppingUiState(
 )
 
 class ShoppingViewModel(
-    private val shoppingRepository: ShoppingRepository = AppRepositories.shopping,
-    private val pantryRepository: PantryRepository = AppRepositories.pantry
+    private val shoppingRepository: ShoppingRepository = AppRepositories.shopping
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShoppingUiState())
@@ -97,9 +95,12 @@ class ShoppingViewModel(
         }
     }
 
+    // One call moves the item. The phone swaps it for a pantry item in a single database
+    // transaction and queues one transfer, so stopping halfway cannot leave a copy behind.
     fun moveToPantry(item: ShoppingItemDto) {
         viewModelScope.launch {
-            pantryRepository.addPantryItem(
+            shoppingRepository.transferToPantry(
+                id = item.id,
                 ingredientName = item.ingredientName,
                 quantity = item.quantity ?: 1.0,
                 unit = item.unit.ifBlank { "unit" },
@@ -107,10 +108,8 @@ class ShoppingViewModel(
                 expiryDate = null
             ).fold(
                 onSuccess = {
-                    shoppingRepository.deleteShoppingItem(item.id).onSuccess {
-                        apply(message = "Moved ${item.ingredientName} to My Kitchen.") { list ->
-                            list.filterNot { it.id == item.id }
-                        }
+                    apply(message = "Moved ${item.ingredientName} to My Kitchen.") { list ->
+                        list.filterNot { it.id == item.id }
                     }
                 },
                 onFailure = { failure ->
