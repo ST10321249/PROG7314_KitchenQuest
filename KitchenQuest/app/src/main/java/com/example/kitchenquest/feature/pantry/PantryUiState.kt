@@ -1,6 +1,8 @@
 package com.example.kitchenquest.feature.pantry
 
 import com.example.kitchenquest.data.pantry.PantryItemDto
+import com.example.kitchenquest.data.sync.SyncFailure
+import com.example.kitchenquest.data.sync.SyncOverview
 import java.time.LocalDate
 
 data class PantryUiState(
@@ -8,7 +10,12 @@ data class PantryUiState(
     val hasLoaded: Boolean = false,
     val hasRefreshed: Boolean = false,
     val items: List<PantryItemDto> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    // Online or offline, and how many changes are waiting to be sent.
+    val sync: SyncOverview = SyncOverview(),
+    // A failed item the user tapped, with the reason the server gave.
+    val failure: SyncFailure? = null
+
 ) {
     val showLoading: Boolean
         get() = items.isEmpty() && !hasRefreshed && errorMessage == null
@@ -20,6 +27,7 @@ data class PantryUiState(
     val everythingElse: List<PantryItemDto>
         get() = items - expiringSoon.toSet()
 }
+
 
 fun daysUntilExpiry(item: PantryItemDto): Long? {
     val expiryDate = item.expiryDate ?: return null

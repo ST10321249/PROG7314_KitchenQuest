@@ -399,4 +399,17 @@
     <string name="expiry_alert_title">Ingredients expiring soon</string>
     <string name="expiry_alert_text_one">%1$s expires within %2$d days.</string>
     <string name="expiry_alert_text_many">%1$s and %2$d more expire within %3$d days.</string>
+
+    <string name="sync_badge_pending">Waiting to sync</string>
+    <string name="sync_badge_failed">Couldn\'t sync</string>
+    <string name="sync_offline_banner">You are offline. Your changes will be saved and sent when you are back online.</string>
+    <string name="sync_waiting_one">1 change waiting to sync</string>
+    <string name="sync_waiting_many">%1$d changes waiting to sync</string>
+    <string name="sync_failed_title">%1$s couldn\'t be synced</string>
+    <string name="sync_failed_explanation">The server refused this change, so it is only saved on this phone. You can edit it and try again, or delete it.</string>
+    <string name="sync_failed_explanation_delete_only">The server refused this change, so it is only saved on this phone. You can delete it and add it again.</string>
+    <string name="sync_failed_reason">Reason: %1$s</string>
+    <string name="sync_failed_edit">Edit</string>
+    <string name="sync_failed_delete">Delete</string>
+    <string name="sync_failed_close">Close</string>
 </resources>

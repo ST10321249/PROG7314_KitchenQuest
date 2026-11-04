@@ -400,4 +400,17 @@
     <string name="expiry_alert_title">Bestanddele verval binnekort</string>
     <string name="expiry_alert_text_one">%1$s verval binne %2$d dae.</string>
     <string name="expiry_alert_text_many">%1$s en %2$d meer verval binne %3$d dae.</string>
+
+    <string name="sync_badge_pending">Wag om te sinkroniseer</string>
+    <string name="sync_badge_failed">Kon nie sinkroniseer nie</string>
+    <string name="sync_offline_banner">Jy is vanlyn. Jou veranderinge word gestoor en gestuur wanneer jy weer aanlyn is.</string>
+    <string name="sync_waiting_one">1 verandering wag om te sinkroniseer</string>
+    <string name="sync_waiting_many">%1$d veranderinge wag om te sinkroniseer</string>
+    <string name="sync_failed_title">%1$s kon nie gesinkroniseer word nie</string>
+    <string name="sync_failed_explanation">Die bediener het hierdie verandering geweier, dus is dit net op hierdie foon gestoor. Jy kan dit wysig en weer probeer, of dit uitvee.</string>
+    <string name="sync_failed_explanation_delete_only">Die bediener het hierdie verandering geweier, dus is dit net op hierdie foon gestoor. Jy kan dit uitvee en weer byvoeg.</string>
+    <string name="sync_failed_reason">Rede: %1$s</string>
+    <string name="sync_failed_edit">Wysig</string>
+    <string name="sync_failed_delete">Vee uit</string>
+    <string name="sync_failed_close">Maak toe</string>
 </resources>

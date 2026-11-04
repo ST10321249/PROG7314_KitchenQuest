@@ -2,6 +2,11 @@ package com.example.kitchenquest.feature.pantry
 
 import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.data.pantry.PantryRepository
+import com.example.kitchenquest.data.sync.NoSyncOverview
+import com.example.kitchenquest.data.sync.SyncEntity
+import com.example.kitchenquest.data.sync.SyncFailure
+import com.example.kitchenquest.data.sync.SyncOverview
+import com.example.kitchenquest.data.sync.SyncOverviewSource
 import com.example.kitchenquest.data.sync.SyncState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -85,11 +90,24 @@ class PantryViewModelTest {
         }
     }
 
+    private class FakeOverview : SyncOverviewSource {
+        val overview = MutableStateFlow(SyncOverview())
+        val reasons = mutableMapOf<String, String?>()
+
+        override fun observe(): Flow<SyncOverview> = overview
+
+        override suspend fun failureReason(
+            entity: SyncEntity,
+            itemId: String
+        ): String? = reasons[itemId]
+    }
+
     private val milk = PantryItemDto(
         id = "milk", ingredientName = "Milk", quantity = 1.0, unit = "l", category = "Dairy"
     )
 
-    private fun viewModel(repository: PantryRepository) = PantryViewModel(repository)
+    private fun viewModel(repository: PantryRepository) =
+        PantryViewModel(repository, NoSyncOverview)
 
     @Before
     fun setUp() {
@@ -211,5 +229,45 @@ class PantryViewModelTest {
 
         viewModel.deleteItem("milk")
         assertEquals(listOf("Eggs"), viewModel.uiState.value.items.map { it.ingredientName })
+    }
+
+    @Test
+    fun theScreenKnowsWhenThePhoneIsOfflineAndHowManyChangesWait() {
+        val overview = FakeOverview()
+        val viewModel = PantryViewModel(FakePantryRepository(), overview)
+
+        viewModel.loadPantry()
+
+        overview.overview.value = SyncOverview(
+            isOnline = false,
+            waitingChanges = 3
+        )
+
+        assertFalse(viewModel.uiState.value.sync.isOnline)
+        assertEquals(3, viewModel.uiState.value.sync.waitingChanges)
+    }
+
+    @Test
+    fun tappingAFailedItemLoadsTheReasonForTheDialog() {
+        val overview = FakeOverview().apply {
+            reasons["milk"] = "Quantity must be greater than zero"
+        }
+
+        val viewModel = PantryViewModel(FakePantryRepository(), overview)
+
+        viewModel.showFailure(milk.copy(syncState = SyncState.FAILED))
+
+        assertEquals(
+            SyncFailure(
+                "milk",
+                "Milk",
+                "Quantity must be greater than zero"
+            ),
+            viewModel.uiState.value.failure
+        )
+
+        viewModel.dismissFailure()
+
+        assertNull(viewModel.uiState.value.failure)
     }
 }

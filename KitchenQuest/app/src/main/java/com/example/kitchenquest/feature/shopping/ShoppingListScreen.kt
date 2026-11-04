@@ -2,6 +2,7 @@ package com.example.kitchenquest.feature.shopping
 
 import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,10 +41,14 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
+import com.example.kitchenquest.data.sync.SyncState
+import com.example.kitchenquest.ui.components.FailedChangeDialog
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
 import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTopBar
+import com.example.kitchenquest.ui.components.OfflineBanner
+import com.example.kitchenquest.ui.components.SyncStateBadge
 import com.example.kitchenquest.ui.theme.KitchenGreen
 import com.example.kitchenquest.ui.theme.KitchenGreenLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
@@ -56,7 +61,9 @@ fun ShoppingListScreen(
     onTogglePurchased: (ShoppingItemDto) -> Unit,
     onMoveToPantry: (ShoppingItemDto) -> Unit,
     onRemove: (String) -> Unit,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    onShowFailure: (ShoppingItemDto) -> Unit = {},
+    onDismissFailure: () -> Unit = {}
 ) {
     var newItemText by remember { mutableStateOf("") }
     var confirmClear by remember { mutableStateOf(false) }
@@ -141,6 +148,14 @@ fun ShoppingListScreen(
             }
         }
 
+        OfflineBanner(
+            overview = state.sync,
+            modifier = Modifier.padding(
+                horizontal = KitchenQuestDimens.ScreenPadding,
+                vertical = KitchenQuestDimens.SmallSpacing
+            )
+        )
+
         state.message?.let { message ->
             Text(
                 text = message,
@@ -196,7 +211,8 @@ fun ShoppingListScreen(
                         item = item,
                         onTogglePurchased = { onTogglePurchased(item) },
                         onMoveToPantry = { onMoveToPantry(item) },
-                        onRemove = { onRemove(item.id) }
+                        onRemove = { onRemove(item.id) },
+                        onShowFailure = { onShowFailure(item) }
                     )
                     if (index != state.items.lastIndex) {
                         HorizontalDivider(
@@ -231,6 +247,18 @@ fun ShoppingListScreen(
             }
         )
     }
+
+    state.failure?.let { failure ->
+        FailedChangeDialog(
+            itemName = failure.itemName,
+            reason = failure.reason,
+            onDelete = {
+                onRemove(failure.itemId)
+                onDismissFailure()
+            },
+            onDismiss = onDismissFailure
+        )
+    }
 }
 
 @Composable
@@ -238,7 +266,8 @@ private fun ShoppingRow(
     item: ShoppingItemDto,
     onTogglePurchased: () -> Unit,
     onMoveToPantry: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onShowFailure: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -255,18 +284,32 @@ private fun ShoppingRow(
                     uncheckedColor = MaterialTheme.colorScheme.outline
                 )
             )
-            Text(
-                text = item.ingredientName,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                textDecoration = if (item.isPurchased) TextDecoration.LineThrough else TextDecoration.None,
-                color = if (item.isPurchased) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(
+                        enabled = item.syncState == SyncState.FAILED,
+                        onClick = onShowFailure
+                    )
+            ) {
+                Text(
+                    text = item.ingredientName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    textDecoration = if (item.isPurchased) {
+                        TextDecoration.LineThrough
+                    } else {
+                        TextDecoration.None
+                    },
+                    color = if (item.isPurchased) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+
+                SyncStateBadge(item.syncState)
+            }
             IconButton(onClick = onRemove) {
                 Icon(
                     imageVector = Icons.Outlined.DeleteOutline,

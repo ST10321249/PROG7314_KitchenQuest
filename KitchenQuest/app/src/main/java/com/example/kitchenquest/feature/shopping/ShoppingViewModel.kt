@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.kitchenquest.data.AppRepositories
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
 import com.example.kitchenquest.data.shopping.ShoppingRepository
+import com.example.kitchenquest.data.sync.SyncEntity
+import com.example.kitchenquest.data.sync.SyncFailure
+import com.example.kitchenquest.data.sync.SyncOverview
+import com.example.kitchenquest.data.sync.SyncOverviewSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,17 +21,21 @@ data class ShoppingUiState(
     val isLoading: Boolean = false,
     val items: List<ShoppingItemDto> = emptyList(),
     val errorMessage: String? = null,
-    val message: String? = null
+    val message: String? = null,
+    val sync: SyncOverview = SyncOverview(),
+    val failure: SyncFailure? = null
 )
 
 class ShoppingViewModel(
-    private val shoppingRepository: ShoppingRepository = AppRepositories.shopping
+    private val shoppingRepository: ShoppingRepository = AppRepositories.shopping,
+    private val syncOverview: SyncOverviewSource = AppRepositories.syncOverview
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShoppingUiState())
     val uiState: StateFlow<ShoppingUiState> = _uiState.asStateFlow()
 
     private var observing: Job? = null
+    private var watchingSync: Job? = null
 
     // True once the repository has delivered the saved list. From then on the list on
     // screen follows the phone's database.
@@ -35,6 +43,7 @@ class ShoppingViewModel(
 
     fun loadList() {
         follow()
+        watchSync()
         refresh()
     }
 
@@ -46,6 +55,39 @@ class ShoppingViewModel(
                 _uiState.update { it.copy(items = items) }
             }
         }
+    }
+
+    private fun watchSync() {
+        if (watchingSync?.isActive == true) return
+
+        watchingSync = viewModelScope.launch {
+            syncOverview.observe().collect { overview ->
+                _uiState.update { it.copy(sync = overview) }
+            }
+        }
+    }
+
+    fun showFailure(item: ShoppingItemDto) {
+        viewModelScope.launch {
+            val reason = syncOverview.failureReason(
+                SyncEntity.SHOPPING_ITEM,
+                item.id
+            )
+
+            _uiState.update {
+                it.copy(
+                    failure = SyncFailure(
+                        item.id,
+                        item.ingredientName,
+                        reason
+                    )
+                )
+            }
+        }
+    }
+
+    fun dismissFailure() {
+        _uiState.update { it.copy(failure = null) }
     }
 
     private fun refresh() {

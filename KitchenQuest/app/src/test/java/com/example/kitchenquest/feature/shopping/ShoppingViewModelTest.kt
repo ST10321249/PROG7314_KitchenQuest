@@ -4,6 +4,11 @@ package com.example.kitchenquest.feature.shopping
 import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.data.shopping.ShoppingItemDto
 import com.example.kitchenquest.data.shopping.ShoppingRepository
+import com.example.kitchenquest.data.sync.NoSyncOverview
+import com.example.kitchenquest.data.sync.SyncEntity
+import com.example.kitchenquest.data.sync.SyncFailure
+import com.example.kitchenquest.data.sync.SyncOverview
+import com.example.kitchenquest.data.sync.SyncOverviewSource
 import com.example.kitchenquest.data.sync.SyncState
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +20,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -115,7 +121,7 @@ class ShoppingViewModelTest {
     private val eggs = ShoppingItemDto(id = "eggs", ingredientName = "Eggs")
 
     private fun viewModel(repository: ShoppingRepository) =
-        ShoppingViewModel(repository)
+        ShoppingViewModel(repository, NoSyncOverview)
 
     @Before
     fun setUp() {
@@ -271,5 +277,41 @@ class ShoppingViewModelTest {
             "Server unavailable",
             viewModel.uiState.value.errorMessage
         )
+    }
+
+    @Test
+    fun aFailedItemLoadsItsReasonForTheDialog() {
+        val overview = object : SyncOverviewSource {
+            override fun observe(): Flow<SyncOverview> =
+                MutableStateFlow(
+                    SyncOverview(
+                        isOnline = false,
+                        waitingChanges = 1
+                    )
+                )
+
+            override suspend fun failureReason(
+                entity: SyncEntity,
+                itemId: String
+            ): String? =
+                if (entity == SyncEntity.SHOPPING_ITEM) {
+                    "Item name is required"
+                } else {
+                    null
+                }
+        }
+
+        val viewModel = ShoppingViewModel(FakeShoppingRepository(), overview)
+        viewModel.loadList()
+
+        viewModel.showFailure(eggs)
+
+        assertEquals(
+            SyncFailure("eggs", "Eggs", "Item name is required"),
+            viewModel.uiState.value.failure
+        )
+
+        assertFalse(viewModel.uiState.value.sync.isOnline)
+        assertEquals(1, viewModel.uiState.value.sync.waitingChanges)
     }
 }

@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.pantry.PantryItemDto
+import com.example.kitchenquest.data.sync.SyncState
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
 import com.example.kitchenquest.ui.components.KitchenQuestIconButton
@@ -47,6 +48,9 @@ import com.example.kitchenquest.ui.theme.KitchenGreen
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 import com.example.kitchenquest.ui.theme.KitchenRed
 import com.example.kitchenquest.ui.theme.KitchenRedLight
+import com.example.kitchenquest.ui.components.OfflineBanner
+import com.example.kitchenquest.ui.components.SyncStateBadge
+import com.example.kitchenquest.ui.components.FailedChangeDialog
 
 @Composable
 fun MyKitchenScreen(
@@ -55,8 +59,20 @@ fun MyKitchenScreen(
     onShoppingList: () -> Unit,
     onIngredientClick: (PantryItemDto) -> Unit,
     onFindRecipes: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onFailedIngredientClick: (PantryItemDto) -> Unit = {},
+    onEditFailed: (String) -> Unit = {},
+    onDeleteFailed: (String) -> Unit = {},
+    onDismissFailure: () -> Unit = {}
 ) {
+    // A failed item explains itself instead of opening its detail screen.
+    val openItem: (PantryItemDto) -> Unit = {
+        if (it.syncState == SyncState.FAILED) {
+            onFailedIngredientClick(it)
+        } else {
+            onIngredientClick(it)
+        }
+    }
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -129,6 +145,14 @@ fun MyKitchenScreen(
                         )
                     }
 
+                    OfflineBanner(
+                        overview = state.sync,
+                        modifier = Modifier.padding(
+                            horizontal = KitchenQuestDimens.ScreenPadding,
+                            vertical = KitchenQuestDimens.SmallSpacing
+                        )
+                    )
+
                     if (state.expiringSoon.isNotEmpty()) {
                         Surface(
                             modifier = Modifier
@@ -157,6 +181,16 @@ fun MyKitchenScreen(
                                 )
                                 Text("›", color = KitchenRed, style = MaterialTheme.typography.titleMedium)
                             }
+                        }
+
+                        state.failure?.let { failure ->
+                            FailedChangeDialog(
+                                itemName = failure.itemName,
+                                reason = failure.reason,
+                                onEdit = { onEditFailed(failure.itemId) },
+                                onDelete = { onDeleteFailed(failure.itemId) },
+                                onDismiss = onDismissFailure
+                            )
                         }
                     }
 
@@ -200,7 +234,7 @@ fun MyKitchenScreen(
                                     IngredientGroup(
                                         items = filteredExpiring,
                                         highlighted = true,
-                                        onIngredientClick = onIngredientClick
+                                        onIngredientClick = openItem
                                     )
                                 }
                                 item { Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing)) }
@@ -218,7 +252,7 @@ fun MyKitchenScreen(
                                     IngredientGroup(
                                         items = filteredElse,
                                         highlighted = false,
-                                        onIngredientClick = onIngredientClick
+                                        onIngredientClick = openItem
                                     )
                                 }
                             }
@@ -333,6 +367,7 @@ private fun IngredientRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = if (highlighted) KitchenRed else KitchenGreen
                 )
+                SyncStateBadge(ingredient.syncState)
             }
             Text(
                 text = "⋮",

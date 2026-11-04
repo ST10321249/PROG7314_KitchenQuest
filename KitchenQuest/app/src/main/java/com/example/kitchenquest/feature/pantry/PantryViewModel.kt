@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.kitchenquest.data.AppRepositories
 import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.data.pantry.PantryRepository
+import com.example.kitchenquest.data.sync.SyncEntity
+import com.example.kitchenquest.data.sync.SyncFailure
+import com.example.kitchenquest.data.sync.SyncOverviewSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,9 +16,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PantryViewModel(
-    private val pantryRepository: PantryRepository = AppRepositories.pantry
+    private val pantryRepository: PantryRepository = AppRepositories.pantry,
+    private val syncOverview: SyncOverviewSource = AppRepositories.syncOverview
 ) : ViewModel() {
 
+    private var watchingSync: Job? = null
     private val _uiState = MutableStateFlow(PantryUiState())
     val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
 
@@ -27,7 +32,29 @@ class PantryViewModel(
 
     fun loadPantry() {
         follow()
+        watchSync()
         refresh()
+    }
+
+    private fun watchSync() {
+        if (watchingSync?.isActive == true) return
+        watchingSync = viewModelScope.launch {
+            syncOverview.observe().collect { overview ->
+                _uiState.update { it.copy(sync = overview) }
+            }
+        }
+    }
+
+    // Looks up why the server refused this item so the screen can explain it.
+    fun showFailure(item: PantryItemDto) {
+        viewModelScope.launch {
+            val reason = syncOverview.failureReason(SyncEntity.PANTRY_ITEM, item.id)
+            _uiState.update { it.copy(failure = SyncFailure(item.id, item.ingredientName, reason)) }
+        }
+    }
+
+    fun dismissFailure() {
+        _uiState.update { it.copy(failure = null) }
     }
 
     // Shows what is saved on the phone straight away.

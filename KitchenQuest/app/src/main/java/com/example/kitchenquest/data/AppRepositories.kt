@@ -1,6 +1,7 @@
 package com.example.kitchenquest.data
 
 import android.content.Context
+import com.example.kitchenquest.data.connectivity.NetworkConnectivity
 import com.example.kitchenquest.data.local.KitchenQuestDatabase
 import com.example.kitchenquest.data.network.ApiClient
 import com.example.kitchenquest.data.pantry.OfflinePantryRepository
@@ -10,9 +11,12 @@ import com.example.kitchenquest.data.shopping.OfflineShoppingRepository
 import com.example.kitchenquest.data.shopping.ShoppingApi
 import com.example.kitchenquest.data.shopping.ShoppingRepository
 import com.example.kitchenquest.data.sync.NoOpSyncScheduler
+import com.example.kitchenquest.data.sync.RoomSyncOverviewSource
+import com.example.kitchenquest.data.sync.SyncOverviewSource
 import com.example.kitchenquest.data.sync.SyncProcessor
 import com.example.kitchenquest.data.sync.SyncScheduler
 import com.google.firebase.auth.FirebaseAuth
+
 
 // The repositories the screens use by default. Pantry and shopping keep a copy of the
 // data on the phone, so they need the app context to open the local database.
@@ -57,6 +61,19 @@ object AppRepositories {
             scheduler = syncScheduler
         )
     }
+
+    // What the screens show about syncing: online or offline, and changes waiting.
+    val syncOverview: SyncOverviewSource by lazy {
+        val context = checkNotNull(appContext) {
+            "AppRepositories.init must be called when the app starts."
+        }
+        RoomSyncOverviewSource(
+            database = database(),
+            connectivity = NetworkConnectivity(context).isOnline,
+            currentUserId = signedInUserId
+        )
+    }
+
 
     // Sends the changes waiting in the queue. Used by the background sync.
     fun syncProcessor(): SyncProcessor = SyncProcessor(

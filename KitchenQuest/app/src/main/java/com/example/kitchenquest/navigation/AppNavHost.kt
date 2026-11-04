@@ -945,7 +945,18 @@ fun AppNavHost(
                     onShoppingList = { navController.navigate(AppDestinations.ShoppingList) },
                     onIngredientClick = { navController.navigate(AppDestinations.ingredientDetailsRoute(it.id)) },
                     onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) },
-                    onRetry = pantryViewModel::loadPantry
+                    onRetry = pantryViewModel::loadPantry,
+                    onFailedIngredientClick = pantryViewModel::showFailure,
+                    onEditFailed = { id ->
+                        pantryViewModel.dismissFailure()
+                        navController.navigate(AppDestinations.ingredientEditorRoute(id))
+                    },
+                    onDeleteFailed = { id ->
+                        pantryViewModel.deleteItem(id)
+                        pantryViewModel.dismissFailure()
+                    },
+                    onDismissFailure = pantryViewModel::dismissFailure
+
                 )
             }
 
@@ -1164,7 +1175,9 @@ fun AppNavHost(
                     onTogglePurchased = shoppingViewModel::togglePurchased,
                     onMoveToPantry = shoppingViewModel::moveToPantry,
                     onRemove = shoppingViewModel::removeItem,
-                    onClear = shoppingViewModel::clearList
+                    onClear = shoppingViewModel::clearList,
+                    onShowFailure = shoppingViewModel::showFailure,
+                    onDismissFailure = shoppingViewModel::dismissFailure
                 )
             }
 
