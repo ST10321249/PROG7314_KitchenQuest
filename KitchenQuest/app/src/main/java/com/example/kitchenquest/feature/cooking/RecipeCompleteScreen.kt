@@ -1,6 +1,14 @@
 package com.example.kitchenquest.feature.cooking
 
 import com.example.kitchenquest.R
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -206,6 +214,10 @@ fun RecipeCompleteScreen(
             )
         }
 
+        Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
+
+        DishPhotoCard()
+
         Spacer(modifier = Modifier.height(KitchenQuestDimens.SectionSpacing))
 
         Text(
@@ -230,6 +242,65 @@ fun RecipeCompleteScreen(
         )
 
         Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
+    }
+}
+
+@Composable
+private fun DishPhotoCard() {
+    val activity = LocalActivity.current as? ComponentActivity ?: return
+    val cookingViewModel: CookingViewModel = viewModel(viewModelStoreOwner = activity)
+    val state by cookingViewModel.uiState.collectAsState()
+    val pickPhoto = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) cookingViewModel.setDishPhoto(uri.toString())
+    }
+    val launchPicker = {
+        pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    KitchenQuestCard {
+        Text(
+            text = stringResource(R.string.dish_photo_title),
+            style = MaterialTheme.typography.titleSmall
+        )
+
+        Text(
+            text = stringResource(R.string.dish_photo_optional),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+
+        val chosen = state.dishPhotoUri
+        if (chosen != null) {
+            ChosenDishPhoto(uri = chosen)
+
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
+            ) {
+                KitchenQuestSecondaryButton(
+                    text = stringResource(R.string.dish_photo_change),
+                    onClick = launchPicker,
+                    modifier = Modifier.weight(1f)
+                )
+                KitchenQuestSecondaryButton(
+                    text = stringResource(R.string.dish_photo_remove),
+                    onClick = { cookingViewModel.setDishPhoto(null) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        } else {
+            KitchenQuestSecondaryButton(
+                text = stringResource(R.string.dish_photo_pick),
+                onClick = launchPicker,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 

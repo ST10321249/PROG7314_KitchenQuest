@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="push_channel_name">KitchenQuest-opdaterings</string>
+    <string name="push_channel_description">Boodskappe wat die KitchenQuest-bediener na hierdie foon stuur.</string>
+    <string name="push_default_title">KitchenQuest</string>
+    <string name="push_test_title">Stootkennisgewings</string>
+    <string name="push_test_message">Vra die KitchenQuest-bediener om \'n toetskennisgewing na hierdie foon te stuur.</string>
+    <string name="push_test_button">Stuur toetskennisgewing</string>
+    <string name="push_test_sending">Besig om te stuur…</string>
+    <string name="push_test_sent">Gestuur. Die kennisgewing behoort binne \'n paar sekondes te kom.</string>
+    <string name="push_test_failed">Die toetskennisgewing kon nie gestuur word nie: %1$s</string>
+
+    <string name="dish_photo_title">Voeg \'n foto van jou gereg by</string>
+    <string name="dish_photo_optional">Opsioneel. Dit word saam met hierdie maaltyd in jou kookgeskiedenis gestoor.</string>
+    <string name="dish_photo_pick">Kies \'n foto</string>
+    <string name="dish_photo_change">Verander foto</string>
+    <string name="dish_photo_remove">Verwyder</string>
+    <string name="dish_photo_description">Foto van die voltooide gereg</string>
+    <string name="dish_photo_saved">Jou foto van die gereg is gestoor.</string>
+    <string name="dish_photo_upload_failed">Die maaltyd is gestoor, maar die foto kon nie opgelaai word nie.</string>
+    <string name="dish_photo_unreadable">Daardie foto kon nie gelees word nie. Probeer \'n ander een.</string>
+</resources>

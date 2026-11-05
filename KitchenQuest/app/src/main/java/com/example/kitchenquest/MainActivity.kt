@@ -44,8 +44,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        openMyKitchen = savedInstanceState == null &&
-                intent.getBooleanExtra(NotificationChannels.EXTRA_OPEN_MY_KITCHEN, false)
+        openMyKitchen = savedInstanceState == null && intent.opensMyKitchen()
 
         setContent {
             KitchenQuestTheme {
@@ -66,10 +65,14 @@ class MainActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (intent.getBooleanExtra(NotificationChannels.EXTRA_OPEN_MY_KITCHEN, false)) {
+        if (intent.opensMyKitchen()) {
             openMyKitchen = true
         }
     }
+
+    private fun Intent.opensMyKitchen(): Boolean =
+        getBooleanExtra(NotificationChannels.EXTRA_OPEN_MY_KITCHEN, false) ||
+                getStringExtra(NotificationChannels.DATA_ROUTE) == NotificationChannels.ROUTE_MY_KITCHEN
 
     private fun askForNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return

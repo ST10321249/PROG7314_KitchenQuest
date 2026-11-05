@@ -17,6 +17,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.kitchenquest.ui.components.KitchenQuestCard
+import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -42,6 +47,14 @@ fun NotificationsScreen(
             title = stringResource(R.string.notifications_notifications_a274f4),
             onBack = onBack,
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding)
+        )
+
+        PushTestCard(
+            modifier = Modifier.padding(
+                start = KitchenQuestDimens.ScreenPadding,
+                end = KitchenQuestDimens.ScreenPadding,
+                bottom = KitchenQuestDimens.SmallSpacing
+            )
         )
 
         when {
@@ -156,5 +169,37 @@ private fun NotificationCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PushTestCard(
+    modifier: Modifier = Modifier,
+    viewModel: PushTestViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
+
+    KitchenQuestCard(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.push_test_title),
+            style = MaterialTheme.typography.titleSmall
+        )
+        Text(
+            text = when (val current = state) {
+                PushTestState.Idle -> stringResource(R.string.push_test_message)
+                PushTestState.Sending -> stringResource(R.string.push_test_sending)
+                PushTestState.Sent -> stringResource(R.string.push_test_sent)
+                is PushTestState.Failed -> stringResource(R.string.push_test_failed, current.reason)
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.size(KitchenQuestDimens.SmallSpacing))
+        KitchenQuestSecondaryButton(
+            text = stringResource(R.string.push_test_button),
+            onClick = viewModel::send,
+            enabled = state != PushTestState.Sending,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

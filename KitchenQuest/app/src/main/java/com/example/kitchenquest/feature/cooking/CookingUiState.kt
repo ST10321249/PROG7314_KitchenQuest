@@ -23,5 +23,6 @@ data class CookingUiState(
     val recipe: RecipeDetailDto? = null,
     val currentStepIndex: Int = 0,
     val timers: List<CookingTimer> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val dishPhotoUri: String? = null
 )

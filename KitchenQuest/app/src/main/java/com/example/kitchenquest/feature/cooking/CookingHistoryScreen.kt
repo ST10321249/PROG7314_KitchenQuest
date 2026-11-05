@@ -343,6 +343,13 @@ private fun HistoryRow(
                 modifier = Modifier.padding(top = KitchenQuestDimens.SmallSpacing)
             )
         }
+
+        entry.photoFileId?.takeIf { it.isNotBlank() }?.let { photoFileId ->
+            SavedDishPhoto(
+                photoFileId = photoFileId,
+                modifier = Modifier.padding(top = KitchenQuestDimens.SmallSpacing)
+            )
+        }
     }
 }
 
@@ -374,7 +381,7 @@ private fun isCurrentMonth(value: String): Boolean {
     val now = OffsetDateTime.now()
 
     return parsed.year == now.year &&
-        parsed.monthValue == now.monthValue
+            parsed.monthValue == now.monthValue
 }
 
 @Composable

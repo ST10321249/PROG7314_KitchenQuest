@@ -10,7 +10,8 @@ data class CookingHistoryDto(
     val cookedAt: String = "",
     val servings: Int? = null,
     val rating: Int? = null,
-    val difficultyFeedback: String? = null
+    val difficultyFeedback: String? = null,
+    val photoFileId: String? = null
 )
 
 @Serializable

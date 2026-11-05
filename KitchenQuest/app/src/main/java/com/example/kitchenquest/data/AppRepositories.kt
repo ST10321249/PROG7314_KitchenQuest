@@ -10,6 +10,16 @@ import com.example.kitchenquest.data.network.ApiClient
 import com.example.kitchenquest.data.pantry.OfflinePantryRepository
 import com.example.kitchenquest.data.pantry.PantryApi
 import com.example.kitchenquest.data.pantry.PantryRepository
+import com.example.kitchenquest.data.photos.AndroidDishPhotoReader
+import com.example.kitchenquest.data.photos.DefaultPhotoRepository
+import com.example.kitchenquest.data.photos.DishPhotoReader
+import com.example.kitchenquest.data.photos.NoOpDishPhotoReader
+import com.example.kitchenquest.data.photos.NoOpPhotoRepository
+import com.example.kitchenquest.data.photos.PhotoRepository
+import com.example.kitchenquest.data.push.DeviceApi
+import com.example.kitchenquest.data.push.PushTestApi
+import com.example.kitchenquest.data.push.PushTester
+import com.example.kitchenquest.data.push.PushTokenRegistrar
 import com.example.kitchenquest.data.recipes.DefaultRecipeRepository
 import com.example.kitchenquest.data.recipes.OfflineRecipeRepository
 import com.example.kitchenquest.data.recipes.RecipeOfflineStore
@@ -29,6 +39,8 @@ import com.example.kitchenquest.notifications.AndroidTimerAlarms
 import com.example.kitchenquest.notifications.NoOpTimerAlarms
 import com.example.kitchenquest.notifications.TimerAlarms
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.tasks.await
 
 
 // The repositories the screens use by default. Pantry and shopping keep a copy of the
@@ -109,6 +121,35 @@ object AppRepositories {
         val context = appContext ?: return NoOpTimerAlarms
         return AndroidTimerAlarms(context)
     }
+
+    private val photoRepository: PhotoRepository by lazy { DefaultPhotoRepository() }
+
+    fun photos(): PhotoRepository = if (appContext == null) NoOpPhotoRepository else photoRepository
+
+    fun dishPhotoReader(): DishPhotoReader {
+        val context = appContext ?: return NoOpDishPhotoReader
+        return AndroidDishPhotoReader(context)
+    }
+
+    fun userMessages(): UserMessages {
+        val context = appContext ?: return NoOpUserMessages
+        return ToastUserMessages(context)
+    }
+
+    private val pushTokenRegistrar: PushTokenRegistrar by lazy {
+        PushTokenRegistrar(
+            deviceApi = ApiClient.create(DeviceApi::class.java),
+            tokenProvider = { FirebaseMessaging.getInstance().token.await() },
+            isSignedIn = { signedInUserId() != null }
+        )
+    }
+
+    fun pushTokens(): PushTokenRegistrar = pushTokenRegistrar
+
+    fun pushTester(): PushTester = PushTester(
+        registrar = pushTokenRegistrar,
+        pushTestApi = ApiClient.create(PushTestApi::class.java)
+    )
 
     // What the screens show about syncing: online or offline, and changes waiting.
     val syncOverview: SyncOverviewSource by lazy {

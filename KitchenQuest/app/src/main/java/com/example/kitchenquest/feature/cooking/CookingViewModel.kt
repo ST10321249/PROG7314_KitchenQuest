@@ -2,9 +2,13 @@ package com.example.kitchenquest.feature.cooking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kitchenquest.R
 import com.example.kitchenquest.data.AppRepositories
+import com.example.kitchenquest.data.UserMessages
 import com.example.kitchenquest.data.history.DefaultHistoryRepository
 import com.example.kitchenquest.data.history.HistoryRepository
+import com.example.kitchenquest.data.photos.DishPhotoReader
+import com.example.kitchenquest.data.photos.PhotoRepository
 import com.example.kitchenquest.data.recipes.RecipeRepository
 import com.example.kitchenquest.notifications.TimerAlarms
 import kotlinx.coroutines.Job
@@ -22,7 +26,10 @@ class CookingViewModel(
     private val historyRepository: HistoryRepository = DefaultHistoryRepository(),
     private val sessionStore: CookingSessionStore = AppRepositories.cookingSessions(),
     private val clock: () -> Long = System::currentTimeMillis,
-    private val timerAlarms: TimerAlarms = AppRepositories.timerAlarms()
+    private val timerAlarms: TimerAlarms = AppRepositories.timerAlarms(),
+    private val photoRepository: PhotoRepository = AppRepositories.photos(),
+    private val dishPhotoReader: DishPhotoReader = AppRepositories.dishPhotoReader(),
+    private val userMessages: UserMessages = AppRepositories.userMessages()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CookingUiState())
@@ -162,22 +169,35 @@ class CookingViewModel(
         saveSession()
     }
 
+    fun setDishPhoto(uri: String?) {
+        _uiState.update { it.copy(dishPhotoUri = uri) }
+    }
+
     fun completeCooking(rating: Int?, difficulty: String?, note: String?, onComplete: () -> Unit) {
         val recipe = _uiState.value.recipe
+        val photoUri = _uiState.value.dishPhotoUri
         _uiState.value.timers.forEach { timerAlarms.cancel(it.id) }
 
         viewModelScope.launch {
             if (recipe != null) {
-                historyRepository.addHistoryEntry(
+                val entry = historyRepository.addHistoryEntry(
                     recipeSourceId = recipe.recipeSourceId,
                     recipeTitle = recipe.title,
                     servings = null,
                     rating = rating,
                     difficultyFeedback = difficulty
-                )
+                ).getOrNull()
 
                 if (!note.isNullOrBlank()) {
                     historyRepository.saveNote(recipe.recipeSourceId, note)
+                }
+
+                if (photoUri != null) {
+                    if (entry == null || entry.id.isBlank()) {
+                        userMessages.show(R.string.dish_photo_upload_failed)
+                    } else {
+                        viewModelScope.launch { uploadDishPhoto(entry.id, photoUri) }
+                    }
                 }
             }
 
@@ -186,12 +206,24 @@ class CookingViewModel(
                     recipe = null,
                     currentStepIndex = 0,
                     timers = emptyList(),
-                    errorMessage = null
+                    errorMessage = null,
+                    dishPhotoUri = null
                 )
             }
             sessionStore.clear()
             onComplete()
         }
+    }
+
+    private suspend fun uploadDishPhoto(historyEntryId: String, uri: String) {
+        val photo = dishPhotoReader.read(uri)
+        if (photo == null) {
+            userMessages.show(R.string.dish_photo_unreadable)
+            return
+        }
+        val saved = photoRepository.upload(photo.bytes, photo.contentType)
+            .mapCatching { fileId -> photoRepository.attachToHistory(historyEntryId, fileId).getOrThrow() }
+        userMessages.show(if (saved.isSuccess) R.string.dish_photo_saved else R.string.dish_photo_upload_failed)
     }
 
     private fun restoreSession() {

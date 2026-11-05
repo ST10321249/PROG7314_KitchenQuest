@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="push_channel_name">KitchenQuest updates</string>
+    <string name="push_channel_description">Messages sent to this phone by the KitchenQuest server.</string>
+    <string name="push_default_title">KitchenQuest</string>
+    <string name="push_test_title">Push notifications</string>
+    <string name="push_test_message">Ask the KitchenQuest server to send a test notification to this phone.</string>
+    <string name="push_test_button">Send test notification</string>
+    <string name="push_test_sending">Sending…</string>
+    <string name="push_test_sent">Sent. The notification should arrive in a few seconds.</string>
+    <string name="push_test_failed">The test notification could not be sent: %1$s</string>
+
+    <string name="dish_photo_title">Add a photo of your dish</string>
+    <string name="dish_photo_optional">Optional. It is saved with this meal in your cooking history.</string>
+    <string name="dish_photo_pick">Choose a photo</string>
+    <string name="dish_photo_change">Change photo</string>
+    <string name="dish_photo_remove">Remove</string>
+    <string name="dish_photo_description">Photo of the finished dish</string>
+    <string name="dish_photo_saved">Your dish photo was saved.</string>
+    <string name="dish_photo_upload_failed">The meal was saved, but the photo could not be uploaded.</string>
+    <string name="dish_photo_unreadable">That photo could not be read. Try a different one.</string>
+</resources>

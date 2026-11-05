@@ -38,6 +38,22 @@
             android:name=".notifications.TimerAlarmReceiver"
             android:exported="false" />
 
+        <service
+            android:name=".data.push.KitchenQuestMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="kitchenquest_push" />
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_push" />
+
         <!-- Background work starts itself when first needed (see KitchenQuestApplication),
              so the automatic starter is switched off. Other startup items are kept. -->
         <provider

@@ -14,6 +14,12 @@ object NotificationChannels {
 
     const val TIMER_ALERTS = "kitchenquest_timer_alerts"
 
+    const val PUSH_UPDATES = "kitchenquest_push"
+
+    const val DATA_ROUTE = "route"
+
+    const val ROUTE_MY_KITCHEN = "my_kitchen"
+
     // Set on the intent of a notification that should open My Kitchen when it is tapped.
     const val EXTRA_OPEN_MY_KITCHEN = "kitchenquest_open_my_kitchen"
 
@@ -36,7 +42,16 @@ object NotificationChannels {
             .setDescription(text.getString(R.string.timer_alert_channel_description))
             .build()
 
+        val push = NotificationChannelCompat.Builder(
+            PUSH_UPDATES,
+            NotificationManagerCompat.IMPORTANCE_HIGH
+        )
+            .setName(text.getString(R.string.push_channel_name))
+            .setDescription(text.getString(R.string.push_channel_description))
+            .build()
+
         NotificationManagerCompat.from(context).createNotificationChannel(expiry)
         NotificationManagerCompat.from(context).createNotificationChannel(timers)
+        NotificationManagerCompat.from(context).createNotificationChannel(push)
     }
 }
