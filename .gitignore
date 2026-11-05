@@ -2,3 +2,13 @@
 *.iml
 .DS_Store
 Thumbs.db
+
+# Release signing (never commit keys or passwords)
+*.jks
+*.keystore
+keystore.properties
+
+# Build outputs and archives
+*.apk
+*.aab
+*.zip

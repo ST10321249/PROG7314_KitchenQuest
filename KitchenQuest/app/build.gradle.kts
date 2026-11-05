@@ -16,6 +16,19 @@ val localProperties = Properties().apply {
     }
 }
 
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun signingValue(key: String, environmentName: String): String? =
+    keystoreProperties.getProperty(key) ?: System.getenv(environmentName)
+
+val releaseStoreFile: String? = signingValue("storeFile", "KQ_KEYSTORE_FILE")
+val hasReleaseSigning: Boolean = releaseStoreFile != null && rootProject.file(releaseStoreFile).exists()
+
 // Defaults to the hosted API. To use an API running on your own PC instead, set
 // api.baseUrl in local.properties (for example http://localhost:5000).
 val apiBaseUrl: String = (localProperties.getProperty("api.baseUrl") ?: "https://prog7314-kitchenquest-g7bd.onrender.com/")
@@ -35,18 +48,32 @@ android {
         applicationId = "com.example.kitchenquest"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0.0"
 
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile!!)
+                storePassword = signingValue("storePassword", "KQ_KEYSTORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "KQ_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "KQ_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = false
+            }
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
