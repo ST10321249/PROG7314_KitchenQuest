@@ -18,13 +18,19 @@ import java.util.UUID
 class CookingViewModel(
     // The app-wide repository can load a recipe from its offline copy when there is no connection.
     private val recipeRepository: RecipeRepository = AppRepositories.recipes,
-    private val historyRepository: HistoryRepository = DefaultHistoryRepository()
+    private val historyRepository: HistoryRepository = DefaultHistoryRepository(),
+    private val sessionStore: CookingSessionStore = AppRepositories.cookingSessions(),
+    private val clock: () -> Long = System::currentTimeMillis
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CookingUiState())
     val uiState: StateFlow<CookingUiState> = _uiState.asStateFlow()
 
     private var tickerJob: Job? = null
+
+    init {
+        restoreSession()
+    }
 
     fun loadRecipe(recipeId: String) {
         if (_uiState.value.recipe?.recipeSourceId == recipeId) return
@@ -35,6 +41,7 @@ class CookingViewModel(
             recipeRepository.getRecipeById(recipeId).fold(
                 onSuccess = { recipe ->
                     _uiState.update { it.copy(isLoading = false, recipe = recipe, currentStepIndex = 0) }
+                    saveSession()
                 },
                 onFailure = { failure ->
                     _uiState.update { it.copy(isLoading = false, errorMessage = failure.message) }
@@ -48,10 +55,12 @@ class CookingViewModel(
         _uiState.update {
             it.copy(currentStepIndex = (it.currentStepIndex + 1).coerceAtMost(recipe.steps.size - 1))
         }
+        saveSession()
     }
 
     fun previousStep() {
         _uiState.update { it.copy(currentStepIndex = (it.currentStepIndex - 1).coerceAtLeast(0)) }
+        saveSession()
     }
 
     fun startTimerForCurrentStep(minutes: Int) {
@@ -72,38 +81,78 @@ class CookingViewModel(
             remainingSeconds = totalSeconds,
             isRunning = true,
             isFinished = false,
-            sourceType = sourceType
+            sourceType = sourceType,
+            endsAtMillis = clock() + totalSeconds * 1000L
         )
         _uiState.update { it.copy(timers = it.timers + timer) }
+        saveSession()
         ensureTicking()
     }
 
     fun addMinuteToTimer(id: String) {
+        val now = clock()
         _uiState.update { state ->
             state.copy(timers = state.timers.map {
-                if (it.id == id) it.copy(
-                    remainingSeconds = it.remainingSeconds + 60,
-                    totalSeconds = it.totalSeconds + 60,
-                    isFinished = false
-                ) else it
+                if (it.id != id) {
+                    it
+                } else if (it.isRunning) {
+                    val endsAt = (it.endsAtMillis ?: now).coerceAtLeast(now) + 60_000L
+                    it.copy(
+                        remainingSeconds = it.remainingSeconds + 60,
+                        totalSeconds = it.totalSeconds + 60,
+                        isFinished = false,
+                        endsAtMillis = endsAt
+                    )
+                } else if (it.isFinished) {
+                    it.copy(
+                        remainingSeconds = 60,
+                        totalSeconds = it.totalSeconds + 60,
+                        isFinished = false,
+                        isRunning = true,
+                        endsAtMillis = now + 60_000L
+                    )
+                } else {
+                    it.copy(
+                        remainingSeconds = it.remainingSeconds + 60,
+                        totalSeconds = it.totalSeconds + 60
+                    )
+                }
             })
         }
+        saveSession()
+        ensureTicking()
     }
 
     fun togglePauseTimer(id: String) {
+        val now = clock()
         _uiState.update { state ->
             state.copy(timers = state.timers.map {
-                if (it.id == id && !it.isFinished) it.copy(isRunning = !it.isRunning) else it
+                when {
+                    it.id != id || it.isFinished -> it
+                    it.isRunning -> it.copy(
+                        isRunning = false,
+                        remainingSeconds = remainingAt(it, now),
+                        endsAtMillis = null
+                    )
+                    else -> it.copy(
+                        isRunning = true,
+                        endsAtMillis = now + it.remainingSeconds * 1000L
+                    )
+                }
             })
         }
+        saveSession()
+        ensureTicking()
     }
 
     fun cancelTimer(id: String) {
         _uiState.update { state -> state.copy(timers = state.timers.filterNot { it.id == id }) }
+        saveSession()
     }
 
     fun stopAllTimers() {
         _uiState.update { it.copy(timers = emptyList()) }
+        saveSession()
     }
 
     fun completeCooking(rating: Int?, difficulty: String?, note: String?, onComplete: () -> Unit) {
@@ -132,7 +181,55 @@ class CookingViewModel(
                     errorMessage = null
                 )
             }
+            sessionStore.clear()
             onComplete()
+        }
+    }
+
+    private fun restoreSession() {
+        val session = sessionStore.load() ?: return
+        val now = clock()
+        val timers = session.timers.map { refreshTimer(it, now) }
+        val lastStep = (session.recipe?.steps?.size ?: 1) - 1
+        _uiState.update {
+            it.copy(
+                recipe = session.recipe,
+                currentStepIndex = session.currentStepIndex.coerceIn(0, lastStep.coerceAtLeast(0)),
+                timers = timers
+            )
+        }
+        if (timers.any { it.isRunning }) ensureTicking()
+    }
+
+    private fun saveSession() {
+        val state = _uiState.value
+        if (state.recipe == null && state.timers.isEmpty()) {
+            sessionStore.clear()
+            return
+        }
+        sessionStore.save(
+            CookingSession(
+                recipe = state.recipe,
+                currentStepIndex = state.currentStepIndex,
+                timers = state.timers,
+                savedAtMillis = clock()
+            )
+        )
+    }
+
+    private fun remainingAt(timer: CookingTimer, now: Long): Int {
+        val endsAt = timer.endsAtMillis ?: return timer.remainingSeconds
+        val millisLeft = (endsAt - now).coerceAtLeast(0)
+        return ((millisLeft + 999) / 1000).toInt()
+    }
+
+    private fun refreshTimer(timer: CookingTimer, now: Long): CookingTimer {
+        if (!timer.isRunning || timer.isFinished) return timer
+        val remaining = remainingAt(timer, now)
+        return if (remaining == 0) {
+            timer.copy(remainingSeconds = 0, isFinished = true, isRunning = false, endsAtMillis = null)
+        } else {
+            timer.copy(remainingSeconds = remaining)
         }
     }
 
@@ -141,20 +238,18 @@ class CookingViewModel(
         tickerJob = viewModelScope.launch {
             while (true) {
                 delay(1000)
+                val now = clock()
+                var anyFinished = false
                 _uiState.update { state ->
                     state.copy(
                         timers = state.timers.map { timer ->
-                            if (timer.isRunning && !timer.isFinished) {
-                                val remaining = (timer.remainingSeconds - 1).coerceAtLeast(0)
-                                timer.copy(
-                                    remainingSeconds = remaining,
-                                    isFinished = remaining == 0,
-                                    isRunning = remaining > 0
-                                )
-                            } else timer
+                            val refreshed = refreshTimer(timer, now)
+                            if (refreshed.isFinished && !timer.isFinished) anyFinished = true
+                            refreshed
                         }
                     )
                 }
+                if (anyFinished) saveSession()
             }
         }
     }

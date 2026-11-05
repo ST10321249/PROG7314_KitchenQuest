@@ -22,6 +22,9 @@ import com.example.kitchenquest.data.sync.RoomSyncOverviewSource
 import com.example.kitchenquest.data.sync.SyncOverviewSource
 import com.example.kitchenquest.data.sync.SyncProcessor
 import com.example.kitchenquest.data.sync.SyncScheduler
+import com.example.kitchenquest.feature.cooking.CookingSessionStore
+import com.example.kitchenquest.feature.cooking.NoOpCookingSessionStore
+import com.example.kitchenquest.feature.cooking.SharedPreferencesCookingSessionStore
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -92,6 +95,11 @@ object AppRepositories {
             remote = DefaultFavouriteRepository(),
             store = recipeOfflineStore
         )
+    }
+
+    fun cookingSessions(): CookingSessionStore {
+        val context = appContext ?: return NoOpCookingSessionStore
+        return SharedPreferencesCookingSessionStore(context, signedInUserId)
     }
 
     // What the screens show about syncing: online or offline, and changes waiting.

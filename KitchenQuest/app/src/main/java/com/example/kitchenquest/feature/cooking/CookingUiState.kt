@@ -1,9 +1,12 @@
 package com.example.kitchenquest.feature.cooking
 
 import com.example.kitchenquest.data.recipes.RecipeDetailDto
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class TimerSource { RECIPE, STANDALONE }
 
+@Serializable
 data class CookingTimer(
     val id: String,
     val label: String,
@@ -11,7 +14,8 @@ data class CookingTimer(
     val remainingSeconds: Int,
     val isRunning: Boolean,
     val isFinished: Boolean,
-    val sourceType: TimerSource
+    val sourceType: TimerSource,
+    val endsAtMillis: Long? = null
 )
 
 data class CookingUiState(
