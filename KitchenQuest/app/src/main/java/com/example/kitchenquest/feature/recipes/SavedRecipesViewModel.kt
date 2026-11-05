@@ -2,7 +2,7 @@ package com.example.kitchenquest.feature.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenquest.data.favourites.DefaultFavouriteRepository
+import com.example.kitchenquest.data.AppRepositories
 import com.example.kitchenquest.data.favourites.FavouriteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SavedRecipesViewModel(
-    private val favouriteRepository: FavouriteRepository = DefaultFavouriteRepository()
+
+    private val favouriteRepository: FavouriteRepository = AppRepositories.favourites
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SavedRecipesUiState())
@@ -20,9 +21,16 @@ class SavedRecipesViewModel(
     fun load() {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            favouriteRepository.getFavourites().fold(
-                onSuccess = { favourites ->
-                    _uiState.update { it.copy(isLoading = false, hasLoaded = true, favourites = favourites) }
+            favouriteRepository.getFavouritesWithSource().fold(
+                onSuccess = { loaded ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            favourites = loaded.favourites,
+                            isOfflineCopy = loaded.isOfflineCopy
+                        )
+                    }
                 },
                 onFailure = { failure ->
                     _uiState.update { it.copy(isLoading = false, errorMessage = failure.message) }

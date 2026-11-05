@@ -39,6 +39,7 @@ import com.example.kitchenquest.ui.components.KitchenQuestErrorState
 import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
 import com.example.kitchenquest.ui.components.KitchenQuestSearchField
 import com.example.kitchenquest.ui.components.KitchenQuestTopBar
+import com.example.kitchenquest.ui.components.OfflineCopyBanner
 import com.example.kitchenquest.ui.theme.KitchenOrangeLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
@@ -71,6 +72,18 @@ fun SavedRecipesScreen(
             placeholder = stringResource(R.string.savedrecipes_search_saved_recipes_27f445),
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding)
         )
+
+        // Offline: the list is the copy saved on the phone, and search needs internet.
+        if (state.isOfflineCopy) {
+            OfflineCopyBanner(
+                message = stringResource(R.string.offline_saved_recipes_banner),
+                modifier = Modifier.padding(
+                    start = KitchenQuestDimens.ScreenPadding,
+                    end = KitchenQuestDimens.ScreenPadding,
+                    top = KitchenQuestDimens.SmallSpacing
+                )
+            )
+        }
 
         Box(modifier = Modifier.weight(1f)) {
             when {

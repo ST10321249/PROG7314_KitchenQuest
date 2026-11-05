@@ -35,9 +35,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.recipes.RecipeIngredientDto
+import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
 import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
+import com.example.kitchenquest.ui.components.OfflineCopyBanner
 import com.example.kitchenquest.ui.theme.KitchenGreen
 import com.example.kitchenquest.ui.theme.KitchenGreenLight
 import com.example.kitchenquest.ui.theme.KitchenOrangeLight
@@ -59,6 +61,17 @@ fun RecipeDetailScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 KitchenQuestLoadingState(message = stringResource(R.string.recipedetail_loading_recipe_1d53c5))
             }
+        }
+
+        // Offline, and this recipe was never opened while online, so there is no copy.
+        state.isOfflineWithoutCopy && state.recipe == null -> {
+            KitchenQuestEmptyState(
+                title = stringResource(R.string.offline_recipe_not_saved_title),
+                message = stringResource(R.string.offline_recipe_not_saved_message),
+                actionText = stringResource(R.string.offline_try_again),
+                onAction = onRetry,
+                modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
+            )
         }
 
         state.errorMessage != null && state.recipe == null -> {
@@ -141,6 +154,13 @@ fun RecipeDetailScreen(
                     contentPadding = PaddingValues(KitchenQuestDimens.ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.MediumSpacing)
                 ) {
+                    // Tells the user this is the copy saved on the phone (no connection).
+                    if (state.isOfflineCopy) {
+                        item {
+                            OfflineCopyBanner(message = stringResource(R.string.offline_recipe_copy_banner))
+                        }
+                    }
+
                     item {
                         Text(recipe.title, style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))

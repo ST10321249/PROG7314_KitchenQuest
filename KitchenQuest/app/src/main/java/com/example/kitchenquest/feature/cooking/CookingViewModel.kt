@@ -2,9 +2,9 @@ package com.example.kitchenquest.feature.cooking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kitchenquest.data.AppRepositories
 import com.example.kitchenquest.data.history.DefaultHistoryRepository
 import com.example.kitchenquest.data.history.HistoryRepository
-import com.example.kitchenquest.data.recipes.DefaultRecipeRepository
 import com.example.kitchenquest.data.recipes.RecipeRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class CookingViewModel(
-    private val recipeRepository: RecipeRepository = DefaultRecipeRepository(),
+    // The app-wide repository can load a recipe from its offline copy when there is no connection.
+    private val recipeRepository: RecipeRepository = AppRepositories.recipes,
     private val historyRepository: HistoryRepository = DefaultHistoryRepository()
 ) : ViewModel() {
 

@@ -3,11 +3,10 @@ package com.example.kitchenquest.feature.recipes
 import com.example.kitchenquest.data.AppRepositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenquest.data.favourites.DefaultFavouriteRepository
 import com.example.kitchenquest.data.favourites.FavouriteRepository
 import com.example.kitchenquest.data.pantry.PantryRepository
-import com.example.kitchenquest.data.recipes.DefaultRecipeRepository
 import com.example.kitchenquest.data.recipes.RecipeRepository
+import com.example.kitchenquest.data.recipes.isConnectionProblem
 import com.example.kitchenquest.data.shopping.ShoppingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,31 +15,44 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class RecipeDetailViewModel(
-    private val recipeRepository: RecipeRepository = DefaultRecipeRepository(),
+    // The app-wide repositories keep an offline copy of each recipe that is opened.
+    private val recipeRepository: RecipeRepository = AppRepositories.recipes,
     private val pantryRepository: PantryRepository = AppRepositories.pantry,
     private val shoppingRepository: ShoppingRepository = AppRepositories.shopping,
-    private val favouriteRepository: FavouriteRepository = DefaultFavouriteRepository()
+    private val favouriteRepository: FavouriteRepository = AppRepositories.favourites
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipeDetailUiState())
     val uiState: StateFlow<RecipeDetailUiState> = _uiState.asStateFlow()
 
     fun load(recipeId: String) {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update {
+            it.copy(isLoading = true, errorMessage = null, isOfflineWithoutCopy = false)
+        }
 
         viewModelScope.launch {
-            recipeRepository.getRecipeById(recipeId).fold(
-                onSuccess = { recipe ->
+            recipeRepository.getRecipeWithSource(recipeId).fold(
+                onSuccess = { loaded ->
+                    val recipe = loaded.recipe
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             recipe = recipe,
-                            servings = recipe.servings?.takeIf { s -> s > 0 } ?: 1
+                            servings = recipe.servings?.takeIf { s -> s > 0 } ?: 1,
+                            isOfflineCopy = loaded.isOfflineCopy
                         )
                     }
                 },
                 onFailure = { failure ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = failure.message) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = failure.message,
+                            // No connection and no saved copy: the screen explains this
+                            // instead of showing a general error.
+                            isOfflineWithoutCopy = failure.isConnectionProblem()
+                        )
+                    }
                 }
             )
         }
@@ -54,8 +66,10 @@ class RecipeDetailViewModel(
         }
 
         viewModelScope.launch {
-            favouriteRepository.getFavourites().onSuccess { favourites ->
-                _uiState.update { it.copy(isFavourite = favourites.any { fav -> fav.recipeSourceId == recipeId }) }
+            favouriteRepository.getFavouritesWithSource().onSuccess { loaded ->
+                _uiState.update {
+                    it.copy(isFavourite = loaded.favourites.any { fav -> fav.recipeSourceId == recipeId })
+                }
             }
         }
     }

@@ -12,9 +12,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PantryItemEntity::class,
         ShoppingItemEntity::class,
         PendingOperationEntity::class,
-        TranslationCacheEntity::class
+        TranslationCacheEntity::class,
+        CachedRecipeEntity::class,
+        CachedFavouriteEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class KitchenQuestDatabase : RoomDatabase() {
@@ -27,15 +29,14 @@ abstract class KitchenQuestDatabase : RoomDatabase() {
 
     abstract fun translationCacheDao(): TranslationCacheDao
 
+    abstract fun recipeCacheDao(): RecipeCacheDao
+
     companion object {
 
         private const val DATABASE_NAME = "kitchenquest.db"
 
-        // Every schema change needs a migration here so users keep their offline
-        // data and queued changes when they update the app. Never replace the
-        // database with fallbackToDestructiveMigration: it would delete changes
-        // that have not been sent yet.
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 
         @Volatile
         private var instance: KitchenQuestDatabase? = null
@@ -55,21 +56,50 @@ abstract class KitchenQuestDatabase : RoomDatabase() {
     }
 }
 
-// Version 2 adds the translation cache. Nothing that was already stored is touched.
+
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
             "CREATE TABLE IF NOT EXISTS `translation_cache` (" +
-                "`sourceLanguage` TEXT NOT NULL, " +
-                "`targetLanguage` TEXT NOT NULL, " +
-                "`textHash` TEXT NOT NULL, " +
-                "`translatedText` TEXT NOT NULL, " +
-                "`createdAt` INTEGER NOT NULL, " +
-                "PRIMARY KEY(`sourceLanguage`, `targetLanguage`, `textHash`))"
+                    "`sourceLanguage` TEXT NOT NULL, " +
+                    "`targetLanguage` TEXT NOT NULL, " +
+                    "`textHash` TEXT NOT NULL, " +
+                    "`translatedText` TEXT NOT NULL, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`sourceLanguage`, `targetLanguage`, `textHash`))"
         )
         db.execSQL(
             "CREATE INDEX IF NOT EXISTS `index_translation_cache_createdAt` " +
-                "ON `translation_cache` (`createdAt`)"
+                    "ON `translation_cache` (`createdAt`)"
+        )
+    }
+}
+
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `cached_recipes` (" +
+                    "`userId` TEXT NOT NULL, " +
+                    "`recipeSourceId` TEXT NOT NULL, " +
+                    "`title` TEXT NOT NULL, " +
+                    "`recipeJson` TEXT NOT NULL, " +
+                    "`savedAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`userId`, `recipeSourceId`))"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_cached_recipes_userId_savedAt` " +
+                    "ON `cached_recipes` (`userId`, `savedAt`)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `cached_favourites` (" +
+                    "`userId` TEXT NOT NULL, " +
+                    "`recipeSourceId` TEXT NOT NULL, " +
+                    "`favouriteId` TEXT NOT NULL, " +
+                    "`recipeTitle` TEXT NOT NULL, " +
+                    "`imageUrl` TEXT, " +
+                    "`listOrder` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`userId`, `recipeSourceId`))"
         )
     }
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="offline_recipe_copy_banner">You\'re offline. This is the copy saved on your phone.</string>
+    <string name="offline_saved_recipes_banner">You\'re offline. Showing the recipes saved on this phone. Searching for new recipes needs internet.</string>
+    <string name="offline_recipe_not_saved_title">Not saved on this phone yet</string>
+    <string name="offline_recipe_not_saved_message">You\'re offline and this recipe hasn\'t been saved on your phone. Open it once while you\'re online so you can read it offline later.</string>
+    <string name="offline_try_again">Try again</string>
+</resources>

@@ -2,11 +2,18 @@ package com.example.kitchenquest.data
 
 import android.content.Context
 import com.example.kitchenquest.data.connectivity.NetworkConnectivity
+import com.example.kitchenquest.data.favourites.DefaultFavouriteRepository
+import com.example.kitchenquest.data.favourites.FavouriteRepository
+import com.example.kitchenquest.data.favourites.OfflineFavouriteRepository
 import com.example.kitchenquest.data.local.KitchenQuestDatabase
 import com.example.kitchenquest.data.network.ApiClient
 import com.example.kitchenquest.data.pantry.OfflinePantryRepository
 import com.example.kitchenquest.data.pantry.PantryApi
 import com.example.kitchenquest.data.pantry.PantryRepository
+import com.example.kitchenquest.data.recipes.DefaultRecipeRepository
+import com.example.kitchenquest.data.recipes.OfflineRecipeRepository
+import com.example.kitchenquest.data.recipes.RecipeOfflineStore
+import com.example.kitchenquest.data.recipes.RecipeRepository
 import com.example.kitchenquest.data.shopping.OfflineShoppingRepository
 import com.example.kitchenquest.data.shopping.ShoppingApi
 import com.example.kitchenquest.data.shopping.ShoppingRepository
@@ -59,6 +66,31 @@ object AppRepositories {
             shoppingApi = ApiClient.create(ShoppingApi::class.java),
             currentUserId = signedInUserId,
             scheduler = syncScheduler
+        )
+    }
+
+    // Copies of opened recipes and of the saved-recipes list, kept per user.
+    private val recipeOfflineStore: RecipeOfflineStore by lazy {
+        RecipeOfflineStore(
+            dao = database().recipeCacheDao(),
+            currentUserId = signedInUserId
+        )
+    }
+
+    // Recipe details can be read offline once they have been opened. Search and
+    // recommendations still go to the API, because they need fresh results.
+    val recipes: RecipeRepository by lazy {
+        OfflineRecipeRepository(
+            remote = DefaultRecipeRepository(),
+            store = recipeOfflineStore
+        )
+    }
+
+    // Saved recipes can be listed offline from the last copy the phone received.
+    val favourites: FavouriteRepository by lazy {
+        OfflineFavouriteRepository(
+            remote = DefaultFavouriteRepository(),
+            store = recipeOfflineStore
         )
     }
 

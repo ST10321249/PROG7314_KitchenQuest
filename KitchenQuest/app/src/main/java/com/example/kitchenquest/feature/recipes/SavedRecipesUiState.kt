@@ -7,7 +7,9 @@ data class SavedRecipesUiState(
     val hasLoaded: Boolean = false,
     val searchQuery: String = "",
     val favourites: List<FavouriteRecipeDto> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    val isOfflineCopy: Boolean = false
 ) {
     val filteredFavourites: List<FavouriteRecipeDto>
         get() = if (searchQuery.isBlank()) {

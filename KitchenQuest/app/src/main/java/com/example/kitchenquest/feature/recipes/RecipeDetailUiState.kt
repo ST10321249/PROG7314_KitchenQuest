@@ -8,5 +8,9 @@ data class RecipeDetailUiState(
     val servings: Int = 1,
     val heldIngredientNames: Set<String> = emptySet(),
     val isFavourite: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    val isOfflineCopy: Boolean = false,
+
+    val isOfflineWithoutCopy: Boolean = false
 )

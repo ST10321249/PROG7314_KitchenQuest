@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="offline_recipe_copy_banner">Jy is vanlyn. Dit is die kopie wat op jou foon gestoor is.</string>
+    <string name="offline_saved_recipes_banner">Jy is vanlyn. Die resepte wat op hierdie foon gestoor is, word gewys. Om nuwe resepte te soek, het jy internet nodig.</string>
+    <string name="offline_recipe_not_saved_title">Nog nie op hierdie foon gestoor nie</string>
+    <string name="offline_recipe_not_saved_message">Jy is vanlyn en hierdie resep is nog nie op jou foon gestoor nie. Maak dit een keer oop terwyl jy aanlyn is, sodat jy dit later vanlyn kan lees.</string>
+    <string name="offline_try_again">Probeer weer</string>
+</resources>
