@@ -6,6 +6,7 @@ import com.example.kitchenquest.data.AppRepositories
 import com.example.kitchenquest.data.history.DefaultHistoryRepository
 import com.example.kitchenquest.data.history.HistoryRepository
 import com.example.kitchenquest.data.recipes.RecipeRepository
+import com.example.kitchenquest.notifications.TimerAlarms
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,8 @@ class CookingViewModel(
     private val recipeRepository: RecipeRepository = AppRepositories.recipes,
     private val historyRepository: HistoryRepository = DefaultHistoryRepository(),
     private val sessionStore: CookingSessionStore = AppRepositories.cookingSessions(),
-    private val clock: () -> Long = System::currentTimeMillis
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val timerAlarms: TimerAlarms = AppRepositories.timerAlarms()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CookingUiState())
@@ -85,6 +87,7 @@ class CookingViewModel(
             endsAtMillis = clock() + totalSeconds * 1000L
         )
         _uiState.update { it.copy(timers = it.timers + timer) }
+        scheduleAlarm(timer)
         saveSession()
         ensureTicking()
     }
@@ -119,6 +122,7 @@ class CookingViewModel(
                 }
             })
         }
+        syncAlarm(id)
         saveSession()
         ensureTicking()
     }
@@ -141,22 +145,26 @@ class CookingViewModel(
                 }
             })
         }
+        syncAlarm(id)
         saveSession()
         ensureTicking()
     }
 
     fun cancelTimer(id: String) {
+        timerAlarms.cancel(id)
         _uiState.update { state -> state.copy(timers = state.timers.filterNot { it.id == id }) }
         saveSession()
     }
 
     fun stopAllTimers() {
+        _uiState.value.timers.forEach { timerAlarms.cancel(it.id) }
         _uiState.update { it.copy(timers = emptyList()) }
         saveSession()
     }
 
     fun completeCooking(rating: Int?, difficulty: String?, note: String?, onComplete: () -> Unit) {
         val recipe = _uiState.value.recipe
+        _uiState.value.timers.forEach { timerAlarms.cancel(it.id) }
 
         viewModelScope.launch {
             if (recipe != null) {
@@ -198,7 +206,20 @@ class CookingViewModel(
                 timers = timers
             )
         }
+        timers.filter { it.isRunning }.forEach { scheduleAlarm(it) }
         if (timers.any { it.isRunning }) ensureTicking()
+    }
+
+    private fun scheduleAlarm(timer: CookingTimer) {
+        val endsAt = timer.endsAtMillis ?: return
+        if (timer.isRunning && !timer.isFinished) {
+            timerAlarms.schedule(timer.id, timer.label, endsAt)
+        }
+    }
+
+    private fun syncAlarm(id: String) {
+        val timer = _uiState.value.timers.firstOrNull { it.id == id } ?: return
+        if (timer.isRunning && !timer.isFinished) scheduleAlarm(timer) else timerAlarms.cancel(id)
     }
 
     private fun saveSession() {

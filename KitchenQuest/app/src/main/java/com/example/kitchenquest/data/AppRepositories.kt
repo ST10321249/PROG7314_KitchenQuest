@@ -25,6 +25,9 @@ import com.example.kitchenquest.data.sync.SyncScheduler
 import com.example.kitchenquest.feature.cooking.CookingSessionStore
 import com.example.kitchenquest.feature.cooking.NoOpCookingSessionStore
 import com.example.kitchenquest.feature.cooking.SharedPreferencesCookingSessionStore
+import com.example.kitchenquest.notifications.AndroidTimerAlarms
+import com.example.kitchenquest.notifications.NoOpTimerAlarms
+import com.example.kitchenquest.notifications.TimerAlarms
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -100,6 +103,11 @@ object AppRepositories {
     fun cookingSessions(): CookingSessionStore {
         val context = appContext ?: return NoOpCookingSessionStore
         return SharedPreferencesCookingSessionStore(context, signedInUserId)
+    }
+
+    fun timerAlarms(): TimerAlarms {
+        val context = appContext ?: return NoOpTimerAlarms
+        return AndroidTimerAlarms(context)
     }
 
     // What the screens show about syncing: online or offline, and changes waiting.

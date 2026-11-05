@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT" android:maxSdkVersion="27" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".KitchenQuestApplication"
@@ -32,6 +33,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".notifications.TimerAlarmReceiver"
+            android:exported="false" />
 
         <!-- Background work starts itself when first needed (see KitchenQuestApplication),
              so the automatic starter is switched off. Other startup items are kept. -->

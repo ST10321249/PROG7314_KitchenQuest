@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timer_alert_channel_name">Cooking timers</string>
+    <string name="timer_alert_channel_description">Alerts when a kitchen timer or recipe step timer finishes.</string>
+    <string name="timer_alert_title">Timer finished</string>
+    <string name="timer_alert_text">%1$s is done.</string>
+    <string name="timer_alert_default_label">Your timer</string>
+</resources>

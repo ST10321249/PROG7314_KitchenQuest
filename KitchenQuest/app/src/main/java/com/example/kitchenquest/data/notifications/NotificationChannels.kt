@@ -12,6 +12,8 @@ object NotificationChannels {
 
     const val EXPIRY_ALERTS = "kitchenquest_expiry_alerts"
 
+    const val TIMER_ALERTS = "kitchenquest_timer_alerts"
+
     // Set on the intent of a notification that should open My Kitchen when it is tapped.
     const val EXTRA_OPEN_MY_KITCHEN = "kitchenquest_open_my_kitchen"
 
@@ -26,6 +28,15 @@ object NotificationChannels {
             .setDescription(text.getString(R.string.expiry_alert_channel_description))
             .build()
 
+        val timers = NotificationChannelCompat.Builder(
+            TIMER_ALERTS,
+            NotificationManagerCompat.IMPORTANCE_HIGH
+        )
+            .setName(text.getString(R.string.timer_alert_channel_name))
+            .setDescription(text.getString(R.string.timer_alert_channel_description))
+            .build()
+
         NotificationManagerCompat.from(context).createNotificationChannel(expiry)
+        NotificationManagerCompat.from(context).createNotificationChannel(timers)
     }
 }
