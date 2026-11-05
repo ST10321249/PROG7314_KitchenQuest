@@ -7,6 +7,18 @@ import org.junit.Test
 class IngredientValidationTest {
 
     @Test
+    fun anUnchangedExpiredDateCanStillBeSaved() {
+        val errors = validateIngredientForm("Milk", "1", "2000-01-01", originalExpiryDate = "2000-01-01")
+        assertNull(errors.expiryDate)
+    }
+
+    @Test
+    fun aNewPastDateIsStillRejectedWhenEditing() {
+        val errors = validateIngredientForm("Milk", "1", "2000-01-02", originalExpiryDate = "2099-01-01")
+        assertEquals("Expiry date can't be in the past", errors.expiryDate)
+    }
+
+    @Test
     fun blankNameIsRejected() {
         val errors = validateIngredientForm("", "1", null)
         assertEquals("Ingredient name is required", errors.name)

@@ -6,6 +6,7 @@ data class SettingsUiState(
     val hasLoaded: Boolean = false,
     val displayName: String = "",
     val email: String = "",
+    val profileLanguage: String? = null,
     val dietaryPreferences: Set<String> = emptySet(),
     val avoidedIngredients: Set<String> = emptySet(),
     val hasUnsavedChanges: Boolean = false,

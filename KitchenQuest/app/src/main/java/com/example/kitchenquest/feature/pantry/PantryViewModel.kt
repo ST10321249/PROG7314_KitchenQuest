@@ -2,24 +2,74 @@ package com.example.kitchenquest.feature.pantry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenquest.data.pantry.DefaultPantryRepository
+import com.example.kitchenquest.data.AppRepositories
+import com.example.kitchenquest.data.pantry.PantryItemDto
 import com.example.kitchenquest.data.pantry.PantryRepository
+import com.example.kitchenquest.data.sync.SyncEntity
+import com.example.kitchenquest.data.sync.SyncFailure
+import com.example.kitchenquest.data.sync.SyncOverviewSource
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.example.kitchenquest.data.pantry.PantryItemDto
 
 class PantryViewModel(
-    private val pantryRepository: PantryRepository =
-        DefaultPantryRepository()
+    private val pantryRepository: PantryRepository = AppRepositories.pantry,
+    private val syncOverview: SyncOverviewSource = AppRepositories.syncOverview
 ) : ViewModel() {
 
+    private var watchingSync: Job? = null
     private val _uiState = MutableStateFlow(PantryUiState())
     val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
 
+    private var observing: Job? = null
+
+    // True once the repository has delivered the saved list. From then on the list on
+    // screen follows the phone's database, so changes appear without being patched in.
+    private var following = false
+
     fun loadPantry() {
+        follow()
+        watchSync()
+        refresh()
+    }
+
+    private fun watchSync() {
+        if (watchingSync?.isActive == true) return
+        watchingSync = viewModelScope.launch {
+            syncOverview.observe().collect { overview ->
+                _uiState.update { it.copy(sync = overview) }
+            }
+        }
+    }
+
+    // Looks up why the server refused this item so the screen can explain it.
+    fun showFailure(item: PantryItemDto) {
+        viewModelScope.launch {
+            val reason = syncOverview.failureReason(SyncEntity.PANTRY_ITEM, item.id)
+            _uiState.update { it.copy(failure = SyncFailure(item.id, item.ingredientName, reason)) }
+        }
+    }
+
+    fun dismissFailure() {
+        _uiState.update { it.copy(failure = null) }
+    }
+
+    // Shows what is saved on the phone straight away.
+    private fun follow() {
+        if (observing?.isActive == true) return
+        observing = viewModelScope.launch {
+            pantryRepository.observePantryItems().collect { items ->
+                following = true
+                _uiState.update { it.copy(items = items, hasLoaded = true) }
+            }
+        }
+    }
+
+    // Brings the phone up to date in the background. It never blocks the list.
+    private fun refresh() {
         if (_uiState.value.isLoading) return
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -28,12 +78,17 @@ class PantryViewModel(
             pantryRepository.getPantryItems().fold(
                 onSuccess = { items ->
                     _uiState.update {
-                        it.copy(isLoading = false, hasLoaded = true, items = items)
+                        it.copy(
+                            isLoading = false,
+                            hasLoaded = true,
+                            hasRefreshed = true,
+                            items = if (following) it.items else items
+                        )
                     }
                 },
                 onFailure = { failure ->
                     _uiState.update {
-                        it.copy(isLoading = false, errorMessage = failure.message)
+                        it.copy(isLoading = false, hasRefreshed = true, errorMessage = failure.message)
                     }
                 }
             )
@@ -43,9 +98,7 @@ class PantryViewModel(
     fun deleteItem(id: String) {
         viewModelScope.launch {
             pantryRepository.deletePantryItem(id).onSuccess {
-                _uiState.update { state ->
-                    state.copy(items = state.items.filterNot { it.id == id })
-                }
+                patchList { list -> list.filterNot { it.id == id } }
             }
         }
     }
@@ -65,7 +118,7 @@ class PantryViewModel(
     ) {
         viewModelScope.launch {
             pantryRepository.addPantryItem(name, quantity, unit, category, expiryDate).onSuccess { item ->
-                _uiState.update { it.copy(items = it.items + item) }
+                patchList { list -> list + item }
             }
         }
     }
@@ -83,10 +136,15 @@ class PantryViewModel(
     ) {
         viewModelScope.launch {
             pantryRepository.updatePantryItem(id, name, quantity, unit, category, expiryDate).onSuccess { updated ->
-                _uiState.update { state ->
-                    state.copy(items = state.items.map { if (it.id == updated.id) updated else it })
-                }
+                patchList { list -> list.map { if (it.id == updated.id) updated else it } }
             }
         }
+    }
+
+    // While the list follows the database the change arrives by itself. A repository
+    // with no live list (a test fake) still gets the change patched in.
+    private fun patchList(change: (List<PantryItemDto>) -> List<PantryItemDto>) {
+        if (following) return
+        _uiState.update { it.copy(items = change(it.items)) }
     }
 }

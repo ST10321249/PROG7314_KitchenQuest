@@ -117,6 +117,33 @@ describe('GET /api/users/me', () => {
   });
 });
 
+describe('language preference updates', () => {
+  it('saves an Afrikaans language preference without changing other profile fields', async () => {
+    User.findOneAndUpdate.mockResolvedValue({ ...profile, language: 'af' });
+    const res = await request(app)
+      .put('/api/users/me')
+      .set(AUTH)
+      .send({ language: 'af' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.language).toBe('af');
+    expect(User.findOneAndUpdate).toHaveBeenCalledWith(
+      { firebaseUid: 'uid-1' },
+      { $set: { language: 'af' } },
+      expect.objectContaining({ new: true, runValidators: true })
+    );
+  });
+
+  it('rejects unsupported languages', async () => {
+    const res = await request(app)
+      .put('/api/users/me')
+      .set(AUTH)
+      .send({ language: 'de' });
+    expect(res.status).toBe(400);
+    expect(User.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+});
+
 describe('PUT /api/users/me', () => {
   it('updates only the allowed fields and returns the new profile', async () => {
     User.findOneAndUpdate.mockResolvedValue({ ...profile, displayName: 'New Name' });

@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.cooking
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.example.kitchenquest.ui.components.KitchenQuestCard
 import com.example.kitchenquest.ui.components.KitchenQuestPrimaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
@@ -44,11 +46,11 @@ fun CookScreen(
         )
     ) {
         KitchenQuestTopBar(
-            title = "Cook"
+            title = stringResource(R.string.cook_cook_1bf70a)
         )
 
         Text(
-            text = "Keep your cooking tools and recent activity in one place.",
+            text = stringResource(R.string.cook_keep_your_cooking_tools_and_recent_activity_in_one_place_8a58d1),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -68,7 +70,7 @@ fun CookScreen(
                 )
 
                 Text(
-                    text = "Continue cooking",
+                    text = stringResource(R.string.cook_continue_cooking_dfd1a2),
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -85,7 +87,7 @@ fun CookScreen(
                 )
 
                 KitchenQuestPrimaryButton(
-                    text = "Continue recipe",
+                    text = stringResource(R.string.cook_continue_recipe_cbe219),
                     onClick = onContinueCooking,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -108,12 +110,12 @@ fun CookScreen(
             )
 
             Text(
-                text = "Kitchen timer",
+                text = stringResource(R.string.cook_kitchen_timer_829429),
                 style = MaterialTheme.typography.titleMedium
             )
 
             Text(
-                text = "Start a standalone timer while you cook.",
+                text = stringResource(R.string.cook_start_a_standalone_timer_while_you_cook_a220c2),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -121,7 +123,7 @@ fun CookScreen(
 
         if (activeTimerCount > 0) {
             KitchenQuestSecondaryButton(
-                text = "Active timers ($activeTimerCount)",
+                text = stringResource(R.string.cook_active_timers, activeTimerCount),
                 onClick = onActiveTimers,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -143,12 +145,12 @@ fun CookScreen(
             )
 
             Text(
-                text = "Cooking history",
+                text = stringResource(R.string.cook_cooking_history_4eae4d),
                 style = MaterialTheme.typography.titleMedium
             )
 
             Text(
-                text = "Review meals you have completed and your saved feedback.",
+                text = stringResource(R.string.cook_review_meals_you_have_completed_and_your_saved_feedback_2ad36a),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

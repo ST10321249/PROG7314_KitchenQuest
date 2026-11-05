@@ -2,6 +2,7 @@ package com.example.kitchenquest.data.recipes
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RecipeRepositoryTest {
@@ -11,6 +12,7 @@ class RecipeRepositoryTest {
         var detail: RecipeDetailDto? = null
         var recommendations: List<RecipeRecommendationDto> = emptyList()
         var lastSearchQuery: String? = null
+        var lastRecommendationIngredients: String? = null
 
         override suspend fun searchRecipes(
             query: String?,
@@ -27,7 +29,11 @@ class RecipeRepositoryTest {
             return detail ?: throw NoSuchElementException("No recipe with id $id")
         }
 
-        override suspend fun getRecommendations(number: Int?): RecipeRecommendationsResponseDto {
+        override suspend fun getRecommendations(
+            ingredients: String?,
+            number: Int?
+        ): RecipeRecommendationsResponseDto {
+            lastRecommendationIngredients = ingredients
             return RecipeRecommendationsResponseDto(recommendations)
         }
     }
@@ -35,7 +41,12 @@ class RecipeRepositoryTest {
     @Test
     fun searchRecipesPassesTheQueryThrough() = runBlocking {
         val api = FakeRecipeApi().apply {
-            searchResults = listOf(RecipeSearchResultDto(recipeSourceId = "1", title = "Chicken Soup"))
+            searchResults = listOf(
+                RecipeSearchResultDto(
+                    recipeSourceId = "1",
+                    title = "Chicken Soup"
+                )
+            )
         }
         val repository = DefaultRecipeRepository(api)
 
@@ -49,7 +60,10 @@ class RecipeRepositoryTest {
     @Test
     fun getRecipeByIdReturnsTheDetail() = runBlocking {
         val api = FakeRecipeApi().apply {
-            detail = RecipeDetailDto(recipeSourceId = "42", title = "Pasta Bake")
+            detail = RecipeDetailDto(
+                recipeSourceId = "42",
+                title = "Pasta Bake"
+            )
         }
         val repository = DefaultRecipeRepository(api)
 
@@ -59,18 +73,42 @@ class RecipeRepositoryTest {
     }
 
     @Test
-    fun getRecommendationsUnwrapsTheRecipesList() = runBlocking {
+    fun getRecommendationsWithoutIngredientsUsesPantryFallback() = runBlocking {
         val api = FakeRecipeApi().apply {
             recommendations = listOf(
-                RecipeRecommendationDto(recipeSourceId = "1", title = "A", matchRatio = 0.8),
-                RecipeRecommendationDto(recipeSourceId = "2", title = "B", matchRatio = 0.5)
+                RecipeRecommendationDto(
+                    recipeSourceId = "1",
+                    title = "A",
+                    matchRatio = 0.8
+                ),
+                RecipeRecommendationDto(
+                    recipeSourceId = "2",
+                    title = "B",
+                    matchRatio = 0.5
+                )
             )
         }
         val repository = DefaultRecipeRepository(api)
 
         val result = repository.getRecommendations()
 
+        assertNull(api.lastRecommendationIngredients)
         assertEquals(2, result.getOrThrow().size)
         assertEquals(0.8, result.getOrThrow().first().matchRatio, 0.0001)
+    }
+
+    @Test
+    fun getRecommendationsWithSelectedIngredientsJoinsThemForTheApi() = runBlocking {
+        val api = FakeRecipeApi()
+        val repository = DefaultRecipeRepository(api)
+
+        repository.getRecommendations(
+            listOf("Chicken", "Rice", "Tomato")
+        )
+
+        assertEquals(
+            "Chicken,Rice,Tomato",
+            api.lastRecommendationIngredients
+        )
     }
 }

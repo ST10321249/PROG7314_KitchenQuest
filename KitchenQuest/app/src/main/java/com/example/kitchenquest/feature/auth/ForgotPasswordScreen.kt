@@ -1,5 +1,7 @@
 package com.example.kitchenquest.feature.auth
 
+import androidx.compose.ui.res.stringResource
+import com.example.kitchenquest.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +48,7 @@ fun ForgotPasswordScreen(
             .fillMaxSize()
             .padding(horizontal = KitchenQuestDimens.ScreenPadding)
     ) {
-        KitchenQuestTopBar(title = "Reset password", onBack = onBackToLogin)
+        KitchenQuestTopBar(title = stringResource(R.string.auth_reset_password), onBack = onBackToLogin)
 
         Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
@@ -66,7 +68,7 @@ fun ForgotPasswordScreen(
         Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))
 
         Text(
-            text = if (resetRequested) "Check your inbox" else "Check your inbox",
+            text = if (resetRequested) stringResource(R.string.auth_check_inbox) else stringResource(R.string.auth_check_inbox),
             style = MaterialTheme.typography.headlineLarge
         )
 
@@ -74,9 +76,9 @@ fun ForgotPasswordScreen(
 
         Text(
             text = if (resetRequested) {
-                "If an account exists for that email, a password reset link has been sent."
+                stringResource(R.string.auth_reset_sent)
             } else {
-                "Enter the email you registered with and we'll send a link to set a new password."
+                stringResource(R.string.auth_reset_instructions)
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -87,22 +89,22 @@ fun ForgotPasswordScreen(
         KitchenQuestTextField(
             value = email,
             onValueChange = { email = it },
-            label = "Email address",
+            label = stringResource(R.string.auth_email),
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Email,
             isError = attemptedSubmit && !emailValid,
-            supportingText = if (attemptedSubmit && !emailValid) "Enter a valid email address" else null
+            supportingText = if (attemptedSubmit && !emailValid) stringResource(R.string.auth_email_invalid) else null
         )
 
         if (errorMessage != null) {
             Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
-            Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+            Text(text = localizedAuthError(errorMessage) ?: errorMessage, color = MaterialTheme.colorScheme.error)
         }
 
         Spacer(Modifier.height(KitchenQuestDimens.MediumSpacing))
 
         KitchenQuestPrimaryButton(
-            text = if (isLoading) "Sending..." else "Send reset link",
+            text = if (isLoading) stringResource(R.string.auth_sending) else stringResource(R.string.auth_send_reset),
             onClick = {
                 attemptedSubmit = true
                 if (emailValid) onSendResetLink(email.trim())
@@ -117,7 +119,7 @@ fun ForgotPasswordScreen(
             onClick = onBackToLogin,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text("Back to sign in")
+            Text(stringResource(R.string.auth_back_login))
         }
 
         Spacer(Modifier.height(KitchenQuestDimens.SectionSpacing))

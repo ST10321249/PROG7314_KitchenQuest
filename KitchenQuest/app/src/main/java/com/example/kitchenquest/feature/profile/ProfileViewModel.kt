@@ -1,12 +1,12 @@
 package com.example.kitchenquest.feature.profile
 
+import com.example.kitchenquest.data.AppRepositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kitchenquest.data.favourites.DefaultFavouriteRepository
 import com.example.kitchenquest.data.favourites.FavouriteRepository
 import com.example.kitchenquest.data.history.DefaultHistoryRepository
 import com.example.kitchenquest.data.history.HistoryRepository
-import com.example.kitchenquest.data.pantry.DefaultPantryRepository
 import com.example.kitchenquest.data.pantry.PantryRepository
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.UserRepository
@@ -21,7 +21,7 @@ class ProfileViewModel(
     private val userRepository: UserRepository = DefaultUserRepository(),
     private val historyRepository: HistoryRepository = DefaultHistoryRepository(),
     private val favouriteRepository: FavouriteRepository = DefaultFavouriteRepository(),
-    private val pantryRepository: PantryRepository = DefaultPantryRepository()
+    private val pantryRepository: PantryRepository = AppRepositories.pantry
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())

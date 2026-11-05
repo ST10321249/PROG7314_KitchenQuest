@@ -123,7 +123,14 @@ class CookingViewModel(
                 }
             }
 
-            stopAllTimers()
+            _uiState.update {
+                it.copy(
+                    recipe = null,
+                    currentStepIndex = 0,
+                    timers = emptyList(),
+                    errorMessage = null
+                )
+            }
             onComplete()
         }
     }

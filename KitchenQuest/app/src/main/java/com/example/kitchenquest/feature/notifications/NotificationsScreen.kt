@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.notifications
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
@@ -37,7 +39,7 @@ fun NotificationsScreen(
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         KitchenQuestTopBar(
-            title = "Notifications",
+            title = stringResource(R.string.notifications_notifications_a274f4),
             onBack = onBack,
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding)
         )
@@ -48,7 +50,7 @@ fun NotificationsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(KitchenQuestDimens.ScreenPadding),
-                    message = "Checking your kitchen..."
+                    message = stringResource(R.string.notifications_checking_your_kitchen_78e0a8)
                 )
             }
 
@@ -62,8 +64,8 @@ fun NotificationsScreen(
 
             state.expiringCount == 0 && state.shoppingCount == 0 -> {
                 KitchenQuestEmptyState(
-                    title = "You're all caught up",
-                    message = "Kitchen reminders and shopping updates will appear here.",
+                    title = stringResource(R.string.notifications_you_re_all_caught_up_61ef64),
+                    message = stringResource(R.string.notifications_kitchen_reminders_and_shopping_updates_will_appear_here_f3a5e5),
                     modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                 )
             }
@@ -76,7 +78,7 @@ fun NotificationsScreen(
                 ) {
                     item {
                         Text(
-                            text = "TODAY",
+                            text = stringResource(R.string.notifications_today_03219b),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -86,8 +88,8 @@ fun NotificationsScreen(
                         item {
                             NotificationCard(
                                 emoji = "🥕",
-                                title = "${state.expiringCount} ingredient${if (state.expiringCount == 1) "" else "s"} expiring soon",
-                                message = "Open My Kitchen to use them before they expire.",
+                                title = if (state.expiringCount == 1) stringResource(R.string.notif_expiring_one, state.expiringCount) else stringResource(R.string.notif_expiring_many, state.expiringCount),
+                                message = stringResource(R.string.notifications_open_my_kitchen_to_use_them_before_they_expire_73fbbd),
                                 containerColor = KitchenRedLight,
                                 onClick = onOpenKitchen
                             )
@@ -98,8 +100,8 @@ fun NotificationsScreen(
                         item {
                             NotificationCard(
                                 emoji = "🛒",
-                                title = "Shopping list reminder",
-                                message = "You still have ${state.shoppingCount} item${if (state.shoppingCount == 1) "" else "s"} to buy.",
+                                title = stringResource(R.string.notifications_shopping_list_reminder_fdccb4),
+                                message = if (state.shoppingCount == 1) stringResource(R.string.notif_shopping_one, state.shoppingCount) else stringResource(R.string.notif_shopping_many, state.shoppingCount),
                                 containerColor = KitchenOrangeLight,
                                 onClick = onOpenShoppingList
                             )

@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.recipes
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.favourites.FavouriteRecipeDto
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
@@ -58,7 +60,7 @@ fun SavedRecipesScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         KitchenQuestTopBar(
-            title = "Saved recipes",
+            title = stringResource(R.string.savedrecipes_saved_recipes_10b031),
             onBack = onBack,
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding)
         )
@@ -66,7 +68,7 @@ fun SavedRecipesScreen(
         KitchenQuestSearchField(
             value = query,
             onValueChange = { query = it },
-            placeholder = "Search saved recipes",
+            placeholder = stringResource(R.string.savedrecipes_search_saved_recipes_27f445),
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding)
         )
 
@@ -77,7 +79,7 @@ fun SavedRecipesScreen(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(KitchenQuestDimens.ScreenPadding),
-                        message = "Loading saved recipes..."
+                        message = stringResource(R.string.savedrecipes_loading_saved_recipes_45bde3)
                     )
                 }
 
@@ -91,9 +93,9 @@ fun SavedRecipesScreen(
 
                 state.favourites.isEmpty() -> {
                     KitchenQuestEmptyState(
-                        title = "No saved recipes yet",
-                        message = "Tap the heart on a recipe to keep it here.",
-                        actionText = "Browse recipes",
+                        title = stringResource(R.string.savedrecipes_no_saved_recipes_yet_d67502),
+                        message = stringResource(R.string.savedrecipes_tap_the_heart_on_a_recipe_to_keep_it_here_c79d03),
+                        actionText = stringResource(R.string.savedrecipes_browse_recipes_c60b98),
                         onAction = onBrowseRecipes,
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                     )
@@ -101,8 +103,8 @@ fun SavedRecipesScreen(
 
                 filtered.isEmpty() -> {
                     KitchenQuestEmptyState(
-                        title = "No matches",
-                        message = "No saved recipes match \"$query\".",
+                        title = stringResource(R.string.savedrecipes_no_matches_3b470c),
+                        message = stringResource(R.string.saved_no_query_matches, query),
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                     )
                 }
@@ -145,7 +147,7 @@ fun SavedRecipesScreen(
                                     IconButton(onClick = { pendingRemoval = favourite }) {
                                         Icon(
                                             Icons.Filled.Favorite,
-                                            contentDescription = "Remove from saved",
+                                            contentDescription = stringResource(R.string.savedrecipes_remove_from_saved_8bd723),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
@@ -161,8 +163,8 @@ fun SavedRecipesScreen(
     pendingRemoval?.let { favourite ->
         AlertDialog(
             onDismissRequest = { pendingRemoval = null },
-            title = { Text("Remove saved recipe?") },
-            text = { Text("${favourite.recipeTitle} will be removed from Saved Recipes.") },
+            title = { Text(stringResource(R.string.savedrecipes_remove_saved_recipe_88e079)) },
+            text = { Text(stringResource(R.string.saved_remove_dialog_message, favourite.recipeTitle)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -170,12 +172,12 @@ fun SavedRecipesScreen(
                         pendingRemoval = null
                     }
                 ) {
-                    Text("Remove")
+                    Text(stringResource(R.string.savedrecipes_remove_1063e3))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { pendingRemoval = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.savedrecipes_cancel_ea4788))
                 }
             }
         )

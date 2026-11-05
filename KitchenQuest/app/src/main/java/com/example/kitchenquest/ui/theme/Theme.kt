@@ -68,9 +68,7 @@ fun KitchenQuestTheme(
     darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // The supplied Part 2 designs define a light visual system. Dark colours are
-    // retained above for a future optional dark theme, but the prototype uses
-    // the Figma-aligned light theme unless explicitly overridden.
+    // Use the KitchenQuest light palette by default; callers can request dark mode.
     val colorScheme =
         if (darkTheme) {
             DarkColorScheme

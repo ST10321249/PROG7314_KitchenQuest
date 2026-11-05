@@ -1,6 +1,13 @@
 package com.example.kitchenquest.navigation
 
+
+import com.example.kitchenquest.R
 import android.app.Activity
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -25,11 +33,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.kitchenquest.data.auth.GoogleSignInClient
+import com.example.kitchenquest.data.auth.BiometricSettings
 import com.example.kitchenquest.data.preferences.OnboardingPreferences
+import com.example.kitchenquest.data.sync.SyncState
 import com.example.kitchenquest.data.user.DefaultUserRepository
 import com.example.kitchenquest.data.user.syncSignedInUser
 import com.example.kitchenquest.data.user.toOnboardingSelection
 import com.example.kitchenquest.feature.auth.AuthViewModel
+import com.example.kitchenquest.feature.auth.BiometricGateViewModel
+import com.example.kitchenquest.feature.auth.BiometricUnlockRules
+import com.example.kitchenquest.feature.auth.BiometricUnlockScreen
 import com.example.kitchenquest.feature.auth.ForgotPasswordScreen
 import com.example.kitchenquest.feature.auth.LoginScreen
 import com.example.kitchenquest.feature.auth.RegisterScreen
@@ -68,9 +81,14 @@ import com.example.kitchenquest.feature.shopping.ShoppingListScreen
 import com.example.kitchenquest.feature.shopping.ShoppingViewModel
 import com.example.kitchenquest.ui.components.AppScaffold
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 
 @Composable
-fun AppNavHost() {
+fun AppNavHost(
+    openMyKitchen: Boolean = false,
+    onOpenMyKitchenHandled: () -> Unit = {}
+) {
 
     val navController =
         rememberNavController()
@@ -89,8 +107,90 @@ fun AppNavHost() {
     val context =
         LocalContext.current
 
+    // Capture localized messages in composition for the asynchronous navigation callbacks.
+    val syncFailedMessage = stringResource(R.string.nav_sync_failed)
+    val saveFailedMessage = stringResource(R.string.nav_save_failed)
+
     val activity =
         context as? Activity
+
+    val biometricSettings = remember(context) {
+        BiometricSettings(context.applicationContext)
+    }
+
+    val signedInUid = authState.user?.uid
+
+    // Activity-scoped ViewModel persists a verified unlock through a language
+    // change. No unlocked state survives a cold start or process death.
+    val biometricGate: BiometricGateViewModel = viewModel()
+    val unlockedUid = biometricGate.unlockedUid
+    val signedOutSinceLaunch = biometricGate.signedOutSinceLaunch
+    val passwordFallbackRequested = biometricGate.passwordFallbackRequested
+
+    LaunchedEffect(authState.isAuthChecked, signedInUid) {
+        // Firebase can momentarily report no user while restoring a saved session.
+        // A restored session must NOT be mistaken for a new interactive login.
+        if (authState.isAuthChecked) biometricGate.sessionResolved(signedInUid)
+    }
+
+    // A configuration change (including locale switch) is NOT leaving the app.
+    // True backgrounding clears verification and locks when returning.
+    val observedUid by rememberUpdatedState(signedInUid)
+    DisposableEffect(activity) {
+        val owner = activity as? FragmentActivity
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP &&
+                owner?.isChangingConfigurations != true
+            ) {
+                val uid = observedUid
+                if (uid != null && biometricSettings.isEnabled(uid)) biometricGate.lock()
+            }
+        }
+        owner?.lifecycle?.addObserver(observer)
+        onDispose { owner?.lifecycle?.removeObserver(observer) }
+    }
+
+    val requiresBiometricUnlock = BiometricUnlockRules.shouldLock(
+        signedInUid = signedInUid,
+        biometricEnabled = signedInUid != null && biometricSettings.isEnabled(signedInUid),
+        unlockedUid = unlockedUid,
+        justSignedIn = signedOutSinceLaunch
+    )
+
+    // The system launch splash finishes first. On a cold start we briefly show
+    // KitchenQuest branding before opening the biometric prompt. The splash is
+    // NOT replayed for language changes or when returning from background.
+// Existing startup splash effect — KEEP THIS
+    LaunchedEffect(authState.isAuthChecked, signedInUid, requiresBiometricUnlock) {
+        if (authState.isAuthChecked && requiresBiometricUnlock && !biometricGate.startupSplashShown) {
+            delay(550)
+            biometricGate.finishStartupSplash()
+        }
+    }
+
+    LaunchedEffect(
+        openMyKitchen,
+        authState.isAuthChecked,
+        signedInUid,
+        requiresBiometricUnlock
+    ) {
+        if (
+            !openMyKitchen ||
+            !authState.isAuthChecked ||
+            signedInUid == null ||
+            requiresBiometricUnlock
+        ) return@LaunchedEffect
+
+        navController.currentBackStackEntryFlow.first {
+            SessionNavigationRules.isAlreadyInsideApp(it.destination.route)
+        }
+
+        navController.navigate(AppDestinations.MyKitchen) {
+            launchSingleTop = true
+        }
+
+        onOpenMyKitchenHandled()
+    }
 
     val coroutineScope =
         rememberCoroutineScope()
@@ -140,26 +240,36 @@ fun AppNavHost() {
     }
 
     var showExistingPreferencesMessage by
-    remember {
-        mutableStateOf(false)
-    }
+        remember {
+            mutableStateOf(false)
+        }
 
     // Authentication and profile synchronisation are handled together so the
     // server can decide whether this is a new or returning KitchenQuest user
     // before navigation continues. Existing server preferences always win.
     LaunchedEffect(
         authState.isAuthChecked,
-        authState.user?.uid
+        authState.user?.uid,
+        requiresBiometricUnlock,
+        passwordFallbackRequested
     ) {
 
-        if (!authState.isAuthChecked) {
+        // Do not sync the profile or navigate to protected screens before
+        // biometric verification has completed on a restored session.
+        if (!authState.isAuthChecked || requiresBiometricUnlock) {
             return@LaunchedEffect
         }
 
-        val currentRoute =
-            navController
-                .currentDestination
-                ?.route
+        // Wait until the NavHost has restored its back stack. On an Activity
+        // recreation (e.g. a locale change), the current route is Settings,
+        // Recipe Details, etc., NOT the initial splash destination.
+        val currentRoute = navController.currentBackStackEntryFlow.first().destination.route
+
+        // A restored authenticated destination is already authorized. Do not
+        // rerun initial profile sync + navigate(Home) just because language changed.
+        // This preserves Settings, current scrolling and navigation history.
+        val alreadyInsideApp = SessionNavigationRules.isAlreadyInsideApp(currentRoute)
+        if (authState.user != null && alreadyInsideApp) return@LaunchedEffect
 
         val currentUser =
             authState.user
@@ -167,10 +277,11 @@ fun AppNavHost() {
         if (currentUser == null) {
             showExistingPreferencesMessage = false
 
-            if (currentRoute == AppDestinations.Splash) {
+            if (currentRoute == AppDestinations.Splash ||
+                currentRoute == null || passwordFallbackRequested) {
                 val destination =
                     if (
-                        onboardingPreferences
+                        passwordFallbackRequested || onboardingPreferences
                             .hasAuthenticatedBefore()
                     ) {
                         AppDestinations.Login
@@ -179,12 +290,10 @@ fun AppNavHost() {
                     }
 
                 navController.navigate(destination) {
-                    popUpTo(AppDestinations.Splash) {
-                        inclusive = true
-                    }
-
+                    popUpTo(0) { inclusive = true }
                     launchSingleTop = true
                 }
+                biometricGate.passwordFallbackRequested = false
             }
 
             return@LaunchedEffect
@@ -281,7 +390,7 @@ fun AppNavHost() {
                         .makeText(
                             context,
                             failure.message
-                                ?: "Unable to sync your profile. Please try again.",
+                                ?: syncFailedMessage,
                             Toast.LENGTH_LONG
                         )
                         .show()
@@ -304,6 +413,39 @@ fun AppNavHost() {
                     }
                 }
             )
+    }
+
+    if (requiresBiometricUnlock && signedInUid != null) {
+        // Never compose protected destinations while the user is locked.
+        // A cold-start splash leads into the system biometric prompt.
+        if (!biometricGate.startupSplashShown) {
+            SessionLoadingScreen()
+            return
+        }
+        // Only the lock screen is composed until the returning user verifies.
+        BiometricUnlockScreen(
+            userId = signedInUid,
+            onUnlocked = {
+                if (authViewModel.uiState.value.user?.uid == signedInUid &&
+                    (activity as? FragmentActivity)?.lifecycle?.currentState
+                        ?.isAtLeast(Lifecycle.State.STARTED) == true
+                ) {
+                    biometricGate.verified(signedInUid)
+                }
+            },
+            onUseNormalLogin = {
+                // A password fallback must invalidate the existing Firebase
+                // session, not simply dismiss the lock screen.
+                biometricGate.lock()
+                biometricGate.passwordFallbackRequested = true
+                authViewModel.signOut()
+                coroutineScope.launch {
+                    try { googleSignInClient.clearCredentialState(context) }
+                    catch (_: Exception) { /* Account picker can still be used. */ }
+                }
+            }
+        )
+        return
     }
 
     AppScaffold(
@@ -366,7 +508,7 @@ fun AppNavHost() {
                         currentUser != null &&
                         showExistingPreferencesMessage
                     ) {
-                        "We found dietary preferences already saved for this account. Review them below and continue to keep or update them."
+                        stringResource(R.string.onboard_existing_saved)
                     } else {
                         null
                     }
@@ -444,7 +586,7 @@ fun AppNavHost() {
                                                 .makeText(
                                                     context,
                                                     failure.message
-                                                        ?: "Unable to save your preferences. Please try again.",
+                                                        ?: saveFailedMessage,
                                                     Toast.LENGTH_LONG
                                                 )
                                                 .show()
@@ -803,7 +945,18 @@ fun AppNavHost() {
                     onShoppingList = { navController.navigate(AppDestinations.ShoppingList) },
                     onIngredientClick = { navController.navigate(AppDestinations.ingredientDetailsRoute(it.id)) },
                     onFindRecipes = { navController.navigate(AppDestinations.WhatCanIMake) },
-                    onRetry = pantryViewModel::loadPantry
+                    onRetry = pantryViewModel::loadPantry,
+                    onFailedIngredientClick = pantryViewModel::showFailure,
+                    onEditFailed = { id ->
+                        pantryViewModel.dismissFailure()
+                        navController.navigate(AppDestinations.ingredientEditorRoute(id))
+                    },
+                    onDeleteFailed = { id ->
+                        pantryViewModel.deleteItem(id)
+                        pantryViewModel.dismissFailure()
+                    },
+                    onDismissFailure = pantryViewModel::dismissFailure
+
                 )
             }
 
@@ -873,6 +1026,7 @@ fun AppNavHost() {
                         initialExpiryDate = existing?.expiryDate,
                         isEditing = existing != null,
                         knownIngredients = pantryState.items,
+                        syncState = existing?.syncState ?: SyncState.SYNCED,
                         onBack = { navController.popBackStack() },
                         onSave = { name, quantity, unit, category, expiryDate ->
                             if (existing != null) {
@@ -1021,7 +1175,9 @@ fun AppNavHost() {
                     onTogglePurchased = shoppingViewModel::togglePurchased,
                     onMoveToPantry = shoppingViewModel::moveToPantry,
                     onRemove = shoppingViewModel::removeItem,
-                    onClear = shoppingViewModel::clearList
+                    onClear = shoppingViewModel::clearList,
+                    onShowFailure = shoppingViewModel::showFailure,
+                    onDismissFailure = shoppingViewModel::dismissFailure
                 )
             }
 
@@ -1060,6 +1216,7 @@ fun AppNavHost() {
                 AppDestinations.KitchenTimer
             ) {
                 KitchenTimerScreen(
+                    onBack = { navController.popBackStack() },
                     onStartTimer = { minutes, label ->
                         cookingViewModel.startStandaloneTimer(minutes, label)
                         navController.navigate(AppDestinations.ActiveTimers)
@@ -1071,10 +1228,12 @@ fun AppNavHost() {
                 AppDestinations.RecipeComplete
             ) {
                 val cookingState by cookingViewModel.uiState.collectAsState()
-                val recipeTitle = cookingState.recipe?.title ?: "Recipe"
+                val recipeTitle = cookingState.recipe?.title ?: stringResource(R.string.nav_recipe_fallback)
+                val readyInMinutes = cookingState.recipe?.readyInMinutes
 
                 RecipeCompleteScreen(
                     recipeTitle = recipeTitle,
+                    readyInMinutes = readyInMinutes,
                     onSave = { rating, difficulty, note ->
                         cookingViewModel.completeCooking(rating, difficulty, note) {
                             navController.navigate(AppDestinations.Home) {
@@ -1096,6 +1255,13 @@ fun AppNavHost() {
 
                 CookingHistoryScreen(
                     state = cookingHistoryState,
+                    onBack = { navController.popBackStack() },
+                    onFilterSelected = cookingHistoryViewModel::selectFilter,
+                    onRecipeClick = { entry ->
+                        navController.navigate(
+                            AppDestinations.recipeDetailsRoute(entry.recipeSourceId)
+                        )
+                    },
                     onRetry = cookingHistoryViewModel::load
                 )
             }
@@ -1151,6 +1317,7 @@ fun AppNavHost() {
                 SettingsScreen(
                     state =
                         settingsState,
+                    userId = authState.user?.uid.orEmpty(),
 
                     onBack = {
                         navController
@@ -1172,8 +1339,15 @@ fun AppNavHost() {
                     onRetry =
                         settingsViewModel::loadProfile,
 
+                    onBiometricsEnabled = {
+                        // Enabling the preference already requested a system
+                        // biometric check. Prompt again on the next app entry.
+                        authState.user?.uid?.let(biometricGate::verified)
+                    },
+
                     onSignOut = {
 
+                        biometricGate.lock()
                         authViewModel
                             .signOut()
 

@@ -1,15 +1,26 @@
+const mongoose = require('mongoose');
 const PantryItem = require('../models/PantryItem');
 const ApiError = require('../utils/ApiError');
+const createOnce = require('../utils/createOnce');
 
 function toDto(item) {
   return {
     id: item._id.toString(),
+    clientId: item.clientId ?? null,
     ingredientName: item.ingredientName,
     quantity: item.quantity,
     unit: item.unit,
     category: item.category,
     expiryDate: item.expiryDate ? item.expiryDate.toISOString().slice(0, 10) : null,
+    updatedAt: item.updatedAt ? item.updatedAt.toISOString() : null,
   };
+}
+
+// An id that is not a valid Mongo id can never match an item, so treat it as not found.
+function requireValidId(id) {
+  if (!mongoose.isValidObjectId(id)) {
+    throw new ApiError(404, 'Pantry item not found');
+  }
 }
 
 async function getPantryItems(req, res, next) {
@@ -23,8 +34,8 @@ async function getPantryItems(req, res, next) {
 
 async function addPantryItem(req, res, next) {
   try {
-    const item = await PantryItem.create({ ...req.body, userId: req.user.uid });
-    res.status(201).json(toDto(item));
+    const { doc, created } = await createOnce(PantryItem, req.user.uid, req.body);
+    res.status(created ? 201 : 200).json(toDto(doc));
   } catch (err) {
     next(err);
   }
@@ -32,6 +43,8 @@ async function addPantryItem(req, res, next) {
 
 async function updatePantryItem(req, res, next) {
   try {
+    requireValidId(req.params.id);
+
     const item = await PantryItem.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.uid },
       { $set: req.body },
@@ -50,6 +63,8 @@ async function updatePantryItem(req, res, next) {
 
 async function deletePantryItem(req, res, next) {
   try {
+    requireValidId(req.params.id);
+
     const item = await PantryItem.findOneAndDelete({
       _id: req.params.id,
       userId: req.user.uid,
@@ -65,4 +80,4 @@ async function deletePantryItem(req, res, next) {
   }
 }
 
-module.exports = { getPantryItems, addPantryItem, updatePantryItem, deletePantryItem };
+module.exports = { getPantryItems, addPantryItem, updatePantryItem, deletePantryItem, toDto };

@@ -1,14 +1,27 @@
+const mongoose = require('mongoose');
 const ShoppingListItem = require('../models/ShoppingListItem');
+const PantryItem = require('../models/PantryItem');
 const ApiError = require('../utils/ApiError');
+const createOnce = require('../utils/createOnce');
+const { toDto: pantryToDto } = require('./pantryController');
 
 function toDto(item) {
   return {
     id: item._id.toString(),
+    clientId: item.clientId ?? null,
     ingredientName: item.ingredientName,
     quantity: item.quantity,
     unit: item.unit,
     isPurchased: item.isPurchased,
+    updatedAt: item.updatedAt ? item.updatedAt.toISOString() : null,
   };
+}
+
+// An id that is not a valid Mongo id can never match an item, so treat it as not found.
+function requireValidId(id) {
+  if (!mongoose.isValidObjectId(id)) {
+    throw new ApiError(404, 'Shopping item not found');
+  }
 }
 
 async function getShoppingItems(req, res, next) {
@@ -22,8 +35,8 @@ async function getShoppingItems(req, res, next) {
 
 async function addShoppingItem(req, res, next) {
   try {
-    const item = await ShoppingListItem.create({ ...req.body, userId: req.user.uid });
-    res.status(201).json(toDto(item));
+    const { doc, created } = await createOnce(ShoppingListItem, req.user.uid, req.body);
+    res.status(created ? 201 : 200).json(toDto(doc));
   } catch (err) {
     next(err);
   }
@@ -31,6 +44,8 @@ async function addShoppingItem(req, res, next) {
 
 async function updateShoppingItem(req, res, next) {
   try {
+    requireValidId(req.params.id);
+
     const item = await ShoppingListItem.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.uid },
       { $set: req.body },
@@ -46,6 +61,8 @@ async function updateShoppingItem(req, res, next) {
 
 async function deleteShoppingItem(req, res, next) {
   try {
+    requireValidId(req.params.id);
+
     const item = await ShoppingListItem.findOneAndDelete({
       _id: req.params.id,
       userId: req.user.uid,
@@ -58,4 +75,31 @@ async function deleteShoppingItem(req, res, next) {
   }
 }
 
-module.exports = { getShoppingItems, addShoppingItem, updateShoppingItem, deleteShoppingItem };
+// Moves a bought item into the pantry. The pantry item is created first and the shopping
+// item removed second, and both steps are safe to repeat, so a request that is resent
+// after a timeout finishes the job instead of duplicating or losing the item.
+async function transferToPantry(req, res, next) {
+  try {
+    const { shoppingItemId, shoppingClientId, pantryItem } = req.body;
+    const userId = req.user.uid;
+
+    const { doc, created } = await createOnce(PantryItem, userId, pantryItem);
+
+    const shoppingFilter = shoppingItemId
+      ? { _id: shoppingItemId, userId }
+      : { clientId: shoppingClientId, userId };
+    await ShoppingListItem.deleteOne(shoppingFilter);
+
+    res.status(created ? 201 : 200).json(pantryToDto(doc));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  getShoppingItems,
+  addShoppingItem,
+  updateShoppingItem,
+  deleteShoppingItem,
+  transferToPantry,
+};

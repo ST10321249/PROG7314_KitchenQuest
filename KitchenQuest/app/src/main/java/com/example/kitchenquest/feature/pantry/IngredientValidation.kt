@@ -9,11 +9,11 @@ data class IngredientFormErrors(
 ) {
     val hasErrors get() = name != null || quantity != null || expiryDate != null
 }
-
 fun validateIngredientForm(
     name: String,
     quantityText: String,
-    expiryDate: String?
+    expiryDate: String?,
+    originalExpiryDate: String? = null
 ): IngredientFormErrors {
     val nameError = if (name.isBlank()) "Ingredient name is required" else null
 
@@ -25,13 +25,18 @@ fun validateIngredientForm(
         else -> null
     }
 
-    val expiryError = if (expiryDate != null) {
-        try {
-            if (LocalDate.parse(expiryDate).isBefore(LocalDate.now())) "Expiry date can't be in the past" else null
+    val expiryError = when {
+        expiryDate == null -> null
+        expiryDate == originalExpiryDate -> null
+        else -> try {
+            if (LocalDate.parse(expiryDate).isBefore(LocalDate.now())) {
+                "Expiry date can't be in the past"
+            } else {
+                null
+            }
         } catch (error: Exception) {
             "Invalid date"
         }
-    } else null
-
+    }
     return IngredientFormErrors(nameError, quantityError, expiryError)
 }

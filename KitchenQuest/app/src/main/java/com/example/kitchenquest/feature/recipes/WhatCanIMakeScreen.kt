@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.recipes
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,17 +29,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.data.recipes.RecipeRecommendationDto
-import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
 import com.example.kitchenquest.ui.components.KitchenQuestEmptyState
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
 import com.example.kitchenquest.ui.components.KitchenQuestIconButton
 import com.example.kitchenquest.ui.components.KitchenQuestLoadingState
-import com.example.kitchenquest.ui.components.KitchenQuestSecondaryButton
 import com.example.kitchenquest.ui.components.KitchenQuestTopBar
 import com.example.kitchenquest.ui.theme.KitchenAmber
 import com.example.kitchenquest.ui.theme.KitchenGreen
+import com.example.kitchenquest.ui.theme.KitchenGreenLight
 import com.example.kitchenquest.ui.theme.KitchenOrangeLight
 import com.example.kitchenquest.ui.theme.KitchenQuestDimens
 
@@ -55,13 +62,13 @@ fun WhatCanIMakeScreen(
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         KitchenQuestTopBar(
-            title = "What Can I Make?",
+            title = stringResource(R.string.whatcanimake_what_can_i_make_726bfa),
             onBack = onBack,
             modifier = Modifier.padding(horizontal = KitchenQuestDimens.ScreenPadding),
             actions = {
                 KitchenQuestIconButton(
                     icon = Icons.Filled.Favorite,
-                    contentDescription = "Saved recipes",
+                    contentDescription = stringResource(R.string.whatcanimake_saved_recipes_10b031),
                     onClick = onSavedRecipes
                 )
             }
@@ -73,17 +80,14 @@ fun WhatCanIMakeScreen(
             verticalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
         ) {
             state.pantryIngredients.forEach { ingredient ->
-                KitchenQuestChoiceChip(
-                    text = if (ingredient in state.selectedIngredients) "$ingredient ×" else ingredient,
+                IngredientSelectionChip(
+                    text = ingredient,
                     selected = ingredient in state.selectedIngredients,
                     onClick = { onToggleIngredient(ingredient) }
                 )
             }
 
-            KitchenQuestSecondaryButton(
-                text = "+ Add ingredient",
-                onClick = onAddIngredient
-            )
+            AddIngredientChip(onClick = onAddIngredient)
         }
 
         state.actionMessage?.let { message ->
@@ -107,7 +111,7 @@ fun WhatCanIMakeScreen(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(KitchenQuestDimens.ScreenPadding),
-                        message = "Matching recipes to your kitchen..."
+                        message = stringResource(R.string.whatcanimake_matching_recipes_to_your_kitchen_aed261)
                     )
                 }
 
@@ -121,18 +125,18 @@ fun WhatCanIMakeScreen(
 
                 state.selectedIngredients.isEmpty() -> {
                     KitchenQuestEmptyState(
-                        title = "Choose at least one ingredient",
-                        message = "Tap an ingredient above to include it in recipe matching.",
+                        title = stringResource(R.string.whatcanimake_choose_at_least_one_ingredient_3b808f),
+                        message = stringResource(R.string.whatcanimake_tap_an_ingredient_above_to_include_it_in_recipe_matching_51dd98),
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding)
                     )
                 }
 
                 state.recommendations.isEmpty() -> {
                     KitchenQuestEmptyState(
-                        title = "No matches yet",
-                        message = "Add more ingredients to My Kitchen or try a different combination.",
+                        title = stringResource(R.string.whatcanimake_no_matches_yet_d6e5dc),
+                        message = stringResource(R.string.whatcanimake_add_more_ingredients_to_my_kitchen_or_try_a_different_com_80328b),
                         modifier = Modifier.padding(KitchenQuestDimens.ScreenPadding),
-                        actionText = "Add ingredient",
+                        actionText = stringResource(R.string.whatcanimake_add_ingredient_590a4f),
                         onAction = onAddIngredient
                     )
                 }
@@ -152,12 +156,13 @@ fun WhatCanIMakeScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "${state.recommendations.size} matches",
+                                    text = stringResource(R.string.what_matches_format, state.recommendations.size),
                                     modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Best match",
+                                    text = stringResource(R.string.whatcanimake_best_match_c09359),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -179,6 +184,67 @@ fun WhatCanIMakeScreen(
 }
 
 @Composable
+private fun IngredientSelectionChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+    val textColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Surface(
+        modifier = Modifier
+            .heightIn(min = 36.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(KitchenQuestDimens.ChipCorner),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Text(
+            text = if (selected) "$text  ×" else text,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor
+        )
+    }
+}
+
+@Composable
+private fun AddIngredientChip(
+    onClick: () -> Unit
+) {
+    val orange = MaterialTheme.colorScheme.primary
+    val corner = 18.dp
+
+    Box(
+        modifier = Modifier
+            .heightIn(min = 36.dp)
+            .drawBehind {
+                drawRoundRect(
+                    color = orange,
+                    cornerRadius = CornerRadius(corner.toPx(), corner.toPx()),
+                    style = Stroke(
+                        width = 1.25.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(
+                            intervals = floatArrayOf(7.dp.toPx(), 5.dp.toPx()),
+                            phase = 0f
+                        )
+                    )
+                )
+            }
+            .clickable(onClick = onClick)
+            .padding(horizontal = 13.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(R.string.whatcanimake_add_ingredient_39d698),
+            style = MaterialTheme.typography.labelMedium,
+            color = orange
+        )
+    }
+}
+
+@Composable
 private fun RecommendationCard(
     recommendation: RecipeRecommendationDto,
     onClick: () -> Unit,
@@ -186,6 +252,7 @@ private fun RecommendationCard(
 ) {
     val percent = (recommendation.matchRatio * 100).toInt()
     val ratioColor = if (recommendation.matchRatio >= 0.75) KitchenGreen else KitchenAmber
+    val imageBackground = if (recommendation.matchRatio >= 0.75) KitchenGreenLight else KitchenOrangeLight
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -197,12 +264,12 @@ private fun RecommendationCard(
         Column(modifier = Modifier.padding(KitchenQuestDimens.MediumSpacing)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    modifier = Modifier.size(56.dp),
+                    modifier = Modifier.size(54.dp),
                     shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
-                    color = KitchenOrangeLight
+                    color = imageBackground
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("🍲", style = MaterialTheme.typography.headlineSmall)
+                        Text("🍲", style = MaterialTheme.typography.titleLarge)
                     }
                 }
 
@@ -211,9 +278,25 @@ private fun RecommendationCard(
                         .weight(1f)
                         .padding(horizontal = KitchenQuestDimens.MediumSpacing)
                 ) {
-                    Text(recommendation.title, style = MaterialTheme.typography.titleSmall)
-                    Text("$percent% ingredient match", style = MaterialTheme.typography.labelMedium, color = ratioColor)
+                    Text(
+                        text = recommendation.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(KitchenQuestDimens.TinySpacing))
+                    Text(
+                        text = stringResource(R.string.what_ingredient_match, percent),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ratioColor
+                    )
                 }
+
+                Text(
+                    text = "$percent%",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = ratioColor
+                )
             }
 
             Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
@@ -223,20 +306,22 @@ private fun RecommendationCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp),
-                color = ratioColor
+                color = ratioColor,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
 
             if (recommendation.missingIngredients.isNotEmpty()) {
                 Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Missing: ${recommendation.missingIngredients.joinToString(", ")}",
+                        text = stringResource(R.string.what_missing_ingredients, recommendation.missingIngredients.joinToString(", ")),
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2
                     )
                     Text(
-                        text = "Add to list",
+                        text = stringResource(R.string.whatcanimake_add_to_list_4db44a),
                         modifier = Modifier
                             .clickable(onClick = onAddMissing)
                             .padding(KitchenQuestDimens.SmallSpacing),

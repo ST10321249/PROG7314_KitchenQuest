@@ -1,5 +1,6 @@
 package com.example.kitchenquest.feature.profile
 
+import com.example.kitchenquest.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.components.KitchenQuestErrorState
 import com.example.kitchenquest.ui.components.KitchenQuestIconButton
@@ -61,7 +63,7 @@ fun ProfileScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Profile",
+                            text = stringResource(R.string.profile_profile_cce99c),
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onPrimary
@@ -69,7 +71,7 @@ fun ProfileScreen(
 
                         KitchenQuestIconButton(
                             icon = Icons.Filled.Settings,
-                            contentDescription = "Settings",
+                            contentDescription = stringResource(R.string.profile_settings_f4f707),
                             onClick = onSettings
                         )
                     }
@@ -94,7 +96,7 @@ fun ProfileScreen(
                     Spacer(Modifier.height(KitchenQuestDimens.SmallSpacing))
 
                     Text(
-                        text = state.displayName.ifBlank { "KitchenQuest cook" },
+                        text = state.displayName.ifBlank { stringResource(R.string.profile_kitchenquest_cook_aa90ad) },
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onPrimary
@@ -127,9 +129,9 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(KitchenQuestDimens.SmallSpacing)
                 ) {
-                    StatCard("${state.mealsCooked}", "Meals cooked", Modifier.weight(1f))
-                    StatCard("${state.savedRecipes}", "Saved recipes", Modifier.weight(1f))
-                    StatCard("${state.expiringSoon}", "Expiring soon", Modifier.weight(1f))
+                    StatCard("${state.mealsCooked}", stringResource(R.string.profile_meals_cooked_f956fe), Modifier.weight(1f))
+                    StatCard("${state.savedRecipes}", stringResource(R.string.profile_saved_recipes_316c09), Modifier.weight(1f))
+                    StatCard("${state.expiringSoon}", stringResource(R.string.profile_expiring_soon_7b4ec0), Modifier.weight(1f))
                 }
 
                 state.averageRating?.let { rating ->
@@ -146,12 +148,12 @@ fun ProfileScreen(
                             Spacer(Modifier.size(KitchenQuestDimens.MediumSpacing))
                             Column {
                                 Text(
-                                    text = "${"%.1f".format(rating)} average rating",
+                                    text = stringResource(R.string.profile_average_rating_format, "%.1f".format(rating)),
                                     style = MaterialTheme.typography.titleSmall,
                                     color = KitchenGreen
                                 )
                                 Text(
-                                    text = "Based on recipes you've rated after cooking.",
+                                    text = stringResource(R.string.profile_based_on_recipes_you_ve_rated_after_cooking_a81718),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -161,13 +163,13 @@ fun ProfileScreen(
 
                 ProfileLink(
                     emoji = "❤️",
-                    title = "Saved recipes",
+                    title = stringResource(R.string.profile_saved_recipes_10b031),
                     onClick = onSavedRecipes
                 )
 
                 ProfileLink(
                     emoji = "📖",
-                    title = "Cooking history",
+                    title = stringResource(R.string.profile_cooking_history_4eae4d),
                     onClick = onCookingHistory
                 )
             }

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -38,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -183,7 +183,7 @@ fun KitchenQuestChoiceChip(
         colors = FilterChipDefaults.filterChipColors(
             containerColor = MaterialTheme.colorScheme.surface,
             labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
             selectedLabelColor = MaterialTheme.colorScheme.primary
         )
     )
@@ -203,23 +203,28 @@ fun KitchenQuestTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (onBack != null) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.size(KitchenQuestDimens.TouchTarget)
+            Surface(
+                modifier = Modifier.size(KitchenQuestDimens.TouchTarget),
+                shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(KitchenQuestDimens.SmallSpacing))
+            Spacer(modifier = Modifier.width(KitchenQuestDimens.MediumSpacing))
         }
 
         Text(
             text = title,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
 
@@ -336,10 +341,12 @@ fun KitchenQuestSearchField(
         ),
         shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+            unfocusedBorderColor = Color.Transparent,
+            focusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
 }
@@ -353,8 +360,9 @@ fun KitchenQuestIconButton(
 ) {
     Surface(
         modifier = modifier.size(KitchenQuestDimens.TouchTarget),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant
+        shape = RoundedCornerShape(KitchenQuestDimens.MediumCorner),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         IconButton(onClick = onClick) {
             Icon(

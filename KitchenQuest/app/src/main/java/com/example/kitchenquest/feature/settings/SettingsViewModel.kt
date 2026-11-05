@@ -57,6 +57,7 @@ class SettingsViewModel(
                             hasLoaded = true,
                             displayName = profile.displayName,
                             email = profile.email,
+                            profileLanguage = profile.language,
                             dietaryPreferences = profile.dietaryPreferences.toSet(),
                             avoidedIngredients = profile.avoidedIngredients.toSet(),
                             hasUnsavedChanges = false

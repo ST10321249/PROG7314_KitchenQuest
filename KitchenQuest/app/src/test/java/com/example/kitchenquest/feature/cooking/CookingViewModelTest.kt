@@ -198,6 +198,8 @@ class CookingViewModelTest {
         viewModel.completeCooking(rating = null, difficulty = null, note = null) {}
 
         assertTrue(state.timers.isEmpty())
+        assertEquals(null, state.recipe)
+        assertEquals(0, state.currentStepIndex)
     }
 
     private companion object {
