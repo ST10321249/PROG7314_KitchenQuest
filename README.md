@@ -13,6 +13,8 @@ The project progressed from competitor research and a Figma design in **Part 1**
 - **Backend routes and configuration:** [Backend README](backend/README.md)
 - **GitHub Actions:** [Android and backend CI runs](https://github.com/ST10321249/PROG7314_KitchenQuest/actions)
 - **Demo video:** [Watch the KitchenQuest demonstration](https://youtu.be/TLxaVVVlTd8)
+- **Signed Android APK:** [Download KitchenQuest v2.0.0](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/download/Final-POE/app-release.apk)
+- **Release details:** [KitchenQuest Final POE release](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/tag/Final-POE)
 
 ## Screenshots and app walkthrough
 
@@ -123,20 +125,22 @@ The screenshots above show the related screens. Finished-dish photographs are up
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    UI[Android app: Kotlin / Jetpack Compose] --> VM[ViewModels and repositories]
-    VM --> DB[Room local database]
-    VM --> HTTP[Retrofit / OkHttp]
-    DB --> SYNC[Queued offline changes and WorkManager]
-    SYNC --> HTTP
-    HTTP --> API[Express REST API on Render]
-    API --> MONGO[(MongoDB Atlas / Mongoose)]
-    API --> GRID[(MongoDB GridFS dish photos)]
-    API --> SPOON[Spoonacular recipe API]
-    UI --> AUTH[Firebase Authentication / Google SSO]
-    API --> FCM[Firebase Admin / Cloud Messaging]
-    FCM --> UI
+The Android app handles the screens and local storage, while the backend handles cloud data and external recipe requests.
+
+```text
+Android app (Kotlin + Jetpack Compose)
+  -> ViewModels and repositories
+      -> RoomDB (pantry, shopping and cached recipes on the phone)
+      -> Retrofit / OkHttp -> Express REST API (Render)
+          -> MongoDB Atlas (accounts, pantry, shopping and history)
+          -> MongoDB GridFS (finished-dish photos)
+          -> Spoonacular API (recipe search and recommendations)
+
+Firebase Authentication -> Android sign-in -> Firebase ID token -> Express API
+Express API -> Firebase Admin / FCM -> Android push notifications
+RoomDB -> WorkManager -> Express API (sync offline changes)
+Android WorkManager -> local expiry reminders
+Android AlarmManager -> cooking timer notifications
 ```
 
 **Android:** Kotlin, Jetpack Compose, MVVM, RoomDB, WorkManager, Retrofit/OkHttp, Kotlin serialization, Firebase Auth, AndroidX Biometric, Firebase Cloud Messaging and Google ML Kit Translate.
@@ -238,7 +242,9 @@ The Android configuration supports a release key supplied privately using `Kitch
 .\gradlew.bat assembleRelease
 ```
 
-Verify the APK signature with Android's `apksigner verify --verbose --print-certs <path-to-apk>` and install it on a physical device. Release APKs can be distributed through GitHub Releases rather than committed to the source repository. The configured app version is **2.0.0 (version code 2)**.
+The signed **KitchenQuest v2.0.0 APK** is available from the [GitHub release](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/tag/Final-POE) or as a [direct APK download](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/download/Final-POE/app-release.apk). Download it onto an Android phone and install it to try the app without building from source.
+
+To produce a signed APK yourself, use **Build > Generate Signed Bundle / APK > APK > release** in Android Studio with your own private signing key. The Gradle command above only creates a signed APK when release signing has been configured. You can verify the signature with `apksigner verify --verbose --print-certs <path-to-apk>`. Keep the `.jks` keystore and its passwords private. The configured app version is **2.0.0 (version code 2)**.
 
 ## Tests, GitHub and CI
 
