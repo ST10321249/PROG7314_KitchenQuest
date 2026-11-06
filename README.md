@@ -20,65 +20,81 @@ The project progressed from competitor research and a Figma design in **Part 1**
 
 ## Screenshots and app walkthrough
 
-The screenshots below should come from the **final app running on a physical Android phone**, not the original Figma mockups. Replace each bracketed line with a real GitHub Markdown image reference after taking your screenshots (for example, `![Home screen](docs/screenshots/home.png)`). Keep private email addresses and tokens out of screenshots.
+These screenshots were captured from KitchenQuest running on an Android phone. They show the actual application screens, not the original Part 1 wireframes. The original JPEG files are included under [`docs/screenshots/`](docs/screenshots/).
 
-### 1. Welcome and account security
+### 1. Account creation and onboarding
 
-[placeholder image for the KitchenQuest splash screen]
+Users can sign in with email/password or Google, create an account, and save dietary preferences and ingredients to avoid during onboarding. Returning users can update those preferences later. Biometric quick unlock is also available for previously authenticated sessions when enabled.
 
-[placeholder image for the login and Google sign-in screen]
+| **Login screen** | **Create account** | **Initial dietary preferences** |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/login.jpg" alt="Login screen" width="205"> | <img src="docs/screenshots/create-account.jpg" alt="Create account" width="205"> | <img src="docs/screenshots/initial-preferences.jpg" alt="Initial dietary preferences" width="205"> |
 
-[placeholder image for the biometric quick unlock screen]
-
-Users can create an account, sign in with email/password or Google, reset a password and configure biometric quick unlock. Biometric authentication protects an existing Firebase session; it does not replace initial account sign-in. The onboarding flow saves dietary preferences and ingredients to avoid.
+| **Saved dietary preferences** |
+| :---: |
+| <img src="docs/screenshots/existing-preferences.jpg" alt="Saved dietary preferences" width="205"> |
 
 ### 2. Home and My Kitchen
 
-[placeholder image for the Home dashboard showing pantry counts and expiring ingredients]
+Home gives a summary of pantry items, shopping entries, recipe shortcuts and ingredients near expiry. My Kitchen groups expiring ingredients separately and allows users to maintain their pantry.
 
-[placeholder image for the My Kitchen ingredient list and expiry warnings]
+| **Home dashboard** | **My Kitchen with expiring items** |
+| :---: | :---: |
+| <img src="docs/screenshots/home-screen.jpg" alt="Home dashboard" width="205"> | <img src="docs/screenshots/my-kitchen.jpg" alt="My Kitchen with expiring items" width="205"> |
 
-[placeholder image for the add or edit ingredient screen]
+### 3. Recipes and Shopping List
 
-Home provides shortcuts to recipes, timers, shopping and ingredient-based discovery. My Kitchen stores ingredient names, quantities, units, categories and optional expiry dates. Users can add, edit, search and remove ingredients. Items near expiry are highlighted, with reminders controlled from Settings.
+Users can search for recipes, open recipe details, adjust servings, save favourites and keep a shopping list. The *What Can I Make?* feature additionally matches recipes against pantry ingredients and identifies missing items.
 
-### 3. Recipes and shopping
+| **Browse and search recipes** | **Recipe details and ingredient quantities** | **Saved recipes** |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/recipes.jpg" alt="Browse and search recipes" width="205"> | <img src="docs/screenshots/recipe-details.jpg" alt="Recipe details and ingredient quantities" width="205"> | <img src="docs/screenshots/saved-recipes.jpg" alt="Saved recipes" width="205"> |
 
-[placeholder image for recipe search and recipe categories]
+| **Shopping list** |
+| :---: |
+| <img src="docs/screenshots/shopping-list.jpg" alt="Shopping list" width="205"> |
 
-[placeholder image for What Can I Make showing ingredient matches and missing ingredients]
+### 4. Cooking, timers and history
 
-[placeholder image for recipe details with serving-size adjustments]
+Cooking Mode presents recipe steps, with a separate timer screen and a record of completed meals. The completion screen supports ratings, difficulty feedback, notes and optional dish-photo uploads. The screenshots below show the screens and controls, not proof of an uploaded dish photo.
 
-[placeholder image for the Shopping List]
+| **Cook screen** | **Step-by-step cooking** | **Kitchen timer** |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/cook-hub.jpg" alt="Cook screen" width="205"> | <img src="docs/screenshots/cooking-steps.jpg" alt="Step-by-step cooking" width="205"> | <img src="docs/screenshots/kitchen-timer.jpg" alt="Kitchen timer" width="205"> |
 
-Recipes are retrieved through our hosted API, which queries Spoonacular. **What Can I Make?** compares recipes against pantry ingredients and shows the match ratio and missing ingredients. Recipe details support serving-size changes. Missing ingredients can be added to the shopping list, and purchased items can be transferred into the pantry.
+| **Recipe completion and feedback** | **Cooking history** |
+| :---: | :---: |
+| <img src="docs/screenshots/recipe-complete.jpg" alt="Recipe completion and feedback" width="205"> | <img src="docs/screenshots/cooking-history.jpg" alt="Cooking history" width="205"> |
 
-### 4. Cooking and personal records
+### 5. Profile and Settings
 
-[placeholder image for Cooking Mode with a recipe step and timer]
+Profile summarises completed cooking activity and links to saved recipes and history. Settings includes biometric unlock, expiry reminders, language selection, and dietary preferences.
 
-[placeholder image for the Active Timers or Kitchen Timer screen]
+| **Profile and cooking statistics** | **Account and notification settings** | **Enabled security and notification preferences** |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/profile.jpg" alt="Profile and cooking statistics" width="205"> | <img src="docs/screenshots/settings.jpg" alt="Account and notification settings" width="205"> | <img src="docs/screenshots/settings-enabled.jpg" alt="Enabled security and notification preferences" width="205"> |
 
-[placeholder image for recipe completion with a dish photo]
+| **Dietary and avoided ingredient settings** |
+| :---: |
+| <img src="docs/screenshots/settings-preferences.jpg" alt="Dietary and avoided ingredient settings" width="205"> |
 
-[placeholder image for Cooking History showing ratings and a saved dish photo]
+### 6. English and Afrikaans
 
-Cooking Mode displays steps one at a time. Recipe timers and the standalone kitchen timer share a timer system, with alarms for completed timers. The app stores cooking progress locally so it can be restored. Completed dishes can be recorded with a rating, difficulty feedback, note and an optional photograph.
+KitchenQuest supports in-app language switching between English and Afrikaans. These captures show the language selector and translated Settings and Home screens.
 
-### 5. Final POE evidence screens
+| **Select English or Afrikaans** | **Settings in Afrikaans** | **Home in Afrikaans** |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/choose-language.jpg" alt="Select English or Afrikaans" width="205"> | <img src="docs/screenshots/afrikaans-settings.jpg" alt="Settings in Afrikaans" width="205"> | <img src="docs/screenshots/afrikaans-home.jpg" alt="Home in Afrikaans" width="205"> |
 
-[placeholder image for offline pantry changes waiting to sync]
+### 7. Notifications
 
-[placeholder image for the same items after reconnecting and successful synchronization]
+The Notifications screen displays kitchen reminders and includes actions to test the Firebase push-notification flow and check local expiry reminders. The Android notification-shade screenshot shows an actual received message; local cooking-timer and expiry alerts are separate notification paths.
 
-[placeholder image for Settings in Afrikaans]
+| **Notifications screen and test actions** | **Notification delivered to Android** |
+| :---: | :---: |
+| <img src="docs/screenshots/notifications-screen.jpg" alt="Notifications screen and test actions" width="205"> | <img src="docs/screenshots/push-notification.jpg" alt="Notification delivered to Android" width="205"> |
 
-[placeholder image for the Firebase Cloud Messaging test notification received on the device]
-
-[placeholder image for the Notifications screen and notification preferences]
-
-These last screenshots support the POE-specific requirements. The demonstration video must also show the changes reflected in the actual backend database, not merely the Android interface.
+**Demonstration evidence:** The final video will additionally show biometric unlock, offline sync/reconnection, Firebase push delivery, and backend/database updates on a physical device. These scenarios are not represented by separate screenshots in this collection.
 
 ## Key features
 
@@ -257,7 +273,7 @@ Show a working install and the actual app on a physical phone, with an explanato
 - Recipe artwork in the current UI is mostly icon-based; user-provided dish photos are stored in GridFS.
 - Google ML Kit's translation service/model download exists, but it is not automatically applied to all API or user-entered recipe text.
 - Some advanced Part 1 filters and optional voice/barcode ideas are not implemented.
-- Screenshot placeholders above must be replaced with actual captures, and the demonstration video and verified signed APK must be linked before submission.
+- The screenshots above are included in `docs/screenshots/`. The demonstration video and verified signed APK still need to be linked before submission.
 - Verify biometric behavior after an uninstall/reinstall and account switching on real devices; Android backup configuration matters.
 
 ## Team and acknowledgements
