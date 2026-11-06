@@ -955,6 +955,7 @@ fun AppNavHost(
                         pantryViewModel.deleteItem(id)
                         pantryViewModel.dismissFailure()
                     },
+                    onRetryFailedTransfer = pantryViewModel::retryFailedTransfer,
                     onDismissFailure = pantryViewModel::dismissFailure
 
                 )
@@ -1234,6 +1235,8 @@ fun AppNavHost(
                 RecipeCompleteScreen(
                     recipeTitle = recipeTitle,
                     readyInMinutes = readyInMinutes,
+                    isSaving = cookingState.isCompleting,
+                    saveFailure = cookingState.completionError,
                     onSave = { rating, difficulty, note ->
                         cookingViewModel.completeCooking(rating, difficulty, note) {
                             navController.navigate(AppDestinations.Home) {

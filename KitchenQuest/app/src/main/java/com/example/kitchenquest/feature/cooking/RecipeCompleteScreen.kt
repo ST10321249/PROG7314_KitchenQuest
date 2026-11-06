@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -56,7 +57,9 @@ fun RecipeCompleteScreen(
     recipeTitle: String,
     readyInMinutes: Int?,
     onSave: (rating: Int?, difficulty: String?, note: String?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSaving: Boolean = false,
+    saveFailure: CookingSaveFailure? = null
 ) {
     var rating by rememberSaveable { mutableIntStateOf(0) }
     var difficulty by rememberSaveable { mutableStateOf<String?>(null) }
@@ -229,10 +232,26 @@ fun RecipeCompleteScreen(
 
         Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
+        saveFailure?.let { failure ->
+            Text(
+                text = stringResource(
+                    if (failure == CookingSaveFailure.HISTORY) R.string.cooking_save_history_failed
+                    else R.string.cooking_save_note_failed
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+        }
+        if (isSaving) {
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.height(KitchenQuestDimens.SmallSpacing))
+        }
+
         KitchenQuestPrimaryButton(
             text = stringResource(R.string.recipecomplete_save_finish_5273d8),
             onClick = {
-                onSave(
+                if (!isSaving) onSave(
                     rating.takeIf { it > 0 },
                     difficulty,
                     note.trim().takeIf { it.isNotBlank() }

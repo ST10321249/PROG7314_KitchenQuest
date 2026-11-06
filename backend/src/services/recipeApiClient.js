@@ -70,4 +70,18 @@ async function findByIngredients(ingredients, number = 10) {
   return response.json();
 }
 
-module.exports = { searchRecipes, getRecipeById, findByIngredients };
+// Fetch details in one request so dietary/ingredient restrictions can be checked
+// without making one network request per recommendation.
+async function getRecipesInformationBulk(ids) {
+  if (!ids.length) return [];
+  const params = new URLSearchParams({
+    apiKey: getApiKey(),
+    ids: ids.join(','),
+    includeNutrition: 'false',
+  });
+  const response = await fetch(`${SPOONACULAR_BASE_URL}/recipes/informationBulk?${params}`);
+  if (!response.ok) throw new Error(`Spoonacular recipe details failed with status ${response.status}`);
+  return response.json();
+}
+
+module.exports = { searchRecipes, getRecipeById, findByIngredients, getRecipesInformationBulk };

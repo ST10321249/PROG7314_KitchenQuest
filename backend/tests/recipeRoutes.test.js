@@ -1,15 +1,18 @@
 jest.mock('../src/config/firebaseAdmin', () => ({}));
 jest.mock('firebase-admin/auth', () => ({ getAuth: jest.fn() }));
 jest.mock('../src/models/PantryItem', () => ({ find: jest.fn() }));
+jest.mock('../src/models/User', () => ({ findOne: jest.fn() }));
 jest.mock('../src/services/recipeApiClient', () => ({
   searchRecipes: jest.fn(),
   getRecipeById: jest.fn(),
   findByIngredients: jest.fn(),
+  getRecipesInformationBulk: jest.fn(),
 }));
 
 const request = require('supertest');
 const { getAuth } = require('firebase-admin/auth');
 const PantryItem = require('../src/models/PantryItem');
+const User = require('../src/models/User');
 const recipeApiClient = require('../src/services/recipeApiClient');
 const app = require('../src/app');
 
@@ -20,6 +23,8 @@ beforeEach(() => {
   jest.resetAllMocks();
   getAuth.mockReturnValue({ verifyIdToken });
   verifyIdToken.mockResolvedValue({ uid: 'uid-1', email: 'test@example.com' });
+  User.findOne.mockResolvedValue({ dietaryPreferences: [], avoidedIngredients: [] });
+  PantryItem.find.mockResolvedValue([]);
 });
 
 describe('recipe routes', () => {
@@ -76,7 +81,7 @@ describe('recipe routes', () => {
       .set(AUTH);
 
     expect(res.status).toBe(200);
-    expect(PantryItem.find).not.toHaveBeenCalled();
+    expect(PantryItem.find).toHaveBeenCalledWith({ userId: 'uid-1' });
     expect(recipeApiClient.findByIngredients).toHaveBeenCalledWith(
       ['Chicken', 'Rice'],
       10
@@ -105,6 +110,48 @@ describe('recipe routes', () => {
       ['Eggs', 'Milk'],
       10
     );
+  });
+
+  it('excludes expired pantry items, including when named in temporary ingredients', async () => {
+    PantryItem.find.mockResolvedValue([
+      { ingredientName: 'Chicken', category: 'Meat', expiryDate: new Date('2020-01-01') },
+      { ingredientName: 'Rice', category: 'Grains', expiryDate: null },
+    ]);
+    recipeApiClient.findByIngredients.mockResolvedValue([]);
+    const res = await request(app).get('/api/recipes/recommendations?ingredients=Chicken,Rice').set(AUTH);
+    expect(res.status).toBe(200);
+    expect(recipeApiClient.findByIngredients).toHaveBeenCalledWith(['Rice'], 10);
+  });
+
+  it('filters recipes by saved dietary choices and avoided ingredients', async () => {
+    User.findOne.mockResolvedValue({ dietaryPreferences: ['Vegetarian'], avoidedIngredients: ['Nuts'] });
+    PantryItem.find.mockResolvedValue([{ ingredientName: 'Tomato', category: 'Vegetable' }]);
+    recipeApiClient.findByIngredients.mockResolvedValue([
+      { id: 1, title: 'Safe pasta', usedIngredientCount: 1, missedIngredientCount: 0 },
+      { id: 2, title: 'Nut pasta', usedIngredientCount: 1, missedIngredientCount: 0 },
+      { id: 3, title: 'Meat pasta', usedIngredientCount: 1, missedIngredientCount: 0 },
+    ]);
+    recipeApiClient.getRecipesInformationBulk.mockResolvedValue([
+      { id: 1, vegetarian: true, extendedIngredients: [{ name: 'Tomato' }] },
+      { id: 2, vegetarian: true, extendedIngredients: [{ name: 'Cashews' }] },
+      { id: 3, vegetarian: false, extendedIngredients: [{ name: 'Chicken' }] },
+    ]);
+    const res = await request(app).get('/api/recipes/recommendations').set(AUTH);
+    expect(res.status).toBe(200);
+    expect(res.body.recipes.map((r) => r.recipeSourceId)).toEqual(['1']);
+  });
+
+  it('excludes avoided foods from ingredient matching itself', async () => {
+    User.findOne.mockResolvedValue({ dietaryPreferences: [], avoidedIngredients: ['Milk'] });
+    PantryItem.find.mockResolvedValue([
+      { ingredientName: 'Milk', category: 'Dairy' }, { ingredientName: 'Rice', category: 'Grains' },
+    ]);
+    recipeApiClient.findByIngredients.mockResolvedValue([]);
+    const res = await request(app).get('/api/recipes/recommendations').set(AUTH);
+    expect(res.status).toBe(200);
+    expect(recipeApiClient.findByIngredients).toHaveBeenCalledWith(['Rice'], 10);
+    expect(recipeApiClient.getRecipesInformationBulk).not.toHaveBeenCalled();
+    expect(res.body).toEqual({ recipes: [] });
   });
 
   it('returns an empty recommendation list when the pantry is empty', async () => {

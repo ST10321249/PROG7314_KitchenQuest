@@ -63,6 +63,7 @@ fun MyKitchenScreen(
     onFailedIngredientClick: (PantryItemDto) -> Unit = {},
     onEditFailed: (String) -> Unit = {},
     onDeleteFailed: (String) -> Unit = {},
+    onRetryFailedTransfer: (String) -> Unit = {},
     onDismissFailure: () -> Unit = {}
 ) {
     // A failed item explains itself instead of opening its detail screen.
@@ -80,6 +81,17 @@ fun MyKitchenScreen(
         searchQuery.isBlank() || item.ingredientName.contains(searchQuery, ignoreCase = true)
 
     Box(modifier = Modifier.fillMaxSize()) {
+        state.failure?.let { failure ->
+            FailedChangeDialog(
+                itemName = failure.itemName,
+                reason = failure.reason,
+                onEdit = if (failure.canRetryTransfer) null else ({ onEditFailed(failure.itemId) }),
+                onRetry = if (failure.canRetryTransfer) ({ onRetryFailedTransfer(failure.itemId) }) else null,
+                onDelete = { onDeleteFailed(failure.itemId) },
+                onDismiss = onDismissFailure
+            )
+        }
+
         when {
             state.showLoading -> {
                 KitchenQuestLoadingState(
@@ -183,15 +195,7 @@ fun MyKitchenScreen(
                             }
                         }
 
-                        state.failure?.let { failure ->
-                            FailedChangeDialog(
-                                itemName = failure.itemName,
-                                reason = failure.reason,
-                                onEdit = { onEditFailed(failure.itemId) },
-                                onDelete = { onDeleteFailed(failure.itemId) },
-                                onDismiss = onDismissFailure
-                            )
-                        }
+
                     }
 
                     val filteredExpiring = state.expiringSoon.filter(::matches)

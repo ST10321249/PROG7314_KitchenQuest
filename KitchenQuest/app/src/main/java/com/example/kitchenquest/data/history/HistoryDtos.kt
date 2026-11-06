@@ -20,7 +20,8 @@ data class AddHistoryRequest(
     val recipeTitle: String,
     val servings: Int? = null,
     val rating: Int? = null,
-    val difficultyFeedback: String? = null
+    val difficultyFeedback: String? = null,
+    val clientId: String? = null
 )
 
 @Serializable

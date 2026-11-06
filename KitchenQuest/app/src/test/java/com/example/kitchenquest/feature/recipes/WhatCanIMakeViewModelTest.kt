@@ -45,7 +45,8 @@ class WhatCanIMakeViewModelTest {
     }
 
     private class FakePantryRepository(
-        private val names: List<String>
+        private val names: List<String>,
+        private val expiryByName: Map<String, String> = emptyMap()
     ) : PantryRepository {
         override suspend fun getPantryItems() = Result.success(
             names.map {
@@ -54,7 +55,8 @@ class WhatCanIMakeViewModelTest {
                     ingredientName = it,
                     quantity = 1.0,
                     unit = "unit",
-                    category = "Other"
+                    category = "Other",
+                    expiryDate = expiryByName[it]
                 )
             }
         )
@@ -139,6 +141,23 @@ class WhatCanIMakeViewModelTest {
         assertEquals(listOf("Milk", "Eggs"), recipeRepository.recommendationRequests.single())
         assertEquals(1, state.recommendations.size)
         assertTrue(state.hasLoaded)
+    }
+
+    @Test
+    fun expiredIngredientsAreNotOfferedAsAvailableForRecipeMatching() {
+        val recipeRepository = FakeRecipeRepository(Result.success(emptyList()))
+        val viewModel = WhatCanIMakeViewModel(
+            recipeRepository = recipeRepository,
+            pantryRepository = FakePantryRepository(
+                listOf("Expired Chicken", "Rice"),
+                expiryByName = mapOf("Expired Chicken" to "2020-01-01")
+            ),
+            shoppingRepository = FakeShoppingRepository()
+        )
+
+        viewModel.load()
+        assertEquals(listOf("Rice"), viewModel.uiState.value.pantryIngredients)
+        assertEquals(listOf("Rice"), recipeRepository.recommendationRequests.single())
     }
 
     @Test

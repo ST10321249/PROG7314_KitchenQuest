@@ -38,6 +38,8 @@ class CookingViewModelTest {
         var lastRating: Int? = null
         var lastDifficulty: String? = null
         var lastNote: String? = null
+        var failHistory = false
+        var failNote = false
 
         override suspend fun getHistory() = Result.success(emptyList<CookingHistoryDto>())
 
@@ -49,6 +51,7 @@ class CookingViewModelTest {
             difficultyFeedback: String?
         ): Result<CookingHistoryDto> {
             addHistoryCalls++
+            if (failHistory) return Result.failure(IllegalStateException("History temporarily unavailable"))
             lastRating = rating
             lastDifficulty = difficultyFeedback
             return Result.success(CookingHistoryDto(recipeSourceId = recipeSourceId, recipeTitle = recipeTitle))
@@ -58,6 +61,7 @@ class CookingViewModelTest {
 
         override suspend fun saveNote(recipeSourceId: String, note: String): Result<RecipeNoteDto> {
             saveNoteCalls++
+            if (failNote) return Result.failure(IllegalStateException("Note temporarily unavailable"))
             lastNote = note
             return Result.success(RecipeNoteDto(recipeSourceId = recipeSourceId, note = note))
         }
@@ -178,6 +182,46 @@ class CookingViewModelTest {
         assertEquals(4, historyRepository.lastRating)
         assertEquals(1, historyRepository.saveNoteCalls)
         assertEquals("Add more salt", historyRepository.lastNote)
+    }
+
+    @Test
+    fun failedHistorySaveKeepsTheCookingSessionAndAllowsRetry() {
+        viewModel.loadRecipe("123")
+        viewModel.startTimerForCurrentStep(3)
+        historyRepository.failHistory = true
+        var completed = false
+
+        viewModel.completeCooking(4, "Medium", "More salt") { completed = true }
+        assertFalse(completed)
+        assertEquals(CookingSaveFailure.HISTORY, state.completionError)
+        assertEquals("123", state.recipe?.recipeSourceId)
+        assertTrue(state.timers.isNotEmpty())
+        assertFalse(state.isCompleting)
+
+        historyRepository.failHistory = false
+        viewModel.completeCooking(4, "Medium", "More salt") { completed = true }
+        assertTrue(completed)
+        assertEquals(2, historyRepository.addHistoryCalls)
+        assertEquals(1, historyRepository.saveNoteCalls)
+    }
+
+    @Test
+    fun failedNoteSaveDoesNotDuplicateTheHistoryEntryOnRetry() {
+        viewModel.loadRecipe("123")
+        historyRepository.failNote = true
+        var completed = false
+
+        viewModel.completeCooking(5, "Easy", "More garlic") { completed = true }
+        assertFalse(completed)
+        assertEquals(CookingSaveFailure.NOTE, state.completionError)
+        assertEquals("123", state.recipe?.recipeSourceId)
+        assertEquals(1, historyRepository.addHistoryCalls)
+
+        historyRepository.failNote = false
+        viewModel.completeCooking(5, "Easy", "More garlic") { completed = true }
+        assertTrue(completed)
+        assertEquals(1, historyRepository.addHistoryCalls)
+        assertEquals(2, historyRepository.saveNoteCalls)
     }
 
     @Test

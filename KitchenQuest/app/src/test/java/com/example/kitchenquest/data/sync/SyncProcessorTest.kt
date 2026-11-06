@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -320,6 +321,30 @@ class SyncProcessorTest {
 
         assertEquals(SyncState.FAILED, database.pantryDao().get("user-1", moved.id)?.syncState)
         assertTrue(server.pantry.isEmpty())
+    }
+
+    @Test
+    fun aFailedShoppingTransferCanBeRetriedWithoutLosingOrDuplicatingTheItem() = runBlocking {
+        val shoppingItem = server.seedShopping("Eggs")
+        shopping.getShoppingItems()
+        server.rejectName = "Eggs"
+        val moved = shopping.transferToPantry(shoppingItem.id, "Eggs", 12.0, "pcs", "Dairy", null)
+            .getOrThrow()
+        sync()
+
+        val syncOverview = RoomSyncOverviewSource(database, flowOf(true), { "user-1" })
+        assertTrue(syncOverview.isFailedTransfer(moved.id))
+        assertNotNull(syncOverview.failureReason(SyncEntity.PANTRY_ITEM, moved.id))
+        assertEquals(SyncState.FAILED, database.pantryDao().get("user-1", moved.id)?.syncState)
+
+        server.rejectName = null
+        assertTrue(syncOverview.retryFailedTransfer(moved.id))
+        assertEquals(SyncState.PENDING, database.pantryDao().get("user-1", moved.id)?.syncState)
+        assertEquals(SyncProcessor.Outcome.DONE, sync())
+        assertEquals(1, server.pantry.size)
+        assertEquals(0, server.shopping.size)
+        assertTrue(waiting().isEmpty())
+        assertEquals(SyncState.SYNCED, database.pantryDao().get("user-1", moved.id)?.syncState)
     }
 
     @Test

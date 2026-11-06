@@ -49,12 +49,24 @@ class PantryViewModel(
     fun showFailure(item: PantryItemDto) {
         viewModelScope.launch {
             val reason = syncOverview.failureReason(SyncEntity.PANTRY_ITEM, item.id)
-            _uiState.update { it.copy(failure = SyncFailure(item.id, item.ingredientName, reason)) }
+            _uiState.update { it.copy(failure = SyncFailure(item.id, item.ingredientName, reason, syncOverview.isFailedTransfer(item.id))) }
         }
     }
 
     fun dismissFailure() {
         _uiState.update { it.copy(failure = null) }
+    }
+
+    fun retryFailedTransfer(itemId: String) {
+        viewModelScope.launch {
+            val retried = syncOverview.retryFailedTransfer(itemId)
+            _uiState.update { state ->
+                state.copy(
+                    failure = null,
+                    errorMessage = if (retried) null else "The transfer could not be retried. Please refresh and try again."
+                )
+            }
+        }
     }
 
     // Shows what is saved on the phone straight away.

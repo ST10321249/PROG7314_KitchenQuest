@@ -49,7 +49,7 @@ class CookingViewModel(
         viewModelScope.launch {
             recipeRepository.getRecipeById(recipeId).fold(
                 onSuccess = { recipe ->
-                    _uiState.update { it.copy(isLoading = false, recipe = recipe, currentStepIndex = 0) }
+                    _uiState.update { it.copy(isLoading = false, recipe = recipe, currentStepIndex = 0, completedHistoryId = null, completionClientId = null, completionError = null) }
                     saveSession()
                 },
                 onFailure = { failure ->
@@ -174,40 +174,68 @@ class CookingViewModel(
     }
 
     fun completeCooking(rating: Int?, difficulty: String?, note: String?, onComplete: () -> Unit) {
-        val recipe = _uiState.value.recipe
-        val photoUri = _uiState.value.dishPhotoUri
-        _uiState.value.timers.forEach { timerAlarms.cancel(it.id) }
+        if (_uiState.value.isCompleting) return
+        val recipe = _uiState.value.recipe ?: return
+        _uiState.update { it.copy(isCompleting = true, completionError = null) }
 
         viewModelScope.launch {
-            if (recipe != null) {
-                val entry = historyRepository.addHistoryEntry(
+            // History and the optional note must both succeed before leaving the
+            // screen. Keep the recipe, timers and feedback available on failure.
+            var entryId = _uiState.value.completedHistoryId
+            if (entryId == null) {
+                val clientId = _uiState.value.completionClientId ?: UUID.randomUUID().toString().also { newId ->
+                    _uiState.update { it.copy(completionClientId = newId) }
+                    saveSession()
+                }
+                val result = historyRepository.addHistoryEntryWithClientId(
+                    clientId = clientId,
                     recipeSourceId = recipe.recipeSourceId,
                     recipeTitle = recipe.title,
                     servings = null,
                     rating = rating,
                     difficultyFeedback = difficulty
-                ).getOrNull()
-
-                if (!note.isNullOrBlank()) {
-                    historyRepository.saveNote(recipe.recipeSourceId, note)
+                )
+                if (result.isFailure) {
+                    _uiState.update { it.copy(isCompleting = false, completionError = CookingSaveFailure.HISTORY) }
+                    return@launch
                 }
+                entryId = result.getOrThrow().id
+                _uiState.update { it.copy(completedHistoryId = entryId) }
+                saveSession()
+            }
 
-                if (photoUri != null) {
-                    if (entry == null || entry.id.isBlank()) {
-                        userMessages.show(R.string.dish_photo_upload_failed)
-                    } else {
-                        viewModelScope.launch { uploadDishPhoto(entry.id, photoUri) }
-                    }
+            if (!note.isNullOrBlank()) {
+                val result = historyRepository.saveNote(recipe.recipeSourceId, note)
+                if (result.isFailure) {
+                    _uiState.update { it.copy(isCompleting = false, completionError = CookingSaveFailure.NOTE) }
+                    return@launch
                 }
             }
 
+            val photoUri = _uiState.value.dishPhotoUri
+            // Photo uploading is optional and already reports its own failure.
+            // It must not make an otherwise saved cooking record disappear.
+            val historyIdForPhoto = entryId
+            if (photoUri != null) {
+                if (historyIdForPhoto.isNullOrBlank()) {
+                    userMessages.show(R.string.dish_photo_upload_failed)
+                } else {
+                    viewModelScope.launch { uploadDishPhoto(historyIdForPhoto, photoUri) }
+                }
+            }
+
+            _uiState.value.timers.forEach { timerAlarms.cancel(it.id) }
             _uiState.update {
                 it.copy(
                     recipe = null,
                     currentStepIndex = 0,
                     timers = emptyList(),
                     errorMessage = null,
-                    dishPhotoUri = null
+                    dishPhotoUri = null,
+                    isCompleting = false,
+                    completionError = null,
+                    completedHistoryId = null,
+                    completionClientId = null
                 )
             }
             sessionStore.clear()
@@ -235,7 +263,9 @@ class CookingViewModel(
             it.copy(
                 recipe = session.recipe,
                 currentStepIndex = session.currentStepIndex.coerceIn(0, lastStep.coerceAtLeast(0)),
-                timers = timers
+                timers = timers,
+                completedHistoryId = session.completedHistoryId,
+                completionClientId = session.completionClientId
             )
         }
         timers.filter { it.isRunning }.forEach { scheduleAlarm(it) }
@@ -265,6 +295,8 @@ class CookingViewModel(
                 recipe = state.recipe,
                 currentStepIndex = state.currentStepIndex,
                 timers = state.timers,
+                completedHistoryId = state.completedHistoryId,
+                completionClientId = state.completionClientId,
                 savedAtMillis = clock()
             )
         )

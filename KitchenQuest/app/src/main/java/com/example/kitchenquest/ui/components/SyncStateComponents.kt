@@ -164,7 +164,8 @@ fun FailedChangeDialog(
     reason: String?,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
-    onEdit: (() -> Unit)? = null
+    onEdit: (() -> Unit)? = null,
+    onRetry: (() -> Unit)? = null
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -175,7 +176,9 @@ fun FailedChangeDialog(
             Column {
                 Text(
                     stringResource(
-                        if (onEdit != null) {
+                        if (onRetry != null) {
+                            R.string.sync_transfer_failed_explanation
+                        } else if (onEdit != null) {
                             R.string.sync_failed_explanation
                         } else {
                             R.string.sync_failed_explanation_delete_only
@@ -193,7 +196,11 @@ fun FailedChangeDialog(
             }
         },
         confirmButton = {
-            if (onEdit != null) {
+            if (onRetry != null) {
+                TextButton(onClick = onRetry) {
+                    Text(stringResource(R.string.sync_retry_transfer))
+                }
+            } else if (onEdit != null) {
                 TextButton(onClick = onEdit) {
                     Text(stringResource(R.string.sync_failed_edit))
                 }
@@ -208,7 +215,7 @@ fun FailedChangeDialog(
         },
         dismissButton = {
             Row {
-                if (onEdit != null) {
+                if (onEdit != null && onRetry == null) {
                     TextButton(onClick = onDelete) {
                         Text(
                             stringResource(R.string.sync_failed_delete),

@@ -4,6 +4,7 @@ import com.example.kitchenquest.data.AppRepositories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kitchenquest.data.pantry.PantryRepository
+import com.example.kitchenquest.feature.pantry.daysUntilExpiry
 import com.example.kitchenquest.data.recipes.DefaultRecipeRepository
 import com.example.kitchenquest.data.recipes.RecipeRecommendationDto
 import com.example.kitchenquest.data.recipes.RecipeRepository
@@ -36,6 +37,7 @@ class WhatCanIMakeViewModel(
             pantryRepository.getPantryItems().fold(
                 onSuccess = { items ->
                     val ingredients = items
+                        .filter { item -> daysUntilExpiry(item)?.let { days -> days >= 0 } ?: true }
                         .map { it.ingredientName }
                         .distinctBy { it.lowercase() }
 

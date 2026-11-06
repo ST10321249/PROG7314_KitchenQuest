@@ -159,7 +159,8 @@ object AppRepositories {
         RoomSyncOverviewSource(
             database = database(),
             connectivity = NetworkConnectivity(context).isOnline,
-            currentUserId = signedInUserId
+            currentUserId = signedInUserId,
+            scheduler = syncScheduler
         )
     }
 

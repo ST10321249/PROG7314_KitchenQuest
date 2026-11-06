@@ -181,14 +181,27 @@ class DishPhotoUploadTest {
     }
 
     @Test
-    fun ifTheMealCannotBeSavedThePhotoIsNotUploaded() {
+    fun ifTheMealCannotBeSavedThePhotoIsKeptForRetry() {
         history.fail = true
         viewModel.setDishPhoto("content://photos/1")
 
         finish()
 
+        // A failed history save must not attempt the upload or discard the photo.
         assertTrue(photos.uploads.isEmpty())
-        assertEquals(listOf(R.string.dish_photo_upload_failed), messages.shown)
+        assertTrue(messages.shown.isEmpty())
+        assertEquals(CookingSaveFailure.HISTORY, viewModel.uiState.value.completionError)
+        assertEquals("content://photos/1", viewModel.uiState.value.dishPhotoUri)
+        assertEquals("123", viewModel.uiState.value.recipe?.recipeSourceId)
+
+        // The same photo is uploaded when the user retries and the history save succeeds.
+        history.fail = false
+        finish()
+
+        assertEquals(1, history.added)
+        assertEquals(listOf(500 to "image/jpeg"), photos.uploads)
+        assertEquals(listOf("entry-1" to "photo-1"), photos.attached)
+        assertEquals(listOf(R.string.dish_photo_saved), messages.shown)
     }
 
     @Test

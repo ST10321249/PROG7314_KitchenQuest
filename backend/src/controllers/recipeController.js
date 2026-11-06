@@ -1,4 +1,6 @@
 const PantryItem = require('../models/PantryItem');
+const User = require('../models/User');
+const { pantryIngredientIsEligible, recipeIsEligible } = require('../services/recipeEligibility');
 const recipeApiClient = require('../services/recipeApiClient');
 const ApiError = require('../utils/ApiError');
 
@@ -82,32 +84,42 @@ async function getRecipeById(req, res, next) {
 
 async function getRecommendations(req, res, next) {
   try {
-    // The normal flow uses every ingredient stored in the user's pantry.
-    // Part 2's "What Can I Make?" screen can also pass a temporary
-    // comma-separated ingredient list when the user removes a chip. This
-    // changes the recommendation search without deleting pantry data.
-    const requestedIngredients = typeof req.query.ingredients === 'string'
-      ? req.query.ingredients
-          .split(',')
-          .map((name) => name.trim())
-          .filter(Boolean)
-      : [];
+    const user = await User.findOne({ firebaseUid: req.user.uid });
+    const diets = user?.dietaryPreferences || [];
+    const avoided = user?.avoidedIngredients || [];
+    const today = new Date().toISOString().slice(0, 10);
+    const pantry = await PantryItem.find({ userId: req.user.uid });
+    const byName = new Map(pantry.map((item) => [item.ingredientName.trim().toLowerCase(), item]));
 
-    let ingredientNames = requestedIngredients;
-
-    if (ingredientNames.length === 0) {
-      const pantryItems = await PantryItem.find({ userId: req.user.uid });
-      ingredientNames = pantryItems.map((item) => item.ingredientName);
-    }
-
-    if (ingredientNames.length === 0) {
-      return res.status(200).json({ recipes: [] });
-    }
+    // What Can I Make can pass a temporary ingredient list. Known expired pantry
+    // ingredients must not be reintroduced through that list, but an ingredient
+    // the user adds manually is allowed unless it is restricted by their diet.
+    const requested = typeof req.query.ingredients === 'string'
+      ? req.query.ingredients.split(',').map((name) => name.trim()).filter(Boolean)
+      : null;
+    const selected = requested?.length ? requested.map((name) => byName.get(name.toLowerCase()) || {
+      ingredientName: name,
+      category: '',
+      expiryDate: null,
+    }) : pantry;
+    const ingredientNames = [...new Map(selected
+      .filter((item) => pantryIngredientIsEligible(item, diets, avoided, today))
+      .map((item) => [item.ingredientName.toLowerCase(), item.ingredientName])).values()];
+    if (ingredientNames.length === 0) return res.status(200).json({ recipes: [] });
 
     const number = req.query.number ? Number(req.query.number) : 10;
-    const results = await recipeApiClient.findByIngredients(ingredientNames, number);
-
-    res.status(200).json({ recipes: results.map(toRecommendationDto) });
+    const matches = await recipeApiClient.findByIngredients(ingredientNames, number);
+    if (matches.length === 0) return res.status(200).json({ recipes: [] });
+    let safeMatches = matches;
+    if (diets.some((d) => d.toLowerCase() !== 'no restrictions') || avoided.length) {
+      const ids = matches.map((recipe) => recipe.id);
+      const details = await recipeApiClient.getRecipesInformationBulk(ids);
+      const safeIds = new Set(details
+        .filter((recipe) => recipeIsEligible(recipe, diets, avoided))
+        .map((recipe) => String(recipe.id)));
+      safeMatches = matches.filter((recipe) => safeIds.has(String(recipe.id)));
+    }
+    res.status(200).json({ recipes: safeMatches.map(toRecommendationDto) });
   } catch (err) {
     next(err);
   }

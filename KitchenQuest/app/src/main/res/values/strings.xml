@@ -412,9 +412,14 @@
     <string name="sync_failed_edit">Edit</string>
     <string name="sync_failed_delete">Delete</string>
     <string name="sync_failed_close">Close</string>
+    <string name="cooking_save_history_failed">Could not save your cooking history. Your progress is still here. Try again.</string>
+    <string name="cooking_save_note_failed">Your cooking history was saved, but the note was not. Please try saving again.</string>
+    <string name="sync_transfer_failed_explanation">The transfer could not be completed. The ingredient is still saved on this phone. Retry syncing it to the pantry; it will not be duplicated.</string>
+    <string name="sync_retry_transfer">Retry transfer</string>
+
     <string name="cookingmode_start_timer_format">Start %1$02d:00 timer</string>
-    <string name="settings_biometric_setup_title">Enable biometric unlock</string>
-    <string name="settings_biometric_setup_subtitle">Confirm your fingerprint or face for this KitchenQuest account</string>
     <string name="settings_biometric_setup_cancelled">Biometric setup was cancelled.</string>
     <string name="settings_biometric_setup_failed">Biometric setup could not finish: %1$s</string>
+    <string name="settings_biometric_setup_title">Enable biometric unlock</string>
+    <string name="settings_biometric_setup_subtitle">Confirm your fingerprint or face for this KitchenQuest account</string>
 </resources>

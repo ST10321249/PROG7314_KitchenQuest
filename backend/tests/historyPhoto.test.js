@@ -86,6 +86,18 @@ describe('POST /api/history with a photo', () => {
     expect(CookingHistory.create).not.toHaveBeenCalled();
   });
 
+  it('returns the same history record when a completion request is retried', async () => {
+    const clientId = 'fixed-cooking-completion-1234';
+    CookingHistory.findOne.mockResolvedValue(entry({ clientId }));
+    const res = await request(app).post('/api/history').set(AUTH).send({
+      recipeSourceId: '716429', recipeTitle: 'Pasta', clientId
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(ENTRY_ID);
+    expect(CookingHistory.create).not.toHaveBeenCalled();
+    expect(CookingHistory.findOne).toHaveBeenCalledWith({ userId: 'uid-1', clientId });
+  });
+
   it('still works without a photo', async () => {
     CookingHistory.create.mockResolvedValue(entry());
 

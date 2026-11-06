@@ -413,9 +413,14 @@
     <string name="sync_failed_edit">Wysig</string>
     <string name="sync_failed_delete">Vee uit</string>
     <string name="sync_failed_close">Maak toe</string>
+    <string name="cooking_save_history_failed">Kon nie jou kookgeskiedenis stoor nie. Jou vordering is nog hier. Probeer weer.</string>
+    <string name="cooking_save_note_failed">Jou kookgeskiedenis is gestoor, maar nie die nota nie. Probeer weer stoor.</string>
+    <string name="sync_transfer_failed_explanation">Die oordrag kon nie voltooi word nie. Die bestanddeel is steeds op hierdie foon gestoor. Probeer weer sinchroniseer; dit sal nie gedupliseer word nie.</string>
+    <string name="sync_retry_transfer">Probeer oordrag weer</string>
+
     <string name="cookingmode_start_timer_format">Begin %1$02d:00-afteller</string>
-    <string name="settings_biometric_setup_title">Skakel biometriese ontsluiting aan</string>
-    <string name="settings_biometric_setup_subtitle">Bevestig jou vingerafdruk of gesig vir hierdie KitchenQuest-rekening</string>
     <string name="settings_biometric_setup_cancelled">Biometriese opstelling is gekanselleer.</string>
     <string name="settings_biometric_setup_failed">Biometriese opstelling kon nie voltooi word nie: %1$s</string>
+    <string name="settings_biometric_setup_title">Skakel biometriese ontsluiting aan</string>
+    <string name="settings_biometric_setup_subtitle">Bevestig jou vingerafdruk of gesig vir hierdie KitchenQuest-rekening</string>
 </resources>

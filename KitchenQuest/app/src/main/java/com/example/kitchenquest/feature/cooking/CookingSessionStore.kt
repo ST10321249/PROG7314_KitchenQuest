@@ -11,6 +11,8 @@ data class CookingSession(
     val recipe: RecipeDetailDto? = null,
     val currentStepIndex: Int = 0,
     val timers: List<CookingTimer> = emptyList(),
+    val completedHistoryId: String? = null,
+    val completionClientId: String? = null,
     val savedAtMillis: Long = 0
 )
 

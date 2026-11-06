@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const CookingHistory = require('../models/CookingHistory');
 const fileStorage = require('../services/fileStorage');
 const ApiError = require('../utils/ApiError');
+const createOnce = require('../utils/createOnce');
 
 function toDto(entry) {
   return {
@@ -35,15 +36,15 @@ async function getHistory(req, res, next) {
 
 async function addHistoryEntry(req, res, next) {
   try {
-    const { recipeSourceId, recipeTitle, servings, rating, difficultyFeedback, photoFileId } =
+    const { recipeSourceId, recipeTitle, servings, rating, difficultyFeedback, photoFileId, clientId } =
       req.body;
 
     if (photoFileId) {
       await requireOwnPhoto(photoFileId, req.user.uid);
     }
 
-    const entry = await CookingHistory.create({
-      userId: req.user.uid,
+    const { doc: entry, created } = await createOnce(CookingHistory, req.user.uid, {
+      clientId,
       recipeSourceId,
       recipeTitle,
       servings: servings ?? null,
@@ -52,7 +53,7 @@ async function addHistoryEntry(req, res, next) {
       photoFileId: photoFileId ?? null,
     });
 
-    res.status(201).json(toDto(entry));
+    res.status(created ? 201 : 200).json(toDto(entry));
   } catch (err) {
     next(err);
   }
