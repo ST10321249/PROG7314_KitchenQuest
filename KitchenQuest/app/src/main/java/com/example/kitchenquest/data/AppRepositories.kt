@@ -36,6 +36,7 @@ import com.example.kitchenquest.feature.cooking.CookingSessionStore
 import com.example.kitchenquest.feature.cooking.NoOpCookingSessionStore
 import com.example.kitchenquest.feature.cooking.SharedPreferencesCookingSessionStore
 import com.example.kitchenquest.notifications.AndroidTimerAlarms
+import com.example.kitchenquest.notifications.ExpiryAlertScheduler
 import com.example.kitchenquest.notifications.NoOpTimerAlarms
 import com.example.kitchenquest.notifications.TimerAlarms
 import com.google.firebase.auth.FirebaseAuth
@@ -74,7 +75,8 @@ object AppRepositories {
             database = database(),
             pantryApi = ApiClient.create(PantryApi::class.java),
             currentUserId = signedInUserId,
-            scheduler = syncScheduler
+            scheduler = syncScheduler,
+            onPantryChanged = { appContext?.let { ExpiryAlertScheduler.checkNow(it) } }
         )
     }
 

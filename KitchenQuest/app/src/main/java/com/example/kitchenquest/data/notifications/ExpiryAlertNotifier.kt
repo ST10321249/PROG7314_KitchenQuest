@@ -28,7 +28,7 @@ class ExpiryAlertNotifier(
     private val today: () -> LocalDate = { LocalDate.now() }
 ) {
 
-    enum class Outcome { POSTED, NOTHING_EXPIRING, TURNED_OFF, SIGNED_OUT, NOT_ALLOWED }
+    enum class Outcome { POSTED, ALREADY_NOTIFIED, NOTHING_EXPIRING, TURNED_OFF, SIGNED_OUT, NOT_ALLOWED }
 
     suspend fun run(): Outcome {
         val userId = currentUserId() ?: return Outcome.SIGNED_OUT
@@ -39,7 +39,23 @@ class ExpiryAlertNotifier(
         if (expiring.isEmpty()) return Outcome.NOTHING_EXPIRING
         if (!canPost()) return Outcome.NOT_ALLOWED
 
+        // Room writes and the daily worker may both run on the same day. Notify again only
+        // if the set of expiring ingredients changes. This avoids notification spam.
+        val signature = buildString {
+            append(today())
+            expiring.forEach { item ->
+                append('|')
+                append(item.id)
+                append(':')
+                append(item.expiryDate)
+            }
+        }
+        val prefs = context.getSharedPreferences("kitchenquest_expiry_alert_history", Context.MODE_PRIVATE)
+        val historyKey = "shown_$userId"
+        if (prefs.getString(historyKey, null) == signature) return Outcome.ALREADY_NOTIFIED
+
         post(expiring)
+        prefs.edit().putString(historyKey, signature).apply()
         return Outcome.POSTED
     }
 
@@ -83,6 +99,7 @@ class ExpiryAlertNotifier(
             .setSmallIcon(R.drawable.ic_stat_expiry)
             .setContentTitle(text.getString(R.string.expiry_alert_title))
             .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(open)
             .setAutoCancel(true)

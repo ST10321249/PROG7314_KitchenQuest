@@ -6,6 +6,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,6 +41,30 @@ class ExpiryAlertSchedulerTest {
         ExpiryAlertScheduler.schedule(context)
 
         assertEquals(1, infos().size)
+    }
+
+    @Test
+    fun checkNowSchedulesOnlyOnePendingJob() {
+        ExpiryAlertScheduler.checkNow(context)
+        ExpiryAlertScheduler.checkNow(context)
+
+        val info = WorkManager.getInstance(context)
+            .getWorkInfosForUniqueWork(ExpiryAlertScheduler.ON_DEMAND_WORK_NAME)
+            .get()
+
+        // Robolectric's WorkManager test executor may run the one-time worker
+        // immediately. It can already be SUCCEEDED when this query finishes,
+        // so requiring exactly one ENQUEUED job is not reliable.
+        assertTrue("The immediate expiry check must have been scheduled", info.isNotEmpty())
+        val active = info.count {
+            it.state == WorkInfo.State.ENQUEUED ||
+                it.state == WorkInfo.State.RUNNING ||
+                it.state == WorkInfo.State.BLOCKED
+        }
+        assertTrue("Only one expiry check should be pending or running", active <= 1)
+        assertTrue("The scheduled checks must not all be cancelled", info.any {
+            it.state != WorkInfo.State.CANCELLED
+        })
     }
 
     @Test

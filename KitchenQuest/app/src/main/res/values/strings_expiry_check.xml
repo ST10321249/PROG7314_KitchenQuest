@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expiry_check_title">Expiry reminders</string>
+    <string name="expiry_check_description">Check your saved pantry for ingredients expiring within three days.</string>
+    <string name="expiry_check_button">Check expiry reminders now</string>
+    <string name="expiry_check_running">Checking pantry…</string>
+    <string name="expiry_check_error">Could not check expiry reminders. Please try again.</string>
+    <string name="expiry_check_posted">Reminder sent. Check your phone notifications.</string>
+    <string name="expiry_check_none">No ingredients are expiring in the next three days.</string>
+    <string name="expiry_check_disabled">Turn on expiry reminders in Settings first.</string>
+    <string name="expiry_check_signed_out">Sign in to check your pantry reminders.</string>
+    <string name="expiry_check_blocked">Allow KitchenQuest notifications in your phone settings.</string>
+    <string name="expiry_check_already_posted">A reminder was already sent for these ingredients today.</string>
+</resources>

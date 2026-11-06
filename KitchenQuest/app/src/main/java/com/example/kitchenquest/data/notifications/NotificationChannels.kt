@@ -10,7 +10,7 @@ import com.example.kitchenquest.data.preferences.AppLanguagePreferences
 // and add their own constants here rather than creating channels elsewhere.
 object NotificationChannels {
 
-    const val EXPIRY_ALERTS = "kitchenquest_expiry_alerts"
+    const val EXPIRY_ALERTS = "kitchenquest_expiry_alerts_high"
 
     const val TIMER_ALERTS = "kitchenquest_timer_alerts"
 
@@ -28,7 +28,7 @@ object NotificationChannels {
         val text = AppLanguagePreferences.localizedContext(context)
         val expiry = NotificationChannelCompat.Builder(
             EXPIRY_ALERTS,
-            NotificationManagerCompat.IMPORTANCE_DEFAULT
+            NotificationManagerCompat.IMPORTANCE_HIGH
         )
             .setName(text.getString(R.string.expiry_alert_channel_name))
             .setDescription(text.getString(R.string.expiry_alert_channel_description))

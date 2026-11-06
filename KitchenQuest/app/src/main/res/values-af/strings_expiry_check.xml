@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expiry_check_title">Vervaldatumherinneringe</string>
+    <string name="expiry_check_description">Gaan jou gestoorde kosvoorraad na vir bestanddele wat binne drie dae verval.</string>
+    <string name="expiry_check_button">Kontroleer vervaldatumherinneringe nou</string>
+    <string name="expiry_check_running">Kontroleer kosvoorraad…</string>
+    <string name="expiry_check_error">Kon nie vervaldatumherinneringe nagaan nie. Probeer weer.</string>
+    <string name="expiry_check_posted">Herinnering gestuur. Gaan jou foonkennisgewings na.</string>
+    <string name="expiry_check_none">Geen bestanddele verval binne die volgende drie dae nie.</string>
+    <string name="expiry_check_disabled">Skakel eers vervaldatumherinneringe in Instellings aan.</string>
+    <string name="expiry_check_signed_out">Meld aan om jou kosvoorraadherinneringe na te gaan.</string>
+    <string name="expiry_check_blocked">Laat KitchenQuest-kennisgewings in jou fooninstellings toe.</string>
+    <string name="expiry_check_already_posted">Hierdie bestanddele se herinnering is reeds vandag gestuur.</string>
+</resources>

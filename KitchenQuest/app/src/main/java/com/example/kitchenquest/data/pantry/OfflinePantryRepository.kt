@@ -31,7 +31,8 @@ class OfflinePantryRepository(
     private val scheduler: SyncScheduler = NoOpSyncScheduler,
     private val refreshTimeoutMs: Long = REFRESH_TIMEOUT_MS,
     private val firstLoadTimeoutMs: Long = FIRST_LOAD_TIMEOUT_MS,
-    private val queue: OperationQueue = OperationQueue(database.pendingOperationDao())
+    private val queue: OperationQueue = OperationQueue(database.pendingOperationDao()),
+    private val onPantryChanged: () -> Unit = {}
 ) : PantryRepository {
 
     private val dao get() = database.pantryDao()
@@ -96,6 +97,7 @@ class OfflinePantryRepository(
             )
         }
         scheduler.requestSync()
+        onPantryChanged()
 
         return Result.success(entity.toDto())
     }
@@ -146,7 +148,10 @@ class OfflinePantryRepository(
             Result.success(changed.toDto())
         }
 
-        if (result.isSuccess) scheduler.requestSync()
+        if (result.isSuccess) {
+            scheduler.requestSync()
+            onPantryChanged()
+        }
         return result
     }
 

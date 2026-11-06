@@ -2,4 +2,9 @@
 <resources>
 
     <style name="Theme.KitchenQuest" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.KitchenQuest.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/kitchenquest_brand_orange</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/kitchenquest_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.KitchenQuest</item>
+    </style>
 </resources>

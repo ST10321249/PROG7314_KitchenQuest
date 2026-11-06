@@ -231,6 +231,7 @@ fun SettingsScreen(
         expiryAlertsEnabled = true
         expiryAlertsDenied = false
         ExpiryAlertScheduler.schedule(context)
+        ExpiryAlertScheduler.checkNow(context)
     }
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
