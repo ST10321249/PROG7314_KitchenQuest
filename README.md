@@ -1,299 +1,293 @@
 # KitchenQuest
 
-**Cook smarter. Waste less. Love it.**
+KitchenQuest is an Android cooking app we built for PROG7314 (Group 13). You keep track of what is in your kitchen, the app shows you recipes you can make with it, tells you what you are missing, and then helps you cook the meal. We wanted the pantry, shopping list, recipes and cooking to work together instead of being separate apps, and to cut down on food going to waste because people forget what they have.
 
-KitchenQuest is a native Android cooking and kitchen-management app created for **PROG7314, Group 13**. It helps users keep track of the ingredients they own, find recipes that use those ingredients, plan shopping and follow recipes while cooking. Instead of treating the pantry, shopping list and cooking history as separate jobs, KitchenQuest connects them into one workflow.
+Links:
 
-The project progressed from competitor research and a Figma design in **Part 1**, to a working Android/REST API prototype in **Part 2**, and then to offline synchronization, biometrics, bilingual support, push notifications, persistent timers and dish photos for the **Final POE**.
+- [Demo video](https://youtu.be/TLxaVVVlTd8)
+- [Download the signed APK (v2.0.0)](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/download/Final-POE/app-release.apk)
+- [Final POE release](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/tag/Final-POE)
+- [Release notes](RELEASE_NOTES.md)
+- [Backend README](backend/README.md)
+- [GitHub Actions runs](https://github.com/ST10321249/PROG7314_KitchenQuest/actions)
 
-**Project links**
+## The team
 
-- **Source code:** [KitchenQuest on GitHub](https://github.com/ST10321249/PROG7314_KitchenQuest)
-- **Full development history:** [Release notes](RELEASE_NOTES.md), covering Parts 1–3
-- **Backend routes and configuration:** [Backend README](backend/README.md)
-- **GitHub Actions:** [Android and backend CI runs](https://github.com/ST10321249/PROG7314_KitchenQuest/actions)
-- **Demo video:** [Watch the KitchenQuest demonstration](https://youtu.be/TLxaVVVlTd8)
-- **Signed Android APK:** [Download KitchenQuest v2.0.0](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/download/Final-POE/app-release.apk)
-- **Release details:** [KitchenQuest Final POE release](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/tag/Final-POE)
+- Raheel Singh - authentication, biometrics and languages
+- Akeev Sivai - API, data layer, offline sync, push server and photo storage
+- Avikar Maharaj - pantry, shopping list and expiry reminders
+- Mohamed Shaheer Joosab - recipes, cooking, timers, photos and release
 
-## Screenshots and app walkthrough
+Kaeden Samsunder also worked with us on the Part 1 research.
 
-These screenshots were captured from KitchenQuest running on an Android phone. They show the actual application screens, not the original Part 1 wireframes. The original JPEG files are included under [`docs/screenshots/`](docs/screenshots/).
+## What we planned in Part 1
 
-### 1. Account creation and onboarding
+Part 1 was research and design only, so there was no working app yet. We looked at three existing apps and took ideas from each:
 
-Users can sign in with email/password or Google, create an account, and save dietary preferences and ingredients to avoid during onboarding. Returning users can update those preferences later. Biometric quick unlock is also available for previously authenticated sessions when enabled.
+- SuperCook gave us the idea of searching recipes by what is in your pantry, and of linking missing ingredients to a shopping list.
+- Kitchen Stories gave us full recipe pages, adjustable servings and step-by-step cooking with timers.
+- KitchenPal gave us ingredient quantities, categories, expiry tracking and reminders.
 
-| **Login screen** | **Create account** | **Initial dietary preferences** |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/login.jpg" alt="Login screen" width="205"> | <img src="docs/screenshots/create-account.jpg" alt="Create account" width="205"> | <img src="docs/screenshots/initial-preferences.jpg" alt="Initial dietary preferences" width="205"> |
+None of them really kept a personal record of what you cooked, so we added saved recipes, ratings, notes and a cooking history to our plan.
 
-| **Saved dietary preferences** |
-| :---: |
-| <img src="docs/screenshots/existing-preferences.jpg" alt="Saved dietary preferences" width="205"> |
+From that research we made the concept and logo, the Figma screens and navigation flow, UML and data models, a REST API plan and a project timeline. We also wrote 12 functional requirements (FR-01 to FR-12) and three custom requirements (CR-01 to CR-03). The plan was a Kotlin and Jetpack Compose app with Firebase sign-in, a hosted API, MongoDB, a recipe API, offline storage with Room, notifications and two languages. We also talked about voice input and barcode scanning as possible extras.
 
-### 2. Home and My Kitchen
+## What we built in Part 2
 
-Home gives a summary of pantry items, shopping entries, recipe shortcuts and ingredients near expiry. My Kitchen groups expiring ingredients separately and allows users to maintain their pantry.
+Part 2 was the first working version of the app and backend:
 
-| **Home dashboard** | **My Kitchen with expiring items** |
-| :---: | :---: |
-| <img src="docs/screenshots/home-screen.jpg" alt="Home dashboard" width="205"> | <img src="docs/screenshots/my-kitchen.jpg" alt="My Kitchen with expiring items" width="205"> |
+- Register, log in, reset your password and sign in with Google using Firebase
+- Onboarding for dietary preferences and ingredients to avoid, plus a Settings screen
+- Five main tabs: Home, Recipes, My Kitchen, Cook and Profile
+- A Node.js and Express API hosted on Render, with MongoDB Atlas as the database
+- Spoonacular for recipes, called through our API so the key stays off the phone
+- My Kitchen with quantities, units, categories and expiry dates
+- A shopping list you can move bought items from into your pantry
+- Recipe search, recipe details, changing servings and saved recipes
+- What Can I Make?, which compares recipes to your pantry and lists what is missing
+- Guided cooking with timers, a recipe complete screen and cooking history
+- The orange and cream design from Part 1, Android and backend tests, and GitHub Actions
 
-### 3. Recipes and Shopping List
+At this stage the app still needed the internet for everything. It had no biometrics, no real push notifications, no second language and no photo storage.
 
-Users can search for recipes, open recipe details, adjust servings, save favourites and keep a shopping list. The *What Can I Make?* feature additionally matches recipes against pantry ingredients and identifies missing items.
+## What we added for the Final POE
 
-| **Browse and search recipes** | **Recipe details and ingredient quantities** | **Saved recipes** |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/recipes.jpg" alt="Browse and search recipes" width="205"> | <img src="docs/screenshots/recipe-details.jpg" alt="Recipe details and ingredient quantities" width="205"> | <img src="docs/screenshots/saved-recipes.jpg" alt="Saved recipes" width="205"> |
+- Biometric unlock (fingerprint or face) for returning users, with normal login as a fallback
+- English and Afrikaans for the whole app, chosen in Settings and saved to your profile
+- Google ML Kit translation with downloadable language models
+- Offline pantry and shopping list using Room, with changes queued and sent by WorkManager when you reconnect
+- Sync status on items so you can see what is waiting and what failed
+- Firebase Cloud Messaging push notifications
+- Local expiry reminders that can be turned on or off per account
+- Timer alarms that still go off when the app is in the background
+- Our two user-defined features, explained below
+- A new app icon, a signed release APK and CI switched back on
 
-| **Shopping list** |
-| :---: |
-| <img src="docs/screenshots/shopping-list.jpg" alt="Shopping list" width="205"> |
+## Features
 
-### 4. Cooking, timers and history
+- Accounts: email and password, Google sign-in, password reset and optional biometric unlock
+- Preferences: dietary choices, ingredients to avoid, language, reminders and security options
+- My Kitchen: add, edit, delete and search ingredients, with categories and expiry warnings
+- Recipes: search, view details, change servings and save favourites
+- What Can I Make?: recipes ranked by how many of the ingredients you already have
+- Shopping list: add items yourself or from a recipe, then move them into your pantry
+- Offline: pantry and shopping changes work without internet and sync later
+- Cooking mode: step-by-step instructions and timers, and you can carry on where you left off
+- Notifications: push notifications, expiry reminders and timer alarms
+- Cooking history: ratings, difficulty, private notes and a photo of the finished dish
+- Profile: your cooking stats, with links to saved recipes and history
 
-Cooking Mode presents recipe steps, with a separate timer screen and a record of completed meals. The completion screen supports ratings, difficulty feedback, notes and optional dish-photo uploads. The screenshots below show the cooking and history screens; photos added to completed meals are accessible from Cooking History.
+## Our two user-defined features
 
-| **Cook screen** | **Step-by-step cooking** | **Kitchen timer** |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/cook-hub.jpg" alt="Cook screen" width="205"> | <img src="docs/screenshots/cooking-steps.jpg" alt="Step-by-step cooking" width="205"> | <img src="docs/screenshots/kitchen-timer.jpg" alt="Kitchen timer" width="205"> |
+1. Offline recipes and resumable cooking. Recipes you have opened or saved are stored on the phone, so you can read them and cook from them with no internet. The current step and any running timers also survive the app being closed. Searching for new recipes still needs internet.
+2. Finished-dish photos. When you finish a recipe you can add a photo with your rating and notes. The app shrinks the photo, uploads it through the API to MongoDB GridFS, and you can view it later in Cooking History. Only the person who uploaded a photo can see it.
 
-| **Recipe completion and feedback** | **Cooking history** |
-| :---: | :---: |
-| <img src="docs/screenshots/recipe-complete.jpg" alt="Recipe completion and feedback" width="205"> | <img src="docs/screenshots/cooking-history.jpg" alt="Cooking history" width="205"> |
+## Screenshots
 
-### 5. Profile and Settings
+These were taken from the app running on an Android phone.
 
-Profile summarises completed cooking activity and links to saved recipes and history. Settings includes biometric unlock, expiry reminders, language selection, and dietary preferences.
+Login, create account and dietary preferences:
 
-| **Profile and cooking statistics** | **Account and notification settings** | **Enabled security and notification preferences** |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/profile.jpg" alt="Profile and cooking statistics" width="205"> | <img src="docs/screenshots/settings.jpg" alt="Account and notification settings" width="205"> | <img src="docs/screenshots/settings-enabled.jpg" alt="Enabled security and notification preferences" width="205"> |
+<img src="docs/screenshots/login.jpg" width="200"> <img src="docs/screenshots/create-account.jpg" width="200"> <img src="docs/screenshots/initial-preferences.jpg" width="200">
 
-| **Dietary and avoided ingredient settings** |
-| :---: |
-| <img src="docs/screenshots/settings-preferences.jpg" alt="Dietary and avoided ingredient settings" width="205"> |
+Home and My Kitchen:
 
-### 6. English and Afrikaans
+<img src="docs/screenshots/home-screen.jpg" width="200"> <img src="docs/screenshots/my-kitchen.jpg" width="200">
 
-KitchenQuest supports in-app language switching between English and Afrikaans. These captures show the language selector and translated Settings and Home screens.
+Recipes, recipe details and saved recipes:
 
-| **Select English or Afrikaans** | **Settings in Afrikaans** | **Home in Afrikaans** |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/choose-language.jpg" alt="Select English or Afrikaans" width="205"> | <img src="docs/screenshots/afrikaans-settings.jpg" alt="Settings in Afrikaans" width="205"> | <img src="docs/screenshots/afrikaans-home.jpg" alt="Home in Afrikaans" width="205"> |
+<img src="docs/screenshots/recipes.jpg" width="200"> <img src="docs/screenshots/recipe-details.jpg" width="200"> <img src="docs/screenshots/saved-recipes.jpg" width="200">
 
-### 7. Notifications
+Shopping list:
 
-The Notifications screen shows kitchen and shopping reminders. Firebase Cloud Messaging delivers remote pushes, while ingredient expiry reminders and cooking timers use Android's local notification system. The screenshot shows a real push notification delivered to an Android device during testing.
+<img src="docs/screenshots/shopping-list.jpg" width="200">
 
-| **Firebase push notification delivered to Android** |
-| :---: |
-| <img src="docs/screenshots/push-notification.jpg" alt="Firebase notification delivered to Android" width="205"> |
+Cook screen, cooking steps and kitchen timer:
 
-For functionality that is easier to show in motion, such as biometric unlock, offline sync and reconnection, Firebase push delivery and cloud database updates, see the [demonstration video](https://youtu.be/TLxaVVVlTd8).
+<img src="docs/screenshots/cook-hub.jpg" width="200"> <img src="docs/screenshots/cooking-steps.jpg" width="200"> <img src="docs/screenshots/kitchen-timer.jpg" width="200">
 
-## Key features
+Recipe complete and cooking history:
 
-| Feature | What it does |
-| --- | --- |
-| Account authentication | Firebase email/password and Google SSO; optional biometric unlock for returning sessions |
-| Preferences | Dietary choices, avoided ingredients, English/Afrikaans, notification and security options |
-| Pantry management | Add, edit, delete and search ingredients; track quantities, categories and expiry dates |
-| Recipe discovery | Search recipes through the hosted API and Spoonacular; filter and adjust servings |
-| What Can I Make? | Rank available recipes by matching pantry ingredients and show missing items |
-| Connected shopping | Add items manually or from recipes; move purchased items to the pantry |
-| Offline pantry and shopping | Local Room storage, queued changes, automatic WorkManager sync and sync-status feedback |
-| Offline recipe reading | Keep copies of previously opened recipes and saved favourites for use without connectivity |
-| Cooking Mode | Guided recipe steps, locally restored progress and shared kitchen/recipe timers |
-| Notifications | Remote Firebase Cloud Messaging, local expiry reminders and cooking timer alarms |
-| Cooking history | Save completed recipes, optional rating/difficulty/notes and a finished-dish photograph |
-| File storage | Store and retrieve finished-dish photos through protected MongoDB GridFS endpoints |
-| Language support | Localized English/Afrikaans app interface; Google ML Kit language-model and translation service |
+<img src="docs/screenshots/recipe-complete.jpg" width="200"> <img src="docs/screenshots/cooking-history.jpg" width="200">
 
-## Final POE: Two additional user-defined features
+Profile and Settings:
 
-Besides the required biometric login, multilingual interface, FCM notifications and offline pantry/shopping synchronization, the final POE extends the prototype with two user-defined features:
+<img src="docs/screenshots/profile.jpg" width="200"> <img src="docs/screenshots/settings.jpg" width="200"> <img src="docs/screenshots/settings-preferences.jpg" width="200">
 
-1. **Offline recipe access and resumable cooking (User-Defined Feature 4).** Previously opened and saved recipes can be read from the device's Room cache without an internet connection. Users can follow cached cooking instructions, and the cooking session retains its current step and timer deadlines across interruptions and app restarts. Fresh recipe searches still need internet access.
-2. **Finished-dish photos in Cooking History (User-Defined Feature 5).** After completing a recipe, users can attach a meal photograph alongside their rating, difficulty feedback and private note. The Android app uploads the image through the authenticated REST API to MongoDB GridFS, and the owner can retrieve it from Cooking History. This extends the prototype's existing history feature with image storage.
+Choosing a language, then Settings and Home in Afrikaans:
 
-The screenshots above show the related screens. Finished-dish photographs are uploaded to GridFS through the backend and retrieved within the app.
+<img src="docs/screenshots/choose-language.jpg" width="200"> <img src="docs/screenshots/afrikaans-settings.jpg" width="200"> <img src="docs/screenshots/afrikaans-home.jpg" width="200">
 
-**Language scope:** The static Android interface uses English and Afrikaans resources. Google ML Kit supplies on-device translation capabilities, including downloadable models. Machine translation of every Spoonacular response and every user-entered field is **not automatically wired into all recipe/pantry screens**, so original API text can still appear. This is not a third-party cloud translation service.
+Notifications screen and a push notification on the phone:
 
-## Architecture
+<img src="docs/screenshots/notifications-screen.jpg" width="200"> <img src="docs/screenshots/push-notification.jpg" width="200">
 
-The Android app handles the screens and local storage, while the backend handles cloud data and external recipe requests.
+Biometric unlock, offline sync and the cloud database updating are easier to see in the [demo video](https://youtu.be/TLxaVVVlTd8).
 
-```text
-Android app (Kotlin + Jetpack Compose)
-  -> ViewModels and repositories
-      -> RoomDB (pantry, shopping and cached recipes on the phone)
-      -> Retrofit / OkHttp -> Express REST API (Render)
-          -> MongoDB Atlas (accounts, pantry, shopping and history)
-          -> MongoDB GridFS (finished-dish photos)
-          -> Spoonacular API (recipe search and recommendations)
+## How it works
 
-Firebase Authentication -> Android sign-in -> Firebase ID token -> Express API
-Express API -> Firebase Admin / FCM -> Android push notifications
-RoomDB -> WorkManager -> Express API (sync offline changes)
-Android WorkManager -> local expiry reminders
-Android AlarmManager -> cooking timer notifications
-```
-
-**Android:** Kotlin, Jetpack Compose, MVVM, RoomDB, WorkManager, Retrofit/OkHttp, Kotlin serialization, Firebase Auth, AndroidX Biometric, Firebase Cloud Messaging and Google ML Kit Translate.
-
-**Backend:** Node.js 22+, Express, MongoDB Atlas/Mongoose, Firebase Admin, Zod validation, Spoonacular and GridFS.
-
-**Hosting:** Render for the custom REST API. The API keeps Spoonacular credentials server-side rather than embedding them in the Android client.
-
-### Offline synchronization flow
-
-1. The signed-in user opens their pantry or shopping list. The app reads locally cached records from Room.
-2. An offline edit is saved locally and placed into an account-scoped pending-operation queue.
-3. The interface shows the operation's pending or failed state.
-4. WorkManager retries queued operations when connectivity is available; the API uses client-generated identifiers and idempotent handling to reduce duplicate writes.
-5. Successful responses reconcile local records with the server. Each account's records and pending operations are kept separate.
-
-**Offline scope is deliberate:** pantry and shopping support offline actions; previously cached recipes can be read offline. **Searching for new recipes and fetching new Spoonacular recommendations still require internet access.**
-
-### Authentication and data protection
-
-Firebase Authentication handles credentials and Google SSO. The Android client attaches Firebase ID tokens to protected requests; the Express backend verifies them with Firebase Admin and scopes application records to the authenticated UID. Photos have protected upload/download routes with ownership and file-validation checks. Biometric verification uses the device's biometric APIs; KitchenQuest does not store fingerprints or face images.
-
-## API overview
-
-The API responds publicly at `GET /health`. Other application routes require a valid Firebase ID token.
-
-| Area | Main endpoints |
-| --- | --- |
-| Account | `/api/users/sync`, `/api/users/me` |
-| Pantry | `/api/pantry` and item routes |
-| Shopping | `/api/shopping-list` and item routes |
-| Recipe discovery | `/api/recipes/search`, `/api/recipes/:id`, `/api/recipes/recommendations` |
-| Favourites | `/api/favourites` |
-| History and notes | `/api/history`, `/api/recipe-notes` |
-| Push device registration | `/api/devices` |
-| Photo storage | `/api/files` and file-ID routes |
-
-See [`backend/README.md`](backend/README.md) for method-by-method information and payloads.
-
-## Project structure
+The app is written in Kotlin with Jetpack Compose and follows MVVM with repositories. The backend is Node.js and Express. This is roughly how everything connects:
 
 ```text
-.github/workflows/android-ci.yml    Android and backend verification
-KitchenQuest/                       Native Android project
-  app/src/main/java/                UI, navigation, ViewModels and repositories
-  app/src/main/res/                 English/Afrikaans strings, icons, visual assets
-  app/src/test/                     Android unit tests
-  app/schemas/                      Room migration schemas
-backend/                            Express API, models, validation and tests
-README.md                           Project overview and screenshots
-RELEASE_NOTES.md                    Research, prototype and POE release history
+Screens -> ViewModels -> Repositories
+Repositories -> Room (data saved on the phone)
+Repositories -> Retrofit -> Express API on Render
+Express API -> MongoDB Atlas (users, pantry, shopping, history)
+Express API -> MongoDB GridFS (dish photos)
+Express API -> Spoonacular (recipes)
+Express API -> Firebase Cloud Messaging -> push notifications
+Firebase Auth -> ID token -> Express API checks it on every request
+WorkManager -> sends queued changes and runs expiry reminders
+AlarmManager -> cooking timer alarms
 ```
 
-## Build and run
+How offline works for the pantry and shopping list:
 
-### Android requirements
+1. You make a change. It saves on the phone straight away and goes into a queue.
+2. The item shows as waiting to sync.
+3. When there is a connection, WorkManager sends the queue in order and retries if something fails.
+4. Each item has an id made on the phone, so if a request gets sent twice the server does not create a duplicate.
+5. Every item and queued change is linked to the signed-in account, so two accounts on one phone never see each other's data.
 
-- Android Studio with the installed Android SDK matching `compileSdk` in `app/build.gradle.kts`
-- JDK 21 for the Gradle tooling used by CI
-- Android 8.0 (API 26) or newer, ideally a **physical Android phone** for the final demo
-- Your own configured Firebase Android application (`KitchenQuest/app/google-services.json`)
+Security: the app sends a Firebase token with every request and the backend checks it before doing anything. Each user can only reach their own data. API keys stay on the server. Biometric unlock uses the phone's own system, so we never store fingerprints or face data.
 
-From the `KitchenQuest` directory:
+## API
 
-**Windows PowerShell**
+`GET /health` is public. Everything else needs a Firebase token. The main routes are:
+
+- `/api/users` - sync the account, get and update the profile
+- `/api/pantry` - pantry items
+- `/api/shopping-list` - shopping items, and `/transfer` to move an item to the pantry
+- `/api/recipes` - `/search`, `/recommendations` and `/:id`
+- `/api/favourites` - saved recipes
+- `/api/history` - cooking history
+- `/api/recipe-notes` - private recipe notes
+- `/api/devices` - register or remove a phone for push notifications
+- `/api/notifications/test` - send a test push to your own phone
+- `/api/files` - upload, view and delete dish photos (JPEG, PNG or WebP, up to 3 MB, 50 per user)
+
+The [backend README](backend/README.md) has more detail on the routes from Part 2.
+
+## Folder layout
+
+```text
+KitchenQuest/ -> the Android project
+  app/src/main/java/ -> screens, ViewModels, repositories, database and sync
+  app/src/main/res/ -> English and Afrikaans strings, icons and images
+  app/src/test/ -> Android unit tests
+  app/schemas/ -> Room database schemas
+backend/ -> the Express API, models, validation and tests
+docs/screenshots/ -> the screenshots in this README
+.github/workflows/ -> GitHub Actions
+RELEASE_NOTES.md -> what changed in each part
+```
+
+## How to run it
+
+### Just try the app
+
+Download the [signed APK](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/download/Final-POE/app-release.apk) on an Android phone (Android 8.0 or newer) and install it. You may need to allow installs from unknown sources. It already points to our hosted API, so you do not need to run anything else. The hosted API is on Render's free plan, so the first request can take about a minute while the server wakes up.
+
+### Run the Android project
+
+You need Android Studio, the Android SDK for API 37 and JDK 21. A physical phone is best, because biometrics and push notifications need one.
+
+1. Clone the repo: `git clone https://github.com/ST10321249/PROG7314_KitchenQuest.git`
+2. Open the `KitchenQuest` folder in Android Studio and let Gradle sync.
+3. Press Run with your phone or an emulator selected.
+
+The Firebase app config (`google-services.json`) is already in the project and the app uses the hosted API by default, so you do not need to set anything up to run it.
+
+You can also build from the `KitchenQuest` folder in a terminal:
 
 ```powershell
 .\gradlew.bat testDebugUnitTest
 .\gradlew.bat assembleDebug
 ```
 
-**macOS/Linux**
+On Mac or Linux use `./gradlew` instead of `.\gradlew.bat`.
 
-```bash
-./gradlew testDebugUnitTest
-./gradlew assembleDebug
-```
+### Run the backend yourself
 
-The debug APK is intended for development and testing. Use a properly signed release build for distribution.
+You only need this if you do not want to use the hosted API. You need Node.js 22 or newer, a MongoDB Atlas database, a Firebase service account key from the same Firebase project as the app, and a Spoonacular API key.
 
-### Hosted or local API
-
-The Android build uses `https://prog7314-kitchenquest-g7bd.onrender.com/` by default. To run your own backend, create `backend/.env` from `backend/.env.example` and provide `MONGODB_URI`, `FIREBASE_SERVICE_ACCOUNT_PATH` and `SPOONACULAR_API_KEY` privately.
+1. Go into the `backend` folder and copy `.env.example` to `.env`.
+2. Fill in `MONGODB_URI`, `FIREBASE_SERVICE_ACCOUNT_PATH` and `SPOONACULAR_API_KEY`.
+3. Put your service account key file in the `backend` folder.
+4. Install and start it:
 
 ```powershell
 cd backend
 npm ci
-npm test
 npm start
 ```
 
-To redirect the Android app to your local API, add `api.baseUrl=http://localhost:5000` to `KitchenQuest/local.properties` and rebuild. For a USB-connected physical phone, use `adb reverse tcp:5000 tcp:5000`. Do not put service-account JSON, MongoDB credentials, API keys or signing passwords in the repository.
+The API runs on port 5000. Check it by opening `http://localhost:5000/health`.
 
-### Build the production APK
+To point the app at your own backend, add one line to `KitchenQuest/local.properties` and rebuild:
 
-The Android configuration supports a release key supplied privately using `KitchenQuest/keystore.properties` or the `KQ_KEYSTORE_FILE`, `KQ_KEYSTORE_PASSWORD`, `KQ_KEY_ALIAS` and `KQ_KEY_PASSWORD` environment variables. Generate and securely store a real release keystore before building. From the `KitchenQuest` directory:
-
-```powershell
-.\gradlew.bat assembleRelease
+```text
+api.baseUrl=http://localhost:5000
 ```
 
-The signed **KitchenQuest v2.0.0 APK** is available from the [GitHub release](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/tag/Final-POE) or as a [direct APK download](https://github.com/ST10321249/PROG7314_KitchenQuest/releases/download/Final-POE/app-release.apk). Download it onto an Android phone and install it to try the app without building from source.
+For a phone connected by USB, also run `adb reverse tcp:5000 tcp:5000`. For the emulator, use `http://10.0.2.2:5000` as the address instead. Plain HTTP only works in debug builds.
 
-To produce a signed APK yourself, use **Build > Generate Signed Bundle / APK > APK > release** in Android Studio with your own private signing key. The Gradle command above only creates a signed APK when release signing has been configured. You can verify the signature with `apksigner verify --verbose --print-certs <path-to-apk>`. Keep the `.jks` keystore and its passwords private. The configured app version is **2.0.0 (version code 2)**.
+Never commit your `.env`, service account key, `local.properties`, keystore or passwords.
 
-## Tests, GitHub and CI
+### Build a signed APK
 
-The project contains Android tests for authentication, ViewModels, database migrations, offline queues/synchronization, account separation, recipe caching, timer state, notifications and photo handling. Backend Jest tests cover authentication, route behavior, validation, device tokens, idempotency and protected file access.
+Use Build > Generate Signed Bundle / APK > APK > release in Android Studio with your own keystore. You can also put your signing details in `KitchenQuest/keystore.properties` (or the `KQ_KEYSTORE_FILE`, `KQ_KEYSTORE_PASSWORD`, `KQ_KEY_ALIAS` and `KQ_KEY_PASSWORD` environment variables) and run `.\gradlew.bat assembleRelease`. The app version is 2.0.0 (version code 2).
 
-The tracked [GitHub Actions workflow](.github/workflows/android-ci.yml) runs on pushes and pull requests. It builds/tests Android with Java 21 and runs backend tests with Node.js 22. Four main implementation branches were used: `authentication`, `api-data-layer`, `pantry-shopping` and `recipes-cooking`. See the [commit history](https://github.com/ST10321249/PROG7314_KitchenQuest/commits/main/) for the group's actual work.
+## Tests
 
-## Development history and design origins
+- Android: 393 unit tests, run with `.\gradlew.bat testDebugUnitTest` from the `KitchenQuest` folder. They cover login rules, ViewModels, the Room database and migrations, offline sync, account separation, recipe caching, timers, notifications and photos.
+- Backend: 210 Jest tests, run with `npm test` from the `backend` folder. They cover sign-in checks on every route, validation, duplicate requests, device tokens and photo access.
 
-- **Part 1, research and planning:** Competitor analysis of SuperCook, Kitchen Stories and KitchenPal. This influenced ingredient-first recipe matching, expiry-aware pantry management, connected shopping and guided cooking. The team produced UI mockups, UML, data models and a REST API specification.
-- **Part 2, prototype:** Implemented Firebase account/Google login, onboarding, initial Settings, custom Node/Express backend with MongoDB, pantry and shopping CRUD, recipe search and details, favourites, guided cooking, history, shared styling, navigation and tests.
-- **Final POE, version 2.0.0:** Added biometric unlock, English/Afrikaans localization, Room-backed offline actions and synchronization, on-device recipe caching, FCM push, expiry alerts, persistent timer alarms, GridFS dish photos, app icon and release/CI preparation.
+GitHub Actions runs both on every push and pull request, using Java 21 and Node.js 22. We worked on four branches: `authentication`, `api-data-layer`, `pantry-shopping` and `recipes-cooking`.
 
-The complete change history, including new features, refinements and known limitations, is in **[RELEASE_NOTES.md](RELEASE_NOTES.md)**.
+## Part 1 plan compared to what we finished
 
-### Design requirements and current scope
+Done:
 
-The Part 1 blueprint defined 12 functional requirements (FR-01 to FR-12) and three custom requirements (CR-01 to CR-03). The final implementation covers the core POE requirements in code, but some **expanded Part 1 ideas are only partial**: full difficulty/meal-type/cuisine filters, every proposed expiry-driven recipe suggestion, optional voice/barcode ingredient capture and comprehensive automatic translation of live recipe text are not all present. The release notes distinguish these from completed features rather than listing design goals as finished functionality.
+- Accounts, Google sign-in and biometric unlock (FR-01, FR-02)
+- Pantry management, also offline (FR-05)
+- Ingredient match ratio and missing ingredients (FR-07, CR-01)
+- Guided cooking and timers (FR-09, CR-02)
+- Notifications (FR-10)
+- Cooking history with ratings, notes and photos (FR-11)
+- Offline storage and sync (FR-12)
 
-## Video walkthrough
+Mostly done:
 
-The [KitchenQuest demo video](https://youtu.be/TLxaVVVlTd8) walks through the application on a physical Android device, including:
+- Preferences are saved and synced, but they are not always used as default recipe filters (FR-03)
+- Expiring items are highlighted and we send reminders, but recipes are not fully ranked by what is expiring (FR-06, CR-03)
+- Shopping and moving items to the pantry works, but there is no separate view for recipes missing only a few items (FR-08)
 
-1. Account sign-in, biometric quick unlock, profile preferences and English/Afrikaans switching.
-2. Pantry ingredient management, expiry tracking, recipe matching and Shopping List integration.
-3. Offline pantry and shopping changes, followed by automatic synchronization after reconnecting.
-4. Firebase push notifications and local cooking timer alerts.
-5. Guided cooking, serving adjustments, cooking history and photo uploads backed by MongoDB GridFS.
-6. Firebase Authentication, the hosted API, MongoDB Atlas and the project's automated build checks.
+Partly done:
+
+- Search, recipe details and servings work, but not every difficulty, cuisine and meal-type filter from the plan was added (FR-04)
+
+Not added:
+
+- Voice input and barcode scanning, which were only ideas in Part 1
 
 ## Known limitations
 
-- New recipe searches and live recommendations need Spoonacular and a working internet connection. Render cold starts can add latency.
-- Recipe artwork in the current UI is mostly icon-based; user-provided dish photos are stored in GridFS.
-- Google ML Kit's translation service/model download exists, but it is not automatically applied to all API or user-entered recipe text.
-- Some advanced Part 1 filters and optional voice/barcode ideas are not implemented.
-
-## Team and acknowledgements
-
-Final POE implementation branches: **Raheel Singh** (authentication), **Akeev Sivai** (API/data layer), **Avikar Maharaj** (pantry/shopping) and **Mohamed Shaheer Joosab** (recipes/cooking). The original Part 1 research document also credits **Kaeden Samsunder** for that phase.
+- Searching for new recipes and getting new recommendations needs internet.
+- The hosted API can be slow on the first request because of Render's free plan.
+- Only recipes you have already opened or saved work offline.
+- The app screens are translated into Afrikaans, but recipe text from Spoonacular and anything users type can stay in its original language. The ML Kit translation service is in the app but is not applied everywhere.
+- Most recipe images in the app are icons. Only your own dish photos are real pictures.
+- Notifications and alarms depend on the permissions and battery settings on the phone.
 
 ## References
 
-- Android Developers. *Biometric authentication*. https://developer.android.com/identity/sign-in/biometric-auth
-- Android Developers. *Room database*. https://developer.android.com/training/data-storage/room
-- Android Developers. *WorkManager*. https://developer.android.com/develop/background-work/background-tasks/persistent
-- Android Developers. *Alarms*. https://developer.android.com/develop/background-work/services/alarms/schedule
-- Firebase. *Authentication*. https://firebase.google.com/docs/auth
-- Firebase. *Cloud Messaging*. https://firebase.google.com/docs/cloud-messaging
-- Google ML Kit. *Translate text on Android*. https://developers.google.com/ml-kit/language/translation/android
-- MongoDB. *GridFS*. https://www.mongodb.com/docs/manual/core/gridfs/
-- Spoonacular. *Food API*. https://spoonacular.com/food-api
+- Android Developers. Biometric authentication. https://developer.android.com/identity/sign-in/biometric-auth
+- Android Developers. Room database. https://developer.android.com/training/data-storage/room
+- Android Developers. WorkManager. https://developer.android.com/develop/background-work/background-tasks/persistent
+- Android Developers. Alarms. https://developer.android.com/develop/background-work/services/alarms/schedule
+- Firebase. Authentication. https://firebase.google.com/docs/auth
+- Firebase. Cloud Messaging. https://firebase.google.com/docs/cloud-messaging
+- Google ML Kit. Translate text on Android. https://developers.google.com/ml-kit/language/translation/android
+- MongoDB. GridFS. https://www.mongodb.com/docs/manual/core/gridfs/
+- Spoonacular. Food API. https://spoonacular.com/food-api
