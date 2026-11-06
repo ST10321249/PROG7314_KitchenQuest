@@ -6,17 +6,13 @@ KitchenQuest is a native Android cooking and kitchen-management app created for 
 
 The project progressed from competitor research and a Figma design in **Part 1**, to a working Android/REST API prototype in **Part 2**, and then to offline synchronization, biometrics, bilingual support, push notifications, persistent timers and dish photos for the **Final POE**.
 
-**Project links and submission evidence**
+**Project links**
 
 - **Source code:** [KitchenQuest on GitHub](https://github.com/ST10321249/PROG7314_KitchenQuest)
 - **Full development history:** [Release notes](RELEASE_NOTES.md), covering Parts 1–3
 - **Backend routes and configuration:** [Backend README](backend/README.md)
 - **GitHub Actions:** [Android and backend CI runs](https://github.com/ST10321249/PROG7314_KitchenQuest/actions)
-- **Final physical-device demonstration:** **[Add the unlisted video link here after uploading it]**
-- **Signed production APK:** **[Add the final GitHub release link after building, signing and attaching the APK]**
-- **Final release tag:** `Final-POE` **(create and push after the final commit passes verification)**
-
-> **Submission note:** The last three entries are evidence to be supplied before submission, not claims that a signed APK, video or final tag has already been published. The repository's normal build output is not a substitute for a signed release artifact.
+- **Demo video:** [Watch the KitchenQuest demonstration](https://youtu.be/TLxaVVVlTd8)
 
 ## Screenshots and app walkthrough
 
@@ -56,7 +52,7 @@ Users can search for recipes, open recipe details, adjust servings, save favouri
 
 ### 4. Cooking, timers and history
 
-Cooking Mode presents recipe steps, with a separate timer screen and a record of completed meals. The completion screen supports ratings, difficulty feedback, notes and optional dish-photo uploads. The screenshots below show the screens and controls, not proof of an uploaded dish photo.
+Cooking Mode presents recipe steps, with a separate timer screen and a record of completed meals. The completion screen supports ratings, difficulty feedback, notes and optional dish-photo uploads. The screenshots below show the cooking and history screens; photos added to completed meals are accessible from Cooking History.
 
 | **Cook screen** | **Step-by-step cooking** | **Kitchen timer** |
 | :---: | :---: | :---: |
@@ -88,13 +84,13 @@ KitchenQuest supports in-app language switching between English and Afrikaans. T
 
 ### 7. Notifications
 
-The Notifications screen displays kitchen reminders and includes actions to test the Firebase push-notification flow and check local expiry reminders. The Android notification-shade screenshot shows an actual received message; local cooking-timer and expiry alerts are separate notification paths.
+The Notifications screen shows kitchen and shopping reminders. Firebase Cloud Messaging delivers remote pushes, while ingredient expiry reminders and cooking timers use Android's local notification system. The screenshot shows a real push notification delivered to an Android device during testing.
 
-| **Notifications screen and test actions** | **Notification delivered to Android** |
-| :---: | :---: |
-| <img src="docs/screenshots/notifications-screen.jpg" alt="Notifications screen and test actions" width="205"> | <img src="docs/screenshots/push-notification.jpg" alt="Notification delivered to Android" width="205"> |
+| **Firebase push notification delivered to Android** |
+| :---: |
+| <img src="docs/screenshots/push-notification.jpg" alt="Firebase notification delivered to Android" width="205"> |
 
-**Demonstration evidence:** The final video will additionally show biometric unlock, offline sync/reconnection, Firebase push delivery, and backend/database updates on a physical device. These scenarios are not represented by separate screenshots in this collection.
+For functionality that is easier to show in motion, such as biometric unlock, offline sync and reconnection, Firebase push delivery and cloud database updates, see the [demonstration video](https://youtu.be/TLxaVVVlTd8).
 
 ## Key features
 
@@ -113,6 +109,15 @@ The Notifications screen displays kitchen reminders and includes actions to test
 | Cooking history | Save completed recipes, optional rating/difficulty/notes and a finished-dish photograph |
 | File storage | Store and retrieve finished-dish photos through protected MongoDB GridFS endpoints |
 | Language support | Localized English/Afrikaans app interface; Google ML Kit language-model and translation service |
+
+## Final POE: Two additional user-defined features
+
+Besides the required biometric login, multilingual interface, FCM notifications and offline pantry/shopping synchronization, the final POE extends the prototype with two user-defined features:
+
+1. **Offline recipe access and resumable cooking (User-Defined Feature 4).** Previously opened and saved recipes can be read from the device's Room cache without an internet connection. Users can follow cached cooking instructions, and the cooking session retains its current step and timer deadlines across interruptions and app restarts. Fresh recipe searches still need internet access.
+2. **Finished-dish photos in Cooking History (User-Defined Feature 5).** After completing a recipe, users can attach a meal photograph alongside their rating, difficulty feedback and private note. The Android app uploads the image through the authenticated REST API to MongoDB GridFS, and the owner can retrieve it from Cooking History. This extends the prototype's existing history feature with image storage.
+
+The screenshots above show the related screens. Finished-dish photographs are uploaded to GridFS through the backend and retrieved within the app.
 
 **Language scope:** The static Android interface uses English and Afrikaans resources. Google ML Kit supplies on-device translation capabilities, including downloadable models. Machine translation of every Spoonacular response and every user-entered field is **not automatically wired into all recipe/pantry screens**, so original API text can still appear. This is not a third-party cloud translation service.
 
@@ -166,7 +171,7 @@ The API responds publicly at `GET /health`. Other application routes require a v
 | Recipe discovery | `/api/recipes/search`, `/api/recipes/:id`, `/api/recipes/recommendations` |
 | Favourites | `/api/favourites` |
 | History and notes | `/api/history`, `/api/recipe-notes` |
-| Push devices and test | `/api/devices`, `/api/notifications/test` |
+| Push device registration | `/api/devices` |
 | Photo storage | `/api/files` and file-ID routes |
 
 See [`backend/README.md`](backend/README.md) for method-by-method information and payloads.
@@ -181,7 +186,7 @@ KitchenQuest/                       Native Android project
   app/src/test/                     Android unit tests
   app/schemas/                      Room migration schemas
 backend/                            Express API, models, validation and tests
-README.md                           Technical overview and screenshot evidence
+README.md                           Project overview and screenshots
 RELEASE_NOTES.md                    Research, prototype and POE release history
 ```
 
@@ -210,7 +215,7 @@ From the `KitchenQuest` directory:
 ./gradlew assembleDebug
 ```
 
-Android's debug APK is for development. A debug APK is **not** evidence of a signed production APK.
+The debug APK is intended for development and testing. Use a properly signed release build for distribution.
 
 ### Hosted or local API
 
@@ -233,15 +238,13 @@ The Android configuration supports a release key supplied privately using `Kitch
 .\gradlew.bat assembleRelease
 ```
 
-**A successful release Gradle task does not, on its own, prove that the APK was signed.** Verify the release signature with Android's `apksigner verify --verbose --print-certs <path-to-apk>` and install the APK on a physical phone. Publish the verified artifact separately in the GitHub release; do not commit APKs, keystores or ZIPs to the source repository. The configured project version is **2.0.0 (version code 2)**.
+Verify the APK signature with Android's `apksigner verify --verbose --print-certs <path-to-apk>` and install it on a physical device. Release APKs can be distributed through GitHub Releases rather than committed to the source repository. The configured app version is **2.0.0 (version code 2)**.
 
 ## Tests, GitHub and CI
 
 The project contains Android tests for authentication, ViewModels, database migrations, offline queues/synchronization, account separation, recipe caching, timer state, notifications and photo handling. Backend Jest tests cover authentication, route behavior, validation, device tokens, idempotency and protected file access.
 
 The tracked [GitHub Actions workflow](.github/workflows/android-ci.yml) runs on pushes and pull requests. It builds/tests Android with Java 21 and runs backend tests with Node.js 22. Four main implementation branches were used: `authentication`, `api-data-layer`, `pantry-shopping` and `recipes-cooking`. See the [commit history](https://github.com/ST10321249/PROG7314_KitchenQuest/commits/main/) for the group's actual work.
-
-The final submission must have a successful run **on the submitted commit** and the annotated `Final-POE` tag placed on that verified commit. Previous successful workflow runs do not verify later edits automatically.
 
 ## Development history and design origins
 
@@ -255,26 +258,23 @@ The complete change history, including new features, refinements and known limit
 
 The Part 1 blueprint defined 12 functional requirements (FR-01 to FR-12) and three custom requirements (CR-01 to CR-03). The final implementation covers the core POE requirements in code, but some **expanded Part 1 ideas are only partial**: full difficulty/meal-type/cuisine filters, every proposed expiry-driven recipe suggestion, optional voice/barcode ingredient capture and comprehensive automatic translation of live recipe text are not all present. The release notes distinguish these from completed features rather than listing design goals as finished functionality.
 
-## Final physical-device demonstration
+## Video walkthrough
 
-Show a working install and the actual app on a physical phone, with an explanatory voice-over:
+The [KitchenQuest demo video](https://youtu.be/TLxaVVVlTd8) walks through the application on a physical Android device, including:
 
-1. Register/sign in with Google SSO or email; enable biometric unlock, leave and return to the app.
-2. Change Settings and switch English ⇄ Afrikaans.
-3. Add and edit a pantry item online and show its matching record in MongoDB.
-4. Turn on airplane mode; change pantry and shopping data; close/reopen; reconnect and confirm the pending changes reach MongoDB.
-5. Send a genuine FCM test push to the phone; show a timer finishing while KitchenQuest is backgrounded.
-6. Find a recipe, adjust servings, complete a cook, attach a photo and retrieve it from Cooking History/GridFS.
-7. Show the installed **signed release** APK, final app icon, promotional screenshots, final successful CI run and `Final-POE` tag.
+1. Account sign-in, biometric quick unlock, profile preferences and English/Afrikaans switching.
+2. Pantry ingredient management, expiry tracking, recipe matching and Shopping List integration.
+3. Offline pantry and shopping changes, followed by automatic synchronization after reconnecting.
+4. Firebase push notifications and local cooking timer alerts.
+5. Guided cooking, serving adjustments, cooking history and photo uploads backed by MongoDB GridFS.
+6. Firebase Authentication, the hosted API, MongoDB Atlas and the project's automated build checks.
 
-## Known limitations and final evidence to supply
+## Known limitations
 
 - New recipe searches and live recommendations need Spoonacular and a working internet connection. Render cold starts can add latency.
 - Recipe artwork in the current UI is mostly icon-based; user-provided dish photos are stored in GridFS.
 - Google ML Kit's translation service/model download exists, but it is not automatically applied to all API or user-entered recipe text.
 - Some advanced Part 1 filters and optional voice/barcode ideas are not implemented.
-- The screenshots above are included in `docs/screenshots/`. The demonstration video and verified signed APK still need to be linked before submission.
-- Verify biometric behavior after an uninstall/reinstall and account switching on real devices; Android backup configuration matters.
 
 ## Team and acknowledgements
 
