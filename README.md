@@ -245,32 +245,6 @@ Use Build > Generate Signed Bundle / APK > APK > release in Android Studio with 
 
 GitHub Actions runs both on every push and pull request, using Java 21 and Node.js 22. We worked on four branches: `authentication`, `api-data-layer`, `pantry-shopping` and `recipes-cooking`.
 
-## Part 1 plan compared to what we finished
-
-Done:
-
-- Accounts, Google sign-in and biometric unlock (FR-01, FR-02)
-- Pantry management, also offline (FR-05)
-- Ingredient match ratio and missing ingredients (FR-07, CR-01)
-- Guided cooking and timers (FR-09, CR-02)
-- Notifications (FR-10)
-- Cooking history with ratings, notes and photos (FR-11)
-- Offline storage and sync (FR-12)
-
-Mostly done:
-
-- Preferences are saved and synced, but they are not always used as default recipe filters (FR-03)
-- Expiring items are highlighted and we send reminders, but recipes are not fully ranked by what is expiring (FR-06, CR-03)
-- Shopping and moving items to the pantry works, but there is no separate view for recipes missing only a few items (FR-08)
-
-Partly done:
-
-- Search, recipe details and servings work, but not every difficulty, cuisine and meal-type filter from the plan was added (FR-04)
-
-Not added:
-
-- Voice input and barcode scanning, which were only ideas in Part 1
-
 ## Known limitations
 
 - Searching for new recipes and getting new recommendations needs internet.
