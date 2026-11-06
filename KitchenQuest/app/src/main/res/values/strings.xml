@@ -412,4 +412,9 @@
     <string name="sync_failed_edit">Edit</string>
     <string name="sync_failed_delete">Delete</string>
     <string name="sync_failed_close">Close</string>
+    <string name="cookingmode_start_timer_format">Start %1$02d:00 timer</string>
+    <string name="settings_biometric_setup_title">Enable biometric unlock</string>
+    <string name="settings_biometric_setup_subtitle">Confirm your fingerprint or face for this KitchenQuest account</string>
+    <string name="settings_biometric_setup_cancelled">Biometric setup was cancelled.</string>
+    <string name="settings_biometric_setup_failed">Biometric setup could not finish: %1$s</string>
 </resources>

@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.kitchenquest.ui.components.KitchenQuestChoiceChip
@@ -63,6 +65,14 @@ fun CookingModeScreen(
 ) {
     var showExitConfirmation by rememberSaveable { mutableStateOf(false) }
     var selectedTimerMinutes by rememberSaveable { mutableIntStateOf(10) }
+
+    // Keep instructions readable while the user is cooking, then restore normal sleep behaviour.
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val previous = view.keepScreenOn
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = previous }
+    }
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -109,8 +119,9 @@ fun CookingModeScreen(
 
             state.recipe != null && state.recipe.steps.isNotEmpty() -> {
                 val recipe = state.recipe
-                val step = recipe.steps[state.currentStepIndex]
-                val isLastStep = state.currentStepIndex == recipe.steps.lastIndex
+                val displayedStepIndex = state.currentStepIndex.coerceIn(0, recipe.steps.lastIndex)
+                val step = recipe.steps[displayedStepIndex]
+                val isLastStep = displayedStepIndex == recipe.steps.lastIndex
                 val featuredTimer = state.timers
                     .firstOrNull { it.sourceType == TimerSource.RECIPE && !it.isFinished }
                     ?: state.timers.firstOrNull { !it.isFinished }
@@ -153,14 +164,14 @@ fun CookingModeScreen(
                     Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
                     StepProgress(
-                        currentStep = state.currentStepIndex,
+                        currentStep = displayedStepIndex,
                         totalSteps = recipe.steps.size
                     )
 
                     Spacer(modifier = Modifier.height(KitchenQuestDimens.MediumSpacing))
 
                     Text(
-                        text = stringResource(R.string.cooking_step_of, state.currentStepIndex + 1, recipe.steps.size),
+                        text = stringResource(R.string.cooking_step_of, displayedStepIndex + 1, recipe.steps.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -229,7 +240,7 @@ fun CookingModeScreen(
                                 )
                             ) {
                                 Text(
-                                    text = "Start %02d:00 timer".format(selectedTimerMinutes),
+                                    text = stringResource(R.string.cookingmode_start_timer_format, selectedTimerMinutes),
                                     style = MaterialTheme.typography.labelLarge
                                 )
                             }
@@ -247,7 +258,7 @@ fun CookingModeScreen(
                         KitchenQuestSecondaryButton(
                             text = stringResource(R.string.cookingmode_previous_995e9d),
                             onClick = onPreviousStep,
-                            enabled = state.currentStepIndex > 0,
+                            enabled = displayedStepIndex > 0,
                             modifier = Modifier.weight(1f)
                         )
 
