@@ -13,10 +13,10 @@ Links:
 
 ## The team
 
-- Raheel Singh - authentication, biometrics and languages
-- Akeev Sivai - API, data layer, offline sync, push server and photo storage
-- Avikar Maharaj - pantry, shopping list and expiry reminders
-- Mohamed Shaheer Joosab - recipes, cooking, timers, photos and release
+- Raheel Singh (ST10321249) - authentication, biometrics and languages
+- Akeev Sivai (ST10312856) - API, data layer, offline sync, push server and photo storage
+- Avikar Maharaj (ST10325729) - pantry, shopping list and expiry reminders
+- Mohamed Shaheer Joosab (ST10108240) - recipes, cooking, timers, photos and release
 
 Kaeden Samsunder also worked with us on the Part 1 research.
 
